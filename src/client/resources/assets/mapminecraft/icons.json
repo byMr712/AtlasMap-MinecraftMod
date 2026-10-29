@@ -1,0 +1,2581 @@
+{
+ "groups": [
+  {
+   "id": "basic",
+   "ru": "Основные",
+   "en": "Basic",
+   "icons": [
+    {
+     "id": "pin",
+     "ru": "Булавка",
+     "en": "Pin"
+    },
+    {
+     "id": "pin_blue",
+     "ru": "Синяя булавка",
+     "en": "Blue pin"
+    },
+    {
+     "id": "pin_green",
+     "ru": "Зелёная булавка",
+     "en": "Green pin"
+    },
+    {
+     "id": "pin_yellow",
+     "ru": "Жёлтая булавка",
+     "en": "Yellow pin"
+    },
+    {
+     "id": "pin_purple",
+     "ru": "Фиолетовая булавка",
+     "en": "Purple pin"
+    },
+    {
+     "id": "pin_white",
+     "ru": "Белая булавка",
+     "en": "White pin"
+    },
+    {
+     "id": "pin_black",
+     "ru": "Чёрная булавка",
+     "en": "Black pin"
+    },
+    {
+     "id": "flag",
+     "ru": "Флаг",
+     "en": "Flag"
+    },
+    {
+     "id": "flag_blue",
+     "ru": "Синий флаг",
+     "en": "Blue flag"
+    },
+    {
+     "id": "flag_green",
+     "ru": "Зелёный флаг",
+     "en": "Green flag"
+    },
+    {
+     "id": "flag_yellow",
+     "ru": "Жёлтый флаг",
+     "en": "Yellow flag"
+    },
+    {
+     "id": "flag_purple",
+     "ru": "Фиолетовый флаг",
+     "en": "Purple flag"
+    },
+    {
+     "id": "flag_white",
+     "ru": "Белый флаг",
+     "en": "White flag"
+    },
+    {
+     "id": "star",
+     "ru": "Звезда",
+     "en": "Star"
+    },
+    {
+     "id": "heart",
+     "ru": "Любимое место",
+     "en": "Favorite"
+    },
+    {
+     "id": "question",
+     "ru": "Неизвестно",
+     "en": "Unknown"
+    },
+    {
+     "id": "exclamation",
+     "ru": "Важно",
+     "en": "Important"
+    },
+    {
+     "id": "warning",
+     "ru": "Внимание",
+     "en": "Warning"
+    },
+    {
+     "id": "cross",
+     "ru": "Клад",
+     "en": "Treasure"
+    },
+    {
+     "id": "crown",
+     "ru": "Корона",
+     "en": "Crown"
+    },
+    {
+     "id": "trophy",
+     "ru": "Кубок",
+     "en": "Trophy"
+    },
+    {
+     "id": "key",
+     "ru": "Ключ",
+     "en": "Key"
+    },
+    {
+     "id": "note",
+     "ru": "Музыка",
+     "en": "Music"
+    },
+    {
+     "id": "hourglass",
+     "ru": "Песочные часы",
+     "en": "Hourglass"
+    },
+    {
+     "id": "pin_light_gray",
+     "ru": "Светло-серая булавка",
+     "en": "Light gray pin"
+    },
+    {
+     "id": "pin_gray",
+     "ru": "Серая булавка",
+     "en": "Gray pin"
+    },
+    {
+     "id": "pin_brown",
+     "ru": "Коричневая булавка",
+     "en": "Brown pin"
+    },
+    {
+     "id": "pin_orange",
+     "ru": "Оранжевая булавка",
+     "en": "Orange pin"
+    },
+    {
+     "id": "pin_lime",
+     "ru": "Лаймовая булавка",
+     "en": "Lime pin"
+    },
+    {
+     "id": "pin_cyan",
+     "ru": "Бирюзовая булавка",
+     "en": "Cyan pin"
+    },
+    {
+     "id": "pin_light_blue",
+     "ru": "Голубая булавка",
+     "en": "Light blue pin"
+    },
+    {
+     "id": "pin_magenta",
+     "ru": "Пурпурная булавка",
+     "en": "Magenta pin"
+    },
+    {
+     "id": "pin_pink",
+     "ru": "Розовая булавка",
+     "en": "Pink pin"
+    },
+    {
+     "id": "flag_black",
+     "ru": "Чёрный флаг",
+     "en": "Black flag"
+    },
+    {
+     "id": "flag_light_gray",
+     "ru": "Светло-серый флаг",
+     "en": "Light gray flag"
+    },
+    {
+     "id": "flag_gray",
+     "ru": "Серый флаг",
+     "en": "Gray flag"
+    },
+    {
+     "id": "flag_brown",
+     "ru": "Коричневый флаг",
+     "en": "Brown flag"
+    },
+    {
+     "id": "flag_orange",
+     "ru": "Оранжевый флаг",
+     "en": "Orange flag"
+    },
+    {
+     "id": "flag_lime",
+     "ru": "Лаймовый флаг",
+     "en": "Lime flag"
+    },
+    {
+     "id": "flag_cyan",
+     "ru": "Бирюзовый флаг",
+     "en": "Cyan flag"
+    },
+    {
+     "id": "flag_light_blue",
+     "ru": "Голубой флаг",
+     "en": "Light blue flag"
+    },
+    {
+     "id": "flag_magenta",
+     "ru": "Пурпурный флаг",
+     "en": "Magenta flag"
+    },
+    {
+     "id": "flag_pink",
+     "ru": "Розовый флаг",
+     "en": "Pink flag"
+    },
+    {
+     "id": "heart_blue",
+     "ru": "Синее сердце",
+     "en": "Blue heart"
+    },
+    {
+     "id": "star_red",
+     "ru": "Красная звезда",
+     "en": "Red star"
+    },
+    {
+     "id": "star_blue",
+     "ru": "Синяя звезда",
+     "en": "Blue star"
+    },
+    {
+     "id": "star_green",
+     "ru": "Зелёная звезда",
+     "en": "Green star"
+    },
+    {
+     "id": "star_purple",
+     "ru": "Фиолетовая звезда",
+     "en": "Purple star"
+    }
+   ]
+  },
+  {
+   "id": "build",
+   "ru": "Постройки",
+   "en": "Buildings",
+   "icons": [
+    {
+     "id": "house",
+     "ru": "Дом",
+     "en": "House"
+    },
+    {
+     "id": "castle",
+     "ru": "Замок",
+     "en": "Castle"
+    },
+    {
+     "id": "tower",
+     "ru": "Башня",
+     "en": "Tower"
+    },
+    {
+     "id": "church",
+     "ru": "Церковь",
+     "en": "Church"
+    },
+    {
+     "id": "temple",
+     "ru": "Храм",
+     "en": "Temple"
+    },
+    {
+     "id": "windmill",
+     "ru": "Мельница",
+     "en": "Windmill"
+    },
+    {
+     "id": "lighthouse",
+     "ru": "Маяк",
+     "en": "Lighthouse"
+    },
+    {
+     "id": "market",
+     "ru": "Рынок",
+     "en": "Market"
+    },
+    {
+     "id": "tent",
+     "ru": "Палатка",
+     "en": "Tent"
+    },
+    {
+     "id": "igloo",
+     "ru": "Иглу",
+     "en": "Igloo"
+    },
+    {
+     "id": "well",
+     "ru": "Колодец",
+     "en": "Well"
+    },
+    {
+     "id": "bridge",
+     "ru": "Мост",
+     "en": "Bridge"
+    },
+    {
+     "id": "ruins",
+     "ru": "Руины",
+     "en": "Ruins"
+    },
+    {
+     "id": "bell",
+     "ru": "Деревня",
+     "en": "Village"
+    },
+    {
+     "id": "bed",
+     "ru": "Кровать",
+     "en": "Bed"
+    },
+    {
+     "id": "campfire",
+     "ru": "Лагерь",
+     "en": "Camp"
+    },
+    {
+     "id": "portal",
+     "ru": "Портал",
+     "en": "Portal"
+    },
+    {
+     "id": "end",
+     "ru": "Око Края",
+     "en": "Ender eye"
+    },
+    {
+     "id": "house_blue",
+     "ru": "Синий дом",
+     "en": "Blue house"
+    },
+    {
+     "id": "house_green",
+     "ru": "Зелёный дом",
+     "en": "Green house"
+    },
+    {
+     "id": "house_purple",
+     "ru": "Фиолетовый дом",
+     "en": "Purple house"
+    },
+    {
+     "id": "house_brown",
+     "ru": "Коричневый дом",
+     "en": "Brown house"
+    },
+    {
+     "id": "house_black",
+     "ru": "Чёрный дом",
+     "en": "Black house"
+    },
+    {
+     "id": "tent_blue",
+     "ru": "Синяя палатка",
+     "en": "Blue tent"
+    },
+    {
+     "id": "tent_green",
+     "ru": "Зелёная палатка",
+     "en": "Green tent"
+    },
+    {
+     "id": "tent_yellow",
+     "ru": "Жёлтая палатка",
+     "en": "Yellow tent"
+    },
+    {
+     "id": "tent_white",
+     "ru": "Белая палатка",
+     "en": "White tent"
+    },
+    {
+     "id": "tent_purple",
+     "ru": "Фиолетовая палатка",
+     "en": "Purple tent"
+    }
+   ]
+  },
+  {
+   "id": "nature",
+   "ru": "Природа",
+   "en": "Nature",
+   "icons": [
+    {
+     "id": "tree",
+     "ru": "Лес",
+     "en": "Forest"
+    },
+    {
+     "id": "pine",
+     "ru": "Ель",
+     "en": "Spruce"
+    },
+    {
+     "id": "palm",
+     "ru": "Пальма",
+     "en": "Palm"
+    },
+    {
+     "id": "cactus",
+     "ru": "Кактус",
+     "en": "Cactus"
+    },
+    {
+     "id": "flower",
+     "ru": "Цветы",
+     "en": "Flowers"
+    },
+    {
+     "id": "mushroom",
+     "ru": "Грибы",
+     "en": "Mushrooms"
+    },
+    {
+     "id": "apple",
+     "ru": "Яблоко",
+     "en": "Apple"
+    },
+    {
+     "id": "farm",
+     "ru": "Ферма",
+     "en": "Farm"
+    },
+    {
+     "id": "mountain",
+     "ru": "Гора",
+     "en": "Mountain"
+    },
+    {
+     "id": "cave",
+     "ru": "Пещера",
+     "en": "Cave"
+    },
+    {
+     "id": "volcano",
+     "ru": "Вулкан",
+     "en": "Volcano"
+    },
+    {
+     "id": "wave",
+     "ru": "Вода",
+     "en": "Water"
+    },
+    {
+     "id": "snowflake",
+     "ru": "Снег",
+     "en": "Snow"
+    },
+    {
+     "id": "sun",
+     "ru": "Солнце",
+     "en": "Sun"
+    },
+    {
+     "id": "moon",
+     "ru": "Луна",
+     "en": "Moon"
+    },
+    {
+     "id": "lightning",
+     "ru": "Молния",
+     "en": "Lightning"
+    }
+   ]
+  },
+  {
+   "id": "resources",
+   "ru": "Ресурсы",
+   "en": "Resources",
+   "icons": [
+    {
+     "id": "mine",
+     "ru": "Шахта",
+     "en": "Mine"
+    },
+    {
+     "id": "diamond",
+     "ru": "Алмазы",
+     "en": "Diamonds"
+    },
+    {
+     "id": "emerald",
+     "ru": "Торговля",
+     "en": "Trading"
+    },
+    {
+     "id": "gold",
+     "ru": "Золото",
+     "en": "Gold"
+    },
+    {
+     "id": "iron",
+     "ru": "Железо",
+     "en": "Iron"
+    },
+    {
+     "id": "copper",
+     "ru": "Медь",
+     "en": "Copper"
+    },
+    {
+     "id": "coal",
+     "ru": "Уголь",
+     "en": "Coal"
+    },
+    {
+     "id": "redstone",
+     "ru": "Редстоун",
+     "en": "Redstone"
+    },
+    {
+     "id": "lapis",
+     "ru": "Лазурит",
+     "en": "Lapis"
+    },
+    {
+     "id": "amethyst",
+     "ru": "Аметист",
+     "en": "Amethyst"
+    },
+    {
+     "id": "log",
+     "ru": "Древесина",
+     "en": "Wood"
+    },
+    {
+     "id": "fish",
+     "ru": "Рыбалка",
+     "en": "Fishing"
+    },
+    {
+     "id": "chest",
+     "ru": "Сундук",
+     "en": "Chest"
+    },
+    {
+     "id": "coin",
+     "ru": "Монеты",
+     "en": "Coins"
+    },
+    {
+     "id": "ruby",
+     "ru": "Рубин",
+     "en": "Ruby"
+    },
+    {
+     "id": "sapphire",
+     "ru": "Сапфир",
+     "en": "Sapphire"
+    },
+    {
+     "id": "topaz",
+     "ru": "Топаз",
+     "en": "Topaz"
+    },
+    {
+     "id": "onyx",
+     "ru": "Оникс",
+     "en": "Onyx"
+    },
+    {
+     "id": "gem_amethyst",
+     "ru": "Аметистовый камень",
+     "en": "Amethyst gem"
+    }
+   ]
+  },
+  {
+   "id": "mobs",
+   "ru": "Мобы и опасность",
+   "en": "Mobs and danger",
+   "icons": [
+    {
+     "id": "skull",
+     "ru": "Опасность",
+     "en": "Danger"
+    },
+    {
+     "id": "wither",
+     "ru": "Иссушитель",
+     "en": "Wither"
+    },
+    {
+     "id": "creeper",
+     "ru": "Крипер",
+     "en": "Creeper"
+    },
+    {
+     "id": "zombie",
+     "ru": "Зомби",
+     "en": "Zombie"
+    },
+    {
+     "id": "spider",
+     "ru": "Паук",
+     "en": "Spider"
+    },
+    {
+     "id": "slime",
+     "ru": "Слизень",
+     "en": "Slime"
+    },
+    {
+     "id": "ghast",
+     "ru": "Гаст",
+     "en": "Ghast"
+    },
+    {
+     "id": "enderman",
+     "ru": "Эндермен",
+     "en": "Enderman"
+    },
+    {
+     "id": "fire",
+     "ru": "Огонь",
+     "en": "Fire"
+    },
+    {
+     "id": "tnt",
+     "ru": "Динамит",
+     "en": "TNT"
+    },
+    {
+     "id": "sword",
+     "ru": "Битва",
+     "en": "Battle"
+    },
+    {
+     "id": "cow",
+     "ru": "Корова",
+     "en": "Cow"
+    },
+    {
+     "id": "pig",
+     "ru": "Свинья",
+     "en": "Pig"
+    },
+    {
+     "id": "sheep",
+     "ru": "Овца",
+     "en": "Sheep"
+    },
+    {
+     "id": "chicken",
+     "ru": "Курица",
+     "en": "Chicken"
+    },
+    {
+     "id": "horse",
+     "ru": "Лошадь",
+     "en": "Horse"
+    },
+    {
+     "id": "wolf",
+     "ru": "Волк",
+     "en": "Wolf"
+    },
+    {
+     "id": "cat",
+     "ru": "Кошка",
+     "en": "Cat"
+    },
+    {
+     "id": "bee",
+     "ru": "Пчёлы",
+     "en": "Bees"
+    }
+   ]
+  },
+  {
+   "id": "items",
+   "ru": "Транспорт и предметы",
+   "en": "Travel and items",
+   "icons": [
+    {
+     "id": "anchor",
+     "ru": "Порт",
+     "en": "Harbor"
+    },
+    {
+     "id": "boat",
+     "ru": "Лодка",
+     "en": "Boat"
+    },
+    {
+     "id": "minecart",
+     "ru": "Вагонетка",
+     "en": "Minecart"
+    },
+    {
+     "id": "elytra",
+     "ru": "Элитры",
+     "en": "Elytra"
+    },
+    {
+     "id": "axe",
+     "ru": "Топор",
+     "en": "Axe"
+    },
+    {
+     "id": "bow",
+     "ru": "Лук",
+     "en": "Bow"
+    },
+    {
+     "id": "shield",
+     "ru": "Щит",
+     "en": "Shield"
+    },
+    {
+     "id": "potion",
+     "ru": "Зелья",
+     "en": "Potions"
+    },
+    {
+     "id": "anvil",
+     "ru": "Наковальня",
+     "en": "Anvil"
+    },
+    {
+     "id": "crafting",
+     "ru": "Верстак",
+     "en": "Crafting table"
+    },
+    {
+     "id": "furnace",
+     "ru": "Печь",
+     "en": "Furnace"
+    },
+    {
+     "id": "book",
+     "ru": "Чары",
+     "en": "Enchanting"
+    },
+    {
+     "id": "cauldron",
+     "ru": "Котёл",
+     "en": "Cauldron"
+    },
+    {
+     "id": "compass",
+     "ru": "Компас",
+     "en": "Compass"
+    },
+    {
+     "id": "bucket",
+     "ru": "Ведро",
+     "en": "Bucket"
+    },
+    {
+     "id": "cake",
+     "ru": "Торт",
+     "en": "Cake"
+    },
+    {
+     "id": "potion_red",
+     "ru": "Красное зелье",
+     "en": "Red potion"
+    },
+    {
+     "id": "potion_orange",
+     "ru": "Оранжевое зелье",
+     "en": "Orange potion"
+    },
+    {
+     "id": "potion_yellow",
+     "ru": "Жёлтое зелье",
+     "en": "Yellow potion"
+    },
+    {
+     "id": "potion_lime",
+     "ru": "Лаймовое зелье",
+     "en": "Lime potion"
+    },
+    {
+     "id": "potion_cyan",
+     "ru": "Бирюзовое зелье",
+     "en": "Cyan potion"
+    },
+    {
+     "id": "potion_blue",
+     "ru": "Синее зелье",
+     "en": "Blue potion"
+    },
+    {
+     "id": "potion_pink",
+     "ru": "Розовое зелье",
+     "en": "Pink potion"
+    },
+    {
+     "id": "shield_red",
+     "ru": "Красный щит",
+     "en": "Red shield"
+    },
+    {
+     "id": "shield_blue",
+     "ru": "Синий щит",
+     "en": "Blue shield"
+    },
+    {
+     "id": "shield_green",
+     "ru": "Зелёный щит",
+     "en": "Green shield"
+    },
+    {
+     "id": "shield_yellow",
+     "ru": "Жёлтый щит",
+     "en": "Yellow shield"
+    },
+    {
+     "id": "shield_purple",
+     "ru": "Фиолетовый щит",
+     "en": "Purple shield"
+    },
+    {
+     "id": "shield_black",
+     "ru": "Чёрный щит",
+     "en": "Black shield"
+    },
+    {
+     "id": "shield_white",
+     "ru": "Белый щит",
+     "en": "White shield"
+    },
+    {
+     "id": "shield_orange",
+     "ru": "Оранжевый щит",
+     "en": "Orange shield"
+    }
+   ]
+  },
+  {
+   "id": "decor",
+   "ru": "Декор",
+   "en": "Decor",
+   "icons": [
+    {
+     "id": "bed_white",
+     "ru": "Белая кровать",
+     "en": "White bed"
+    },
+    {
+     "id": "bed_light_gray",
+     "ru": "Светло-серая кровать",
+     "en": "Light gray bed"
+    },
+    {
+     "id": "bed_gray",
+     "ru": "Серая кровать",
+     "en": "Gray bed"
+    },
+    {
+     "id": "bed_black",
+     "ru": "Чёрная кровать",
+     "en": "Black bed"
+    },
+    {
+     "id": "bed_brown",
+     "ru": "Коричневая кровать",
+     "en": "Brown bed"
+    },
+    {
+     "id": "bed_orange",
+     "ru": "Оранжевая кровать",
+     "en": "Orange bed"
+    },
+    {
+     "id": "bed_yellow",
+     "ru": "Жёлтая кровать",
+     "en": "Yellow bed"
+    },
+    {
+     "id": "bed_lime",
+     "ru": "Лаймовая кровать",
+     "en": "Lime bed"
+    },
+    {
+     "id": "bed_green",
+     "ru": "Зелёная кровать",
+     "en": "Green bed"
+    },
+    {
+     "id": "bed_cyan",
+     "ru": "Бирюзовая кровать",
+     "en": "Cyan bed"
+    },
+    {
+     "id": "bed_light_blue",
+     "ru": "Голубая кровать",
+     "en": "Light blue bed"
+    },
+    {
+     "id": "bed_blue",
+     "ru": "Синяя кровать",
+     "en": "Blue bed"
+    },
+    {
+     "id": "bed_purple",
+     "ru": "Фиолетовая кровать",
+     "en": "Purple bed"
+    },
+    {
+     "id": "bed_magenta",
+     "ru": "Пурпурная кровать",
+     "en": "Magenta bed"
+    },
+    {
+     "id": "bed_pink",
+     "ru": "Розовая кровать",
+     "en": "Pink bed"
+    },
+    {
+     "id": "banner_white",
+     "ru": "Белый баннер",
+     "en": "White banner"
+    },
+    {
+     "id": "banner_light_gray",
+     "ru": "Светло-серый баннер",
+     "en": "Light gray banner"
+    },
+    {
+     "id": "banner_gray",
+     "ru": "Серый баннер",
+     "en": "Gray banner"
+    },
+    {
+     "id": "banner_black",
+     "ru": "Чёрный баннер",
+     "en": "Black banner"
+    },
+    {
+     "id": "banner_brown",
+     "ru": "Коричневый баннер",
+     "en": "Brown banner"
+    },
+    {
+     "id": "banner_red",
+     "ru": "Красный баннер",
+     "en": "Red banner"
+    },
+    {
+     "id": "banner_orange",
+     "ru": "Оранжевый баннер",
+     "en": "Orange banner"
+    },
+    {
+     "id": "banner_yellow",
+     "ru": "Жёлтый баннер",
+     "en": "Yellow banner"
+    },
+    {
+     "id": "banner_lime",
+     "ru": "Лаймовый баннер",
+     "en": "Lime banner"
+    },
+    {
+     "id": "banner_green",
+     "ru": "Зелёный баннер",
+     "en": "Green banner"
+    },
+    {
+     "id": "banner_cyan",
+     "ru": "Бирюзовый баннер",
+     "en": "Cyan banner"
+    },
+    {
+     "id": "banner_light_blue",
+     "ru": "Голубой баннер",
+     "en": "Light blue banner"
+    },
+    {
+     "id": "banner_blue",
+     "ru": "Синий баннер",
+     "en": "Blue banner"
+    },
+    {
+     "id": "banner_purple",
+     "ru": "Фиолетовый баннер",
+     "en": "Purple banner"
+    },
+    {
+     "id": "banner_magenta",
+     "ru": "Пурпурный баннер",
+     "en": "Magenta banner"
+    },
+    {
+     "id": "banner_pink",
+     "ru": "Розовый баннер",
+     "en": "Pink banner"
+    },
+    {
+     "id": "candle_white",
+     "ru": "Белая свеча",
+     "en": "White candle"
+    },
+    {
+     "id": "candle_light_gray",
+     "ru": "Светло-серая свеча",
+     "en": "Light gray candle"
+    },
+    {
+     "id": "candle_gray",
+     "ru": "Серая свеча",
+     "en": "Gray candle"
+    },
+    {
+     "id": "candle_black",
+     "ru": "Чёрная свеча",
+     "en": "Black candle"
+    },
+    {
+     "id": "candle_brown",
+     "ru": "Коричневая свеча",
+     "en": "Brown candle"
+    },
+    {
+     "id": "candle_red",
+     "ru": "Красная свеча",
+     "en": "Red candle"
+    },
+    {
+     "id": "candle_orange",
+     "ru": "Оранжевая свеча",
+     "en": "Orange candle"
+    },
+    {
+     "id": "candle_yellow",
+     "ru": "Жёлтая свеча",
+     "en": "Yellow candle"
+    },
+    {
+     "id": "candle_lime",
+     "ru": "Лаймовая свеча",
+     "en": "Lime candle"
+    },
+    {
+     "id": "candle_green",
+     "ru": "Зелёная свеча",
+     "en": "Green candle"
+    },
+    {
+     "id": "candle_cyan",
+     "ru": "Бирюзовая свеча",
+     "en": "Cyan candle"
+    },
+    {
+     "id": "candle_light_blue",
+     "ru": "Голубая свеча",
+     "en": "Light blue candle"
+    },
+    {
+     "id": "candle_blue",
+     "ru": "Синяя свеча",
+     "en": "Blue candle"
+    },
+    {
+     "id": "candle_purple",
+     "ru": "Фиолетовая свеча",
+     "en": "Purple candle"
+    },
+    {
+     "id": "candle_magenta",
+     "ru": "Пурпурная свеча",
+     "en": "Magenta candle"
+    },
+    {
+     "id": "candle_pink",
+     "ru": "Розовая свеча",
+     "en": "Pink candle"
+    }
+   ]
+  },
+  {
+   "id": "shapes",
+   "ru": "Фигуры",
+   "en": "Shapes",
+   "icons": [
+    {
+     "id": "shape_circle_white",
+     "ru": "Белый круг",
+     "en": "White circle"
+    },
+    {
+     "id": "shape_circle_light_gray",
+     "ru": "Светло-серый круг",
+     "en": "Light gray circle"
+    },
+    {
+     "id": "shape_circle_gray",
+     "ru": "Серый круг",
+     "en": "Gray circle"
+    },
+    {
+     "id": "shape_circle_black",
+     "ru": "Чёрный круг",
+     "en": "Black circle"
+    },
+    {
+     "id": "shape_circle_brown",
+     "ru": "Коричневый круг",
+     "en": "Brown circle"
+    },
+    {
+     "id": "shape_circle_red",
+     "ru": "Красный круг",
+     "en": "Red circle"
+    },
+    {
+     "id": "shape_circle_orange",
+     "ru": "Оранжевый круг",
+     "en": "Orange circle"
+    },
+    {
+     "id": "shape_circle_yellow",
+     "ru": "Жёлтый круг",
+     "en": "Yellow circle"
+    },
+    {
+     "id": "shape_circle_lime",
+     "ru": "Лаймовый круг",
+     "en": "Lime circle"
+    },
+    {
+     "id": "shape_circle_green",
+     "ru": "Зелёный круг",
+     "en": "Green circle"
+    },
+    {
+     "id": "shape_circle_cyan",
+     "ru": "Бирюзовый круг",
+     "en": "Cyan circle"
+    },
+    {
+     "id": "shape_circle_light_blue",
+     "ru": "Голубой круг",
+     "en": "Light blue circle"
+    },
+    {
+     "id": "shape_circle_blue",
+     "ru": "Синий круг",
+     "en": "Blue circle"
+    },
+    {
+     "id": "shape_circle_purple",
+     "ru": "Фиолетовый круг",
+     "en": "Purple circle"
+    },
+    {
+     "id": "shape_circle_magenta",
+     "ru": "Пурпурный круг",
+     "en": "Magenta circle"
+    },
+    {
+     "id": "shape_circle_pink",
+     "ru": "Розовый круг",
+     "en": "Pink circle"
+    },
+    {
+     "id": "shape_square_white",
+     "ru": "Белый квадрат",
+     "en": "White square"
+    },
+    {
+     "id": "shape_square_light_gray",
+     "ru": "Светло-серый квадрат",
+     "en": "Light gray square"
+    },
+    {
+     "id": "shape_square_gray",
+     "ru": "Серый квадрат",
+     "en": "Gray square"
+    },
+    {
+     "id": "shape_square_black",
+     "ru": "Чёрный квадрат",
+     "en": "Black square"
+    },
+    {
+     "id": "shape_square_brown",
+     "ru": "Коричневый квадрат",
+     "en": "Brown square"
+    },
+    {
+     "id": "shape_square_red",
+     "ru": "Красный квадрат",
+     "en": "Red square"
+    },
+    {
+     "id": "shape_square_orange",
+     "ru": "Оранжевый квадрат",
+     "en": "Orange square"
+    },
+    {
+     "id": "shape_square_yellow",
+     "ru": "Жёлтый квадрат",
+     "en": "Yellow square"
+    },
+    {
+     "id": "shape_square_lime",
+     "ru": "Лаймовый квадрат",
+     "en": "Lime square"
+    },
+    {
+     "id": "shape_square_green",
+     "ru": "Зелёный квадрат",
+     "en": "Green square"
+    },
+    {
+     "id": "shape_square_cyan",
+     "ru": "Бирюзовый квадрат",
+     "en": "Cyan square"
+    },
+    {
+     "id": "shape_square_light_blue",
+     "ru": "Голубой квадрат",
+     "en": "Light blue square"
+    },
+    {
+     "id": "shape_square_blue",
+     "ru": "Синий квадрат",
+     "en": "Blue square"
+    },
+    {
+     "id": "shape_square_purple",
+     "ru": "Фиолетовый квадрат",
+     "en": "Purple square"
+    },
+    {
+     "id": "shape_square_magenta",
+     "ru": "Пурпурный квадрат",
+     "en": "Magenta square"
+    },
+    {
+     "id": "shape_square_pink",
+     "ru": "Розовый квадрат",
+     "en": "Pink square"
+    },
+    {
+     "id": "shape_triangle_white",
+     "ru": "Белый треугольник",
+     "en": "White triangle"
+    },
+    {
+     "id": "shape_triangle_light_gray",
+     "ru": "Светло-серый треугольник",
+     "en": "Light gray triangle"
+    },
+    {
+     "id": "shape_triangle_gray",
+     "ru": "Серый треугольник",
+     "en": "Gray triangle"
+    },
+    {
+     "id": "shape_triangle_black",
+     "ru": "Чёрный треугольник",
+     "en": "Black triangle"
+    },
+    {
+     "id": "shape_triangle_brown",
+     "ru": "Коричневый треугольник",
+     "en": "Brown triangle"
+    },
+    {
+     "id": "shape_triangle_red",
+     "ru": "Красный треугольник",
+     "en": "Red triangle"
+    },
+    {
+     "id": "shape_triangle_orange",
+     "ru": "Оранжевый треугольник",
+     "en": "Orange triangle"
+    },
+    {
+     "id": "shape_triangle_yellow",
+     "ru": "Жёлтый треугольник",
+     "en": "Yellow triangle"
+    },
+    {
+     "id": "shape_triangle_lime",
+     "ru": "Лаймовый треугольник",
+     "en": "Lime triangle"
+    },
+    {
+     "id": "shape_triangle_green",
+     "ru": "Зелёный треугольник",
+     "en": "Green triangle"
+    },
+    {
+     "id": "shape_triangle_cyan",
+     "ru": "Бирюзовый треугольник",
+     "en": "Cyan triangle"
+    },
+    {
+     "id": "shape_triangle_light_blue",
+     "ru": "Голубой треугольник",
+     "en": "Light blue triangle"
+    },
+    {
+     "id": "shape_triangle_blue",
+     "ru": "Синий треугольник",
+     "en": "Blue triangle"
+    },
+    {
+     "id": "shape_triangle_purple",
+     "ru": "Фиолетовый треугольник",
+     "en": "Purple triangle"
+    },
+    {
+     "id": "shape_triangle_magenta",
+     "ru": "Пурпурный треугольник",
+     "en": "Magenta triangle"
+    },
+    {
+     "id": "shape_triangle_pink",
+     "ru": "Розовый треугольник",
+     "en": "Pink triangle"
+    },
+    {
+     "id": "shape_diamond_white",
+     "ru": "Белый ромб",
+     "en": "White rhombus"
+    },
+    {
+     "id": "shape_diamond_light_gray",
+     "ru": "Светло-серый ромб",
+     "en": "Light gray rhombus"
+    },
+    {
+     "id": "shape_diamond_gray",
+     "ru": "Серый ромб",
+     "en": "Gray rhombus"
+    },
+    {
+     "id": "shape_diamond_black",
+     "ru": "Чёрный ромб",
+     "en": "Black rhombus"
+    },
+    {
+     "id": "shape_diamond_brown",
+     "ru": "Коричневый ромб",
+     "en": "Brown rhombus"
+    },
+    {
+     "id": "shape_diamond_red",
+     "ru": "Красный ромб",
+     "en": "Red rhombus"
+    },
+    {
+     "id": "shape_diamond_orange",
+     "ru": "Оранжевый ромб",
+     "en": "Orange rhombus"
+    },
+    {
+     "id": "shape_diamond_yellow",
+     "ru": "Жёлтый ромб",
+     "en": "Yellow rhombus"
+    },
+    {
+     "id": "shape_diamond_lime",
+     "ru": "Лаймовый ромб",
+     "en": "Lime rhombus"
+    },
+    {
+     "id": "shape_diamond_green",
+     "ru": "Зелёный ромб",
+     "en": "Green rhombus"
+    },
+    {
+     "id": "shape_diamond_cyan",
+     "ru": "Бирюзовый ромб",
+     "en": "Cyan rhombus"
+    },
+    {
+     "id": "shape_diamond_light_blue",
+     "ru": "Голубой ромб",
+     "en": "Light blue rhombus"
+    },
+    {
+     "id": "shape_diamond_blue",
+     "ru": "Синий ромб",
+     "en": "Blue rhombus"
+    },
+    {
+     "id": "shape_diamond_purple",
+     "ru": "Фиолетовый ромб",
+     "en": "Purple rhombus"
+    },
+    {
+     "id": "shape_diamond_magenta",
+     "ru": "Пурпурный ромб",
+     "en": "Magenta rhombus"
+    },
+    {
+     "id": "shape_diamond_pink",
+     "ru": "Розовый ромб",
+     "en": "Pink rhombus"
+    },
+    {
+     "id": "shape_hexagon_white",
+     "ru": "Белый шестиугольник",
+     "en": "White hexagon"
+    },
+    {
+     "id": "shape_hexagon_light_gray",
+     "ru": "Светло-серый шестиугольник",
+     "en": "Light gray hexagon"
+    },
+    {
+     "id": "shape_hexagon_gray",
+     "ru": "Серый шестиугольник",
+     "en": "Gray hexagon"
+    },
+    {
+     "id": "shape_hexagon_black",
+     "ru": "Чёрный шестиугольник",
+     "en": "Black hexagon"
+    },
+    {
+     "id": "shape_hexagon_brown",
+     "ru": "Коричневый шестиугольник",
+     "en": "Brown hexagon"
+    },
+    {
+     "id": "shape_hexagon_red",
+     "ru": "Красный шестиугольник",
+     "en": "Red hexagon"
+    },
+    {
+     "id": "shape_hexagon_orange",
+     "ru": "Оранжевый шестиугольник",
+     "en": "Orange hexagon"
+    },
+    {
+     "id": "shape_hexagon_yellow",
+     "ru": "Жёлтый шестиугольник",
+     "en": "Yellow hexagon"
+    },
+    {
+     "id": "shape_hexagon_lime",
+     "ru": "Лаймовый шестиугольник",
+     "en": "Lime hexagon"
+    },
+    {
+     "id": "shape_hexagon_green",
+     "ru": "Зелёный шестиугольник",
+     "en": "Green hexagon"
+    },
+    {
+     "id": "shape_hexagon_cyan",
+     "ru": "Бирюзовый шестиугольник",
+     "en": "Cyan hexagon"
+    },
+    {
+     "id": "shape_hexagon_light_blue",
+     "ru": "Голубой шестиугольник",
+     "en": "Light blue hexagon"
+    },
+    {
+     "id": "shape_hexagon_blue",
+     "ru": "Синий шестиугольник",
+     "en": "Blue hexagon"
+    },
+    {
+     "id": "shape_hexagon_purple",
+     "ru": "Фиолетовый шестиугольник",
+     "en": "Purple hexagon"
+    },
+    {
+     "id": "shape_hexagon_magenta",
+     "ru": "Пурпурный шестиугольник",
+     "en": "Magenta hexagon"
+    },
+    {
+     "id": "shape_hexagon_pink",
+     "ru": "Розовый шестиугольник",
+     "en": "Pink hexagon"
+    },
+    {
+     "id": "shape_star_white",
+     "ru": "Белая звёздочка",
+     "en": "White star shape"
+    },
+    {
+     "id": "shape_star_light_gray",
+     "ru": "Светло-серая звёздочка",
+     "en": "Light gray star shape"
+    },
+    {
+     "id": "shape_star_gray",
+     "ru": "Серая звёздочка",
+     "en": "Gray star shape"
+    },
+    {
+     "id": "shape_star_black",
+     "ru": "Чёрная звёздочка",
+     "en": "Black star shape"
+    },
+    {
+     "id": "shape_star_brown",
+     "ru": "Коричневая звёздочка",
+     "en": "Brown star shape"
+    },
+    {
+     "id": "shape_star_red",
+     "ru": "Красная звёздочка",
+     "en": "Red star shape"
+    },
+    {
+     "id": "shape_star_orange",
+     "ru": "Оранжевая звёздочка",
+     "en": "Orange star shape"
+    },
+    {
+     "id": "shape_star_yellow",
+     "ru": "Жёлтая звёздочка",
+     "en": "Yellow star shape"
+    },
+    {
+     "id": "shape_star_lime",
+     "ru": "Лаймовая звёздочка",
+     "en": "Lime star shape"
+    },
+    {
+     "id": "shape_star_green",
+     "ru": "Зелёная звёздочка",
+     "en": "Green star shape"
+    },
+    {
+     "id": "shape_star_cyan",
+     "ru": "Бирюзовая звёздочка",
+     "en": "Cyan star shape"
+    },
+    {
+     "id": "shape_star_light_blue",
+     "ru": "Голубая звёздочка",
+     "en": "Light blue star shape"
+    },
+    {
+     "id": "shape_star_blue",
+     "ru": "Синяя звёздочка",
+     "en": "Blue star shape"
+    },
+    {
+     "id": "shape_star_purple",
+     "ru": "Фиолетовая звёздочка",
+     "en": "Purple star shape"
+    },
+    {
+     "id": "shape_star_magenta",
+     "ru": "Пурпурная звёздочка",
+     "en": "Magenta star shape"
+    },
+    {
+     "id": "shape_star_pink",
+     "ru": "Розовая звёздочка",
+     "en": "Pink star shape"
+    },
+    {
+     "id": "shape_plus_white",
+     "ru": "Белый крест",
+     "en": "White plus"
+    },
+    {
+     "id": "shape_plus_light_gray",
+     "ru": "Светло-серый крест",
+     "en": "Light gray plus"
+    },
+    {
+     "id": "shape_plus_gray",
+     "ru": "Серый крест",
+     "en": "Gray plus"
+    },
+    {
+     "id": "shape_plus_black",
+     "ru": "Чёрный крест",
+     "en": "Black plus"
+    },
+    {
+     "id": "shape_plus_brown",
+     "ru": "Коричневый крест",
+     "en": "Brown plus"
+    },
+    {
+     "id": "shape_plus_red",
+     "ru": "Красный крест",
+     "en": "Red plus"
+    },
+    {
+     "id": "shape_plus_orange",
+     "ru": "Оранжевый крест",
+     "en": "Orange plus"
+    },
+    {
+     "id": "shape_plus_yellow",
+     "ru": "Жёлтый крест",
+     "en": "Yellow plus"
+    },
+    {
+     "id": "shape_plus_lime",
+     "ru": "Лаймовый крест",
+     "en": "Lime plus"
+    },
+    {
+     "id": "shape_plus_green",
+     "ru": "Зелёный крест",
+     "en": "Green plus"
+    },
+    {
+     "id": "shape_plus_cyan",
+     "ru": "Бирюзовый крест",
+     "en": "Cyan plus"
+    },
+    {
+     "id": "shape_plus_light_blue",
+     "ru": "Голубой крест",
+     "en": "Light blue plus"
+    },
+    {
+     "id": "shape_plus_blue",
+     "ru": "Синий крест",
+     "en": "Blue plus"
+    },
+    {
+     "id": "shape_plus_purple",
+     "ru": "Фиолетовый крест",
+     "en": "Purple plus"
+    },
+    {
+     "id": "shape_plus_magenta",
+     "ru": "Пурпурный крест",
+     "en": "Magenta plus"
+    },
+    {
+     "id": "shape_plus_pink",
+     "ru": "Розовый крест",
+     "en": "Pink plus"
+    },
+    {
+     "id": "shape_ring_white",
+     "ru": "Белое кольцо",
+     "en": "White ring"
+    },
+    {
+     "id": "shape_ring_light_gray",
+     "ru": "Светло-серое кольцо",
+     "en": "Light gray ring"
+    },
+    {
+     "id": "shape_ring_gray",
+     "ru": "Серое кольцо",
+     "en": "Gray ring"
+    },
+    {
+     "id": "shape_ring_black",
+     "ru": "Чёрное кольцо",
+     "en": "Black ring"
+    },
+    {
+     "id": "shape_ring_brown",
+     "ru": "Коричневое кольцо",
+     "en": "Brown ring"
+    },
+    {
+     "id": "shape_ring_red",
+     "ru": "Красное кольцо",
+     "en": "Red ring"
+    },
+    {
+     "id": "shape_ring_orange",
+     "ru": "Оранжевое кольцо",
+     "en": "Orange ring"
+    },
+    {
+     "id": "shape_ring_yellow",
+     "ru": "Жёлтое кольцо",
+     "en": "Yellow ring"
+    },
+    {
+     "id": "shape_ring_lime",
+     "ru": "Лаймовое кольцо",
+     "en": "Lime ring"
+    },
+    {
+     "id": "shape_ring_green",
+     "ru": "Зелёное кольцо",
+     "en": "Green ring"
+    },
+    {
+     "id": "shape_ring_cyan",
+     "ru": "Бирюзовое кольцо",
+     "en": "Cyan ring"
+    },
+    {
+     "id": "shape_ring_light_blue",
+     "ru": "Голубое кольцо",
+     "en": "Light blue ring"
+    },
+    {
+     "id": "shape_ring_blue",
+     "ru": "Синее кольцо",
+     "en": "Blue ring"
+    },
+    {
+     "id": "shape_ring_purple",
+     "ru": "Фиолетовое кольцо",
+     "en": "Purple ring"
+    },
+    {
+     "id": "shape_ring_magenta",
+     "ru": "Пурпурное кольцо",
+     "en": "Magenta ring"
+    },
+    {
+     "id": "shape_ring_pink",
+     "ru": "Розовое кольцо",
+     "en": "Pink ring"
+    }
+   ]
+  },
+  {
+   "id": "arrows",
+   "ru": "Стрелки",
+   "en": "Arrows",
+   "icons": [
+    {
+     "id": "arrow_n",
+     "ru": "Красная стрелка вверх",
+     "en": "Red arrow up"
+    },
+    {
+     "id": "arrow_ne",
+     "ru": "Красная стрелка вверх-вправо",
+     "en": "Red arrow up-right"
+    },
+    {
+     "id": "arrow_e",
+     "ru": "Красная стрелка вправо",
+     "en": "Red arrow right"
+    },
+    {
+     "id": "arrow_se",
+     "ru": "Красная стрелка вниз-вправо",
+     "en": "Red arrow down-right"
+    },
+    {
+     "id": "arrow_s",
+     "ru": "Красная стрелка вниз",
+     "en": "Red arrow down"
+    },
+    {
+     "id": "arrow_sw",
+     "ru": "Красная стрелка вниз-влево",
+     "en": "Red arrow down-left"
+    },
+    {
+     "id": "arrow_w",
+     "ru": "Красная стрелка влево",
+     "en": "Red arrow left"
+    },
+    {
+     "id": "arrow_nw",
+     "ru": "Красная стрелка вверх-влево",
+     "en": "Red arrow up-left"
+    },
+    {
+     "id": "arrow_n_blue",
+     "ru": "Синяя стрелка вверх",
+     "en": "Blue arrow up"
+    },
+    {
+     "id": "arrow_ne_blue",
+     "ru": "Синяя стрелка вверх-вправо",
+     "en": "Blue arrow up-right"
+    },
+    {
+     "id": "arrow_e_blue",
+     "ru": "Синяя стрелка вправо",
+     "en": "Blue arrow right"
+    },
+    {
+     "id": "arrow_se_blue",
+     "ru": "Синяя стрелка вниз-вправо",
+     "en": "Blue arrow down-right"
+    },
+    {
+     "id": "arrow_s_blue",
+     "ru": "Синяя стрелка вниз",
+     "en": "Blue arrow down"
+    },
+    {
+     "id": "arrow_sw_blue",
+     "ru": "Синяя стрелка вниз-влево",
+     "en": "Blue arrow down-left"
+    },
+    {
+     "id": "arrow_w_blue",
+     "ru": "Синяя стрелка влево",
+     "en": "Blue arrow left"
+    },
+    {
+     "id": "arrow_nw_blue",
+     "ru": "Синяя стрелка вверх-влево",
+     "en": "Blue arrow up-left"
+    }
+   ]
+  },
+  {
+   "id": "numbers",
+   "ru": "Номера",
+   "en": "Numbers",
+   "icons": [
+    {
+     "id": "num_1",
+     "ru": "Номер 1",
+     "en": "Number 1"
+    },
+    {
+     "id": "num_2",
+     "ru": "Номер 2",
+     "en": "Number 2"
+    },
+    {
+     "id": "num_3",
+     "ru": "Номер 3",
+     "en": "Number 3"
+    },
+    {
+     "id": "num_4",
+     "ru": "Номер 4",
+     "en": "Number 4"
+    },
+    {
+     "id": "num_5",
+     "ru": "Номер 5",
+     "en": "Number 5"
+    },
+    {
+     "id": "num_6",
+     "ru": "Номер 6",
+     "en": "Number 6"
+    },
+    {
+     "id": "num_7",
+     "ru": "Номер 7",
+     "en": "Number 7"
+    },
+    {
+     "id": "num_8",
+     "ru": "Номер 8",
+     "en": "Number 8"
+    },
+    {
+     "id": "num_9",
+     "ru": "Номер 9",
+     "en": "Number 9"
+    },
+    {
+     "id": "num_10",
+     "ru": "Номер 10",
+     "en": "Number 10"
+    },
+    {
+     "id": "num_11",
+     "ru": "Номер 11",
+     "en": "Number 11"
+    },
+    {
+     "id": "num_12",
+     "ru": "Номер 12",
+     "en": "Number 12"
+    },
+    {
+     "id": "num_13",
+     "ru": "Номер 13",
+     "en": "Number 13"
+    },
+    {
+     "id": "num_14",
+     "ru": "Номер 14",
+     "en": "Number 14"
+    },
+    {
+     "id": "num_15",
+     "ru": "Номер 15",
+     "en": "Number 15"
+    },
+    {
+     "id": "num_16",
+     "ru": "Номер 16",
+     "en": "Number 16"
+    },
+    {
+     "id": "num_17",
+     "ru": "Номер 17",
+     "en": "Number 17"
+    },
+    {
+     "id": "num_18",
+     "ru": "Номер 18",
+     "en": "Number 18"
+    },
+    {
+     "id": "num_19",
+     "ru": "Номер 19",
+     "en": "Number 19"
+    },
+    {
+     "id": "num_20",
+     "ru": "Номер 20",
+     "en": "Number 20"
+    },
+    {
+     "id": "num_21",
+     "ru": "Номер 21",
+     "en": "Number 21"
+    },
+    {
+     "id": "num_22",
+     "ru": "Номер 22",
+     "en": "Number 22"
+    },
+    {
+     "id": "num_23",
+     "ru": "Номер 23",
+     "en": "Number 23"
+    },
+    {
+     "id": "num_24",
+     "ru": "Номер 24",
+     "en": "Number 24"
+    },
+    {
+     "id": "num_25",
+     "ru": "Номер 25",
+     "en": "Number 25"
+    },
+    {
+     "id": "num_26",
+     "ru": "Номер 26",
+     "en": "Number 26"
+    },
+    {
+     "id": "num_27",
+     "ru": "Номер 27",
+     "en": "Number 27"
+    },
+    {
+     "id": "num_28",
+     "ru": "Номер 28",
+     "en": "Number 28"
+    },
+    {
+     "id": "num_29",
+     "ru": "Номер 29",
+     "en": "Number 29"
+    },
+    {
+     "id": "num_30",
+     "ru": "Номер 30",
+     "en": "Number 30"
+    },
+    {
+     "id": "num_31",
+     "ru": "Номер 31",
+     "en": "Number 31"
+    },
+    {
+     "id": "num_32",
+     "ru": "Номер 32",
+     "en": "Number 32"
+    },
+    {
+     "id": "num_33",
+     "ru": "Номер 33",
+     "en": "Number 33"
+    },
+    {
+     "id": "num_34",
+     "ru": "Номер 34",
+     "en": "Number 34"
+    },
+    {
+     "id": "num_35",
+     "ru": "Номер 35",
+     "en": "Number 35"
+    },
+    {
+     "id": "num_36",
+     "ru": "Номер 36",
+     "en": "Number 36"
+    },
+    {
+     "id": "num_37",
+     "ru": "Номер 37",
+     "en": "Number 37"
+    },
+    {
+     "id": "num_38",
+     "ru": "Номер 38",
+     "en": "Number 38"
+    },
+    {
+     "id": "num_39",
+     "ru": "Номер 39",
+     "en": "Number 39"
+    },
+    {
+     "id": "num_40",
+     "ru": "Номер 40",
+     "en": "Number 40"
+    },
+    {
+     "id": "num_41",
+     "ru": "Номер 41",
+     "en": "Number 41"
+    },
+    {
+     "id": "num_42",
+     "ru": "Номер 42",
+     "en": "Number 42"
+    },
+    {
+     "id": "num_43",
+     "ru": "Номер 43",
+     "en": "Number 43"
+    },
+    {
+     "id": "num_44",
+     "ru": "Номер 44",
+     "en": "Number 44"
+    },
+    {
+     "id": "num_45",
+     "ru": "Номер 45",
+     "en": "Number 45"
+    },
+    {
+     "id": "num_46",
+     "ru": "Номер 46",
+     "en": "Number 46"
+    },
+    {
+     "id": "num_47",
+     "ru": "Номер 47",
+     "en": "Number 47"
+    },
+    {
+     "id": "num_48",
+     "ru": "Номер 48",
+     "en": "Number 48"
+    },
+    {
+     "id": "num_49",
+     "ru": "Номер 49",
+     "en": "Number 49"
+    },
+    {
+     "id": "num_50",
+     "ru": "Номер 50",
+     "en": "Number 50"
+    },
+    {
+     "id": "num_51",
+     "ru": "Номер 51",
+     "en": "Number 51"
+    },
+    {
+     "id": "num_52",
+     "ru": "Номер 52",
+     "en": "Number 52"
+    },
+    {
+     "id": "num_53",
+     "ru": "Номер 53",
+     "en": "Number 53"
+    },
+    {
+     "id": "num_54",
+     "ru": "Номер 54",
+     "en": "Number 54"
+    },
+    {
+     "id": "num_55",
+     "ru": "Номер 55",
+     "en": "Number 55"
+    },
+    {
+     "id": "num_56",
+     "ru": "Номер 56",
+     "en": "Number 56"
+    },
+    {
+     "id": "num_57",
+     "ru": "Номер 57",
+     "en": "Number 57"
+    },
+    {
+     "id": "num_58",
+     "ru": "Номер 58",
+     "en": "Number 58"
+    },
+    {
+     "id": "num_59",
+     "ru": "Номер 59",
+     "en": "Number 59"
+    },
+    {
+     "id": "num_60",
+     "ru": "Номер 60",
+     "en": "Number 60"
+    },
+    {
+     "id": "num_61",
+     "ru": "Номер 61",
+     "en": "Number 61"
+    },
+    {
+     "id": "num_62",
+     "ru": "Номер 62",
+     "en": "Number 62"
+    },
+    {
+     "id": "num_63",
+     "ru": "Номер 63",
+     "en": "Number 63"
+    },
+    {
+     "id": "num_64",
+     "ru": "Номер 64",
+     "en": "Number 64"
+    },
+    {
+     "id": "num_65",
+     "ru": "Номер 65",
+     "en": "Number 65"
+    },
+    {
+     "id": "num_66",
+     "ru": "Номер 66",
+     "en": "Number 66"
+    },
+    {
+     "id": "num_67",
+     "ru": "Номер 67",
+     "en": "Number 67"
+    },
+    {
+     "id": "num_68",
+     "ru": "Номер 68",
+     "en": "Number 68"
+    },
+    {
+     "id": "num_69",
+     "ru": "Номер 69",
+     "en": "Number 69"
+    },
+    {
+     "id": "num_70",
+     "ru": "Номер 70",
+     "en": "Number 70"
+    },
+    {
+     "id": "num_71",
+     "ru": "Номер 71",
+     "en": "Number 71"
+    },
+    {
+     "id": "num_72",
+     "ru": "Номер 72",
+     "en": "Number 72"
+    },
+    {
+     "id": "num_73",
+     "ru": "Номер 73",
+     "en": "Number 73"
+    },
+    {
+     "id": "num_74",
+     "ru": "Номер 74",
+     "en": "Number 74"
+    },
+    {
+     "id": "num_75",
+     "ru": "Номер 75",
+     "en": "Number 75"
+    },
+    {
+     "id": "num_76",
+     "ru": "Номер 76",
+     "en": "Number 76"
+    },
+    {
+     "id": "num_77",
+     "ru": "Номер 77",
+     "en": "Number 77"
+    },
+    {
+     "id": "num_78",
+     "ru": "Номер 78",
+     "en": "Number 78"
+    },
+    {
+     "id": "num_79",
+     "ru": "Номер 79",
+     "en": "Number 79"
+    },
+    {
+     "id": "num_80",
+     "ru": "Номер 80",
+     "en": "Number 80"
+    },
+    {
+     "id": "num_81",
+     "ru": "Номер 81",
+     "en": "Number 81"
+    },
+    {
+     "id": "num_82",
+     "ru": "Номер 82",
+     "en": "Number 82"
+    },
+    {
+     "id": "num_83",
+     "ru": "Номер 83",
+     "en": "Number 83"
+    },
+    {
+     "id": "num_84",
+     "ru": "Номер 84",
+     "en": "Number 84"
+    },
+    {
+     "id": "num_85",
+     "ru": "Номер 85",
+     "en": "Number 85"
+    },
+    {
+     "id": "num_86",
+     "ru": "Номер 86",
+     "en": "Number 86"
+    },
+    {
+     "id": "num_87",
+     "ru": "Номер 87",
+     "en": "Number 87"
+    },
+    {
+     "id": "num_88",
+     "ru": "Номер 88",
+     "en": "Number 88"
+    },
+    {
+     "id": "num_89",
+     "ru": "Номер 89",
+     "en": "Number 89"
+    },
+    {
+     "id": "num_90",
+     "ru": "Номер 90",
+     "en": "Number 90"
+    },
+    {
+     "id": "num_91",
+     "ru": "Номер 91",
+     "en": "Number 91"
+    },
+    {
+     "id": "num_92",
+     "ru": "Номер 92",
+     "en": "Number 92"
+    },
+    {
+     "id": "num_93",
+     "ru": "Номер 93",
+     "en": "Number 93"
+    },
+    {
+     "id": "num_94",
+     "ru": "Номер 94",
+     "en": "Number 94"
+    },
+    {
+     "id": "num_95",
+     "ru": "Номер 95",
+     "en": "Number 95"
+    },
+    {
+     "id": "num_96",
+     "ru": "Номер 96",
+     "en": "Number 96"
+    },
+    {
+     "id": "num_97",
+     "ru": "Номер 97",
+     "en": "Number 97"
+    },
+    {
+     "id": "num_98",
+     "ru": "Номер 98",
+     "en": "Number 98"
+    },
+    {
+     "id": "num_99",
+     "ru": "Номер 99",
+     "en": "Number 99"
+    },
+    {
+     "id": "num_100",
+     "ru": "Номер 100",
+     "en": "Number 100"
+    }
+   ]
+  },
+  {
+   "id": "letters",
+   "ru": "Буквы",
+   "en": "Letters",
+   "icons": [
+    {
+     "id": "letter_a",
+     "ru": "Буква A",
+     "en": "Letter A"
+    },
+    {
+     "id": "letter_b",
+     "ru": "Буква B",
+     "en": "Letter B"
+    },
+    {
+     "id": "letter_c",
+     "ru": "Буква C",
+     "en": "Letter C"
+    },
+    {
+     "id": "letter_d",
+     "ru": "Буква D",
+     "en": "Letter D"
+    },
+    {
+     "id": "letter_e",
+     "ru": "Буква E",
+     "en": "Letter E"
+    },
+    {
+     "id": "letter_f",
+     "ru": "Буква F",
+     "en": "Letter F"
+    },
+    {
+     "id": "letter_g",
+     "ru": "Буква G",
+     "en": "Letter G"
+    },
+    {
+     "id": "letter_h",
+     "ru": "Буква H",
+     "en": "Letter H"
+    },
+    {
+     "id": "letter_i",
+     "ru": "Буква I",
+     "en": "Letter I"
+    },
+    {
+     "id": "letter_j",
+     "ru": "Буква J",
+     "en": "Letter J"
+    },
+    {
+     "id": "letter_k",
+     "ru": "Буква K",
+     "en": "Letter K"
+    },
+    {
+     "id": "letter_l",
+     "ru": "Буква L",
+     "en": "Letter L"
+    },
+    {
+     "id": "letter_m",
+     "ru": "Буква M",
+     "en": "Letter M"
+    },
+    {
+     "id": "letter_n",
+     "ru": "Буква N",
+     "en": "Letter N"
+    },
+    {
+     "id": "letter_o",
+     "ru": "Буква O",
+     "en": "Letter O"
+    },
+    {
+     "id": "letter_p",
+     "ru": "Буква P",
+     "en": "Letter P"
+    },
+    {
+     "id": "letter_q",
+     "ru": "Буква Q",
+     "en": "Letter Q"
+    },
+    {
+     "id": "letter_r",
+     "ru": "Буква R",
+     "en": "Letter R"
+    },
+    {
+     "id": "letter_s",
+     "ru": "Буква S",
+     "en": "Letter S"
+    },
+    {
+     "id": "letter_t",
+     "ru": "Буква T",
+     "en": "Letter T"
+    },
+    {
+     "id": "letter_u",
+     "ru": "Буква U",
+     "en": "Letter U"
+    },
+    {
+     "id": "letter_v",
+     "ru": "Буква V",
+     "en": "Letter V"
+    },
+    {
+     "id": "letter_w",
+     "ru": "Буква W",
+     "en": "Letter W"
+    },
+    {
+     "id": "letter_x",
+     "ru": "Буква X",
+     "en": "Letter X"
+    },
+    {
+     "id": "letter_y",
+     "ru": "Буква Y",
+     "en": "Letter Y"
+    },
+    {
+     "id": "letter_z",
+     "ru": "Буква Z",
+     "en": "Letter Z"
+    },
+    {
+     "id": "letter_cyr_be",
+     "ru": "Буква Б",
+     "en": "Letter Б"
+    },
+    {
+     "id": "letter_cyr_ge",
+     "ru": "Буква Г",
+     "en": "Letter Г"
+    },
+    {
+     "id": "letter_cyr_de",
+     "ru": "Буква Д",
+     "en": "Letter Д"
+    },
+    {
+     "id": "letter_cyr_zhe",
+     "ru": "Буква Ж",
+     "en": "Letter Ж"
+    },
+    {
+     "id": "letter_cyr_ze",
+     "ru": "Буква З",
+     "en": "Letter З"
+    },
+    {
+     "id": "letter_cyr_i",
+     "ru": "Буква И",
+     "en": "Letter И"
+    },
+    {
+     "id": "letter_cyr_ishort",
+     "ru": "Буква Й",
+     "en": "Letter Й"
+    },
+    {
+     "id": "letter_cyr_el",
+     "ru": "Буква Л",
+     "en": "Letter Л"
+    },
+    {
+     "id": "letter_cyr_pe",
+     "ru": "Буква П",
+     "en": "Letter П"
+    },
+    {
+     "id": "letter_cyr_u",
+     "ru": "Буква У",
+     "en": "Letter У"
+    },
+    {
+     "id": "letter_cyr_ef",
+     "ru": "Буква Ф",
+     "en": "Letter Ф"
+    },
+    {
+     "id": "letter_cyr_tse",
+     "ru": "Буква Ц",
+     "en": "Letter Ц"
+    },
+    {
+     "id": "letter_cyr_che",
+     "ru": "Буква Ч",
+     "en": "Letter Ч"
+    },
+    {
+     "id": "letter_cyr_sha",
+     "ru": "Буква Ш",
+     "en": "Letter Ш"
+    },
+    {
+     "id": "letter_cyr_shcha",
+     "ru": "Буква Щ",
+     "en": "Letter Щ"
+    },
+    {
+     "id": "letter_cyr_hard",
+     "ru": "Буква Ъ",
+     "en": "Letter Ъ"
+    },
+    {
+     "id": "letter_cyr_yeru",
+     "ru": "Буква Ы",
+     "en": "Letter Ы"
+    },
+    {
+     "id": "letter_cyr_soft",
+     "ru": "Буква Ь",
+     "en": "Letter Ь"
+    },
+    {
+     "id": "letter_cyr_e",
+     "ru": "Буква Э",
+     "en": "Letter Э"
+    },
+    {
+     "id": "letter_cyr_yu",
+     "ru": "Буква Ю",
+     "en": "Letter Ю"
+    },
+    {
+     "id": "letter_cyr_ya",
+     "ru": "Буква Я",
+     "en": "Letter Я"
+    },
+    {
+     "id": "letter_cyr_yo",
+     "ru": "Буква Ё",
+     "en": "Letter Ё"
+    }
+   ]
+  }
+ ]
+}

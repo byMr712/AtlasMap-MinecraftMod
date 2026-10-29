@@ -1,0 +1,2424 @@
+package org.webtrade.mapminecraft.client.gui;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.MultiLineEditBox;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.level.levelgen.Heightmap;
+import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.sdl.SDLScancode;
+import org.webtrade.mapminecraft.client.ModKeys;
+import org.webtrade.mapminecraft.client.data.Marker;
+import org.webtrade.mapminecraft.client.data.ModConfig;
+import org.webtrade.mapminecraft.client.data.Storage;
+import org.webtrade.mapminecraft.client.data.Stroke;
+import org.webtrade.mapminecraft.client.map.MapLayer;
+import org.webtrade.mapminecraft.client.map.MapManager;
+import org.webtrade.mapminecraft.client.map.MapSession;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.DoubleConsumer;
+import java.util.stream.Stream;
+
+/** The full screen papyrus map with markers, the marker list, the ruler and the drawing editor. */
+public class MapScreen extends Screen {
+    private static final int TB = 20;
+    private static final int PAL_COLS = 20;
+    private static final int[] COLORS = buildPalette();
+    private static final int[] WIDTHS = {1, 2, 3, 5};
+    private static final float MIN_ZOOM = 0.25f;
+    private static final float MAX_ZOOM = 16f;
+    private static final String[] SORTS = {"name", "distance", "date", "icon"};
+
+    private static float lastZoom = 2f;
+
+    /** 20 hues in three shades (light, normal, dark): 60 inks in total. */
+    private static int[] buildPalette() {
+        int[] base = {0x3A2616, 0x7A4E2A, 0xB03A2E, 0xD35A2A, 0xE08A2E, 0xE0B03A, 0xE8D44A, 0x9DBB3A, 0x4E8A34, 0x2F5E2A,
+                0x2E8A7E, 0x3AA0C0, 0x5A8FD0, 0x2F5AA8, 0x45408F, 0x7A3E9A, 0xB0408A, 0xD9708A, 0x8A8A8A, 0xF2E6C8};
+        int[] out = new int[base.length * 3];
+        for (int i = 0; i < base.length; i++) {
+            int c = base[i];
+            int r = c >> 16 & 0xFF;
+            int g = c >> 8 & 0xFF;
+            int b = c & 0xFF;
+            out[i] = 0xFF000000 | mix(r, 255, 0.45f) << 16 | mix(g, 255, 0.45f) << 8 | mix(b, 255, 0.45f);
+            out[base.length + i] = 0xFF000000 | c;
+            out[base.length * 2 + i] = 0xFF000000 | (int) (r * 0.58f) << 16 | (int) (g * 0.58f) << 8 | (int) (b * 0.58f);
+        }
+        out[base.length - 1] = 0xFFFFFFFF;
+        out[base.length * 3 - 1] = 0xFF000000;
+        return out;
+    }
+
+    private static int mix(int a, int b, float t) {
+        return Math.round(a + (b - a) * t);
+    }
+
+    private enum Tool { NONE, RULER, DRAW }
+
+    private enum DrawTool { PEN, LINE, RECT, CIRCLE, ERASER }
+
+    private enum Panel { NONE, VIEW, EDIT }
+
+    private enum Overlay { NONE, ICONS, PICKER, VIEWER, CONFIRM, SETTINGS, DIMS }
+
+    private record Hit(int x, int y, int w, int h, Runnable left, Runnable right) {
+    }
+
+    private record ScrollArea(int x, int y, int w, int h, DoubleConsumer onScroll) {
+    }
+
+    private final Screen parent;
+    private final MapSession session;
+    private final boolean ownsSession;
+    private final MapView view = new MapView();
+    private final ModConfig cfg = ModConfig.get();
+    private String dim;
+
+    // tools
+    private Tool tool = Tool.NONE;
+    private DrawTool drawTool = DrawTool.PEN;
+    private int colorIdx = PAL_COLS;
+    private int widthIdx = 1;
+    private Stroke current;
+    private List<Stroke> erased;
+    private final Deque<Runnable> undo = new ArrayDeque<>();
+    private final List<double[]> ruler = new ArrayList<>();
+
+    // marker panels
+    private boolean listOpen;
+    private String search = "";
+    private double listScroll;
+    private Marker selected;
+    private Panel panel = Panel.NONE;
+    private Marker working;
+    private boolean workingIsNew;
+    private final List<String> addedFiles = new ArrayList<>();
+    private final List<String> removedFiles = new ArrayList<>();
+    private double descScroll;
+    private double shotsScroll;
+
+    // overlays
+    private Overlay overlay = Overlay.NONE;
+    private List<Path> pickerFiles = new ArrayList<>();
+    private final List<Path> pickerChosen = new ArrayList<>();
+    private double pickerScroll;
+    private List<Path> viewerFiles = new ArrayList<>();
+    private List<String> viewerNames = new ArrayList<>();
+    private Marker viewerMarker;
+    private boolean annotating;
+    private boolean annotPressed;
+    private Stroke annotCurrent;
+    private int[] viewerRect;
+    private final MapView annotView = new MapView();
+    private int viewerIndex;
+    private Component confirmText = Component.empty();
+    private Runnable confirmAction;
+    private int iconPickerY;
+    private double iconScroll;
+    private final Map<String, Integer> iconGroupOffsets = new HashMap<>();
+    private EditBox iconSearch;
+
+    // widgets
+    private EditBox nameBox;
+    private EditBox xBox;
+    private EditBox yBox;
+    private EditBox zBox;
+    private EditBox searchBox;
+    private MultiLineEditBox descBox;
+
+    // input / hit testing
+    private final List<Hit> hits = new ArrayList<>();
+    private final List<ScrollArea> scrolls = new ArrayList<>();
+    private final List<int[]> uiRects = new ArrayList<>();
+    private List<int[]> lastUiRects = new ArrayList<>();
+    private int modalStart = -1;
+    private Component tooltip;
+    private boolean pressed;
+    private int pressButton;
+    private double pressX;
+    private double pressY;
+    private double pressCX;
+    private double pressCZ;
+    private boolean dragging;
+    private double mouseX;
+    private double mouseY;
+
+    public MapScreen(Screen parent, MapSession session, boolean ownsSession) {
+        super(T.tr("map.title"));
+        this.parent = parent;
+        this.session = session;
+        this.ownsSession = ownsSession;
+        this.dim = session.meta.lastDim;
+        this.view.cx = session.meta.lastX;
+        this.view.cz = session.meta.lastZ;
+        this.view.zoom = lastZoom;
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.player != null && mc.level != null) {
+            dim = mc.level.dimension().identifier().toString();
+            view.cx = mc.player.getX();
+            view.cz = mc.player.getZ();
+        }
+    }
+
+    /** Opens the map of the world the player is in. */
+    public static MapScreen openLive(Minecraft mc) {
+        MapSession s = MapManager.live();
+        if (s == null) {
+            return null;
+        }
+        MapScreen screen = new MapScreen(null, s, false);
+        mc.gui.setScreen(screen);
+        Paper.pageTurn();
+        return screen;
+    }
+
+    public void openMarkerList() {
+        listOpen = true;
+    }
+
+    /** Selects a marker, centers the map on it and shows its info panel. */
+    public void showMarker(Marker m) {
+        openView(m, true);
+    }
+
+    private boolean clean;
+
+    /** Shows only the map itself (no toolbars or panels), e.g. for screenshots. */
+    public void setCleanMode(boolean clean) {
+        this.clean = clean;
+    }
+
+    /** Moves the map view. */
+    public void setView(double x, double z, float zoom) {
+        view.cx = x;
+        view.cz = z;
+        view.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+    }
+
+    public void closePanels() {
+        closePanel();
+        listOpen = false;
+    }
+
+    /** Opens the editor panel for a marker. */
+    public void editMarker(Marker m) {
+        openEdit(m, false);
+    }
+
+    /** Creates a marker at the player's feet and opens its editor. */
+    public void newMarkerAtPlayer() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            createMarker(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ());
+        }
+    }
+
+    // ------------------------------------------------------------------ lifecycle
+
+    @Override
+    protected void init() {
+        nameBox = new EditBox(font, 0, 0, 100, 12, T.tr("field.name"));
+        nameBox.setBordered(false);
+        nameBox.setTextColor(Paper.INK);
+        nameBox.setTextShadow(false);
+        nameBox.setMaxLength(64);
+        nameBox.setResponder(s -> {
+            if (working != null) {
+                working.name = s;
+            }
+        });
+        xBox = coordBox();
+        yBox = coordBox();
+        zBox = coordBox();
+        descBox = MultiLineEditBox.builder()
+                .setTextColor(Paper.INK)
+                .setCursorColor(Paper.INK)
+                .setTextShadow(false)
+                .setShowBackground(false)
+                .setShowDecorations(false)
+                .setPlaceholder(T.tr("field.desc_hint"))
+                .build(font, 100, 60, T.tr("field.desc"));
+        descBox.setCharacterLimit(4000);
+        descBox.setValueListener(s -> {
+            if (working != null) {
+                working.description = s;
+            }
+        });
+        searchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search"));
+        searchBox.setBordered(false);
+        searchBox.setTextColor(Paper.INK);
+        searchBox.setTextShadow(false);
+        searchBox.setValue(search);
+        searchBox.setResponder(s -> {
+            search = s;
+            listScroll = 0;
+        });
+        addRenderableWidget(nameBox);
+        addRenderableWidget(xBox);
+        addRenderableWidget(yBox);
+        addRenderableWidget(zBox);
+        addRenderableWidget(descBox);
+        addRenderableWidget(searchBox);
+        iconSearch = new EditBox(font, 0, 0, 100, 12, T.tr("icons.search_hint"));
+        iconSearch.setBordered(false);
+        iconSearch.setTextColor(Paper.INK);
+        iconSearch.setTextShadow(false);
+        iconSearch.setResponder(v -> iconScroll = 0);
+        addWidget(iconSearch);
+        if (working != null) {
+            fillWidgets();
+        }
+        updateWidgetVisibility();
+    }
+
+    private EditBox coordBox() {
+        EditBox b = new EditBox(font, 0, 0, 30, 12, Component.empty());
+        b.setBordered(false);
+        b.setTextColor(Paper.INK);
+        b.setTextShadow(false);
+        b.setMaxLength(9);
+        return b;
+    }
+
+    private void fillWidgets() {
+        nameBox.setValue(working.name);
+        xBox.setValue(Integer.toString(working.x));
+        yBox.setValue(Integer.toString(working.y));
+        zBox.setValue(Integer.toString(working.z));
+        descBox.setValue(working.description);
+    }
+
+    @Override
+    public void removed() {
+        commitEdit();
+        session.meta.lastDim = session.isLive() ? session.meta.lastDim : dim;
+        if (!session.isLive()) {
+            session.meta.lastX = view.cx;
+            session.meta.lastZ = view.cz;
+            session.saveMeta();
+        }
+        lastZoom = view.zoom;
+        session.saveMarkers();
+        session.saveStrokes();
+        if (ownsSession) {
+            session.close();
+        }
+        ImageCache.clear();
+    }
+
+    @Override
+    public void onClose() {
+        minecraft.gui.setScreen(parent);
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    }
+
+    // ------------------------------------------------------------------ rendering
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
+        this.mouseX = mx;
+        this.mouseY = my;
+        hits.clear();
+        scrolls.clear();
+        uiRects.clear();
+        modalStart = -1;
+        tooltip = null;
+        MapView.newFrame();
+
+        drawMap(g, mx, my);
+        if (clean) {
+            lastUiRects = new ArrayList<>();
+            return;
+        }
+        g.nextStratum();
+
+        drawToolbar(g, mx, my);
+        if (tool == Tool.DRAW) {
+            drawDrawBar(g, mx, my);
+        } else if (tool == Tool.RULER) {
+            drawRulerBar(g);
+        } else {
+            drawTitle(g);
+        }
+        drawStatus(g, mx, my);
+        if (listOpen) {
+            drawList(g, mx, my);
+        }
+        updateWidgetVisibility();
+        if (panel == Panel.VIEW) {
+            drawViewPanel(g, mx, my);
+        } else if (panel == Panel.EDIT) {
+            drawEditPanel(g, mx, my);
+        }
+        super.extractRenderState(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
+
+        if (overlay != Overlay.NONE) {
+            g.nextStratum();
+            modalStart = hits.size();
+            switch (overlay) {
+                case ICONS -> drawIconPicker(g, mx, my);
+                case PICKER -> drawShotPicker(g, mx, my);
+                case VIEWER -> drawViewer(g, mx, my);
+                case CONFIRM -> drawConfirm(g, mx, my);
+                case SETTINGS -> drawSettings(g, mx, my);
+                case DIMS -> drawDims(g, mx, my);
+                default -> {
+                }
+            }
+        }
+        if (tooltip != null) {
+            g.setTooltipForNextFrame(font, tooltip, mx, my);
+        }
+        lastUiRects = new ArrayList<>(uiRects);
+    }
+
+    private void drawMap(GuiGraphicsExtractor g, int mx, int my) {
+        view.setRect(0, 0, width, height);
+        MapLayer layer = session.layer(dim);
+        view.drawBackground(g);
+        view.drawTiles(g, layer);
+        view.drawGrid(g);
+        vignette(g);
+        if (cfg.drawingsVisible || tool == Tool.DRAW) {
+            view.drawStrokes(g, session.strokes(dim), 1f);
+        }
+        if (current != null) {
+            view.drawStroke(g, current, 1f);
+        }
+        if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
+            g.outline(mx - 6, my - 6, 12, 12, Paper.RED);
+        }
+        drawRuler(g, mx, my);
+
+        Marker hovered = hoveredMarker(mx, my);
+        if (cfg.markersVisible) {
+            view.drawMarkers(g, font, session.markers, dim, 16, true,
+                    selected == null ? null : selected.id, hovered == null ? null : hovered.id, false);
+        } else if (selected != null && selected.dim.equals(dim)) {
+            view.drawMarkers(g, font, List.of(selected), dim, 16, true, selected.id, null, false);
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+            view.drawPlayer(g, mc.player.getX(), mc.player.getZ(), mc.player.getYRot(), 16);
+        }
+        if (hovered != null && overlay == Overlay.NONE) {
+            tooltip = Component.literal(hovered.name.isEmpty() ? T.s("marker.unnamed") : hovered.name)
+                    .append(Component.literal("  " + hovered.x + ", " + hovered.y + ", " + hovered.z).withColor(0xFFAAAAAA));
+        }
+    }
+
+    private void vignette(GuiGraphicsExtractor g) {
+        for (int i = 0; i < 10; i++) {
+            int a = (10 - i) * 7 << 24 | 0x2A1A0C;
+            g.fill(0, i * 2, width, i * 2 + 2, a);
+            g.fill(0, height - i * 2 - 2, width, height - i * 2, a);
+            g.fill(i * 2, 0, i * 2 + 2, height, a);
+            g.fill(width - i * 2 - 2, 0, width - i * 2, height, a);
+        }
+    }
+
+    private void drawRuler(GuiGraphicsExtractor g, int mx, int my) {
+        if (ruler.isEmpty()) {
+            return;
+        }
+        int ink = 0xFF9C3B2A;
+        for (int i = 0; i + 1 < ruler.size(); i++) {
+            double[] a = ruler.get(i);
+            double[] b = ruler.get(i + 1);
+            Paper.dashedLine(g, view.sx(a[0]), view.sy(a[1]), view.sx(b[0]), view.sy(b[1]), 2f, ink, 5f);
+        }
+        boolean live = tool == Tool.RULER && overlay == Overlay.NONE && mouseOverMap(mx, my);
+        if (live) {
+            double[] a = ruler.get(ruler.size() - 1);
+            Paper.dashedLine(g, view.sx(a[0]), view.sy(a[1]), mx, my, 1.5f, 0xB09C3B2A, 4f);
+        }
+        for (double[] p : ruler) {
+            float x = view.sx(p[0]);
+            float y = view.sy(p[1]);
+            Paper.dot(g, x, y, 7, Paper.INK);
+            Paper.dot(g, x, y, 4, Paper.GOLD_LIGHT);
+        }
+        for (int i = 0; i + 1 < ruler.size(); i++) {
+            double[] a = ruler.get(i);
+            double[] b = ruler.get(i + 1);
+            label(g, fmt(dist(a, b)) + " " + T.s("unit.blocks"), (view.sx(a[0]) + view.sx(b[0])) / 2, (view.sy(a[1]) + view.sy(b[1])) / 2);
+        }
+        if (live) {
+            double[] a = ruler.get(ruler.size() - 1);
+            double d = Math.hypot(view.wx(mx) - a[0], view.wz(my) - a[1]);
+            label(g, fmt(d), mx + 12, my + 10);
+        }
+    }
+
+    private void label(GuiGraphicsExtractor g, String s, float cx, float cy) {
+        int w = font.width(s);
+        int x = Math.round(cx - w / 2f);
+        int y = Math.round(cy - 5);
+        g.fill(x - 3, y - 2, x + w + 3, y + 10, 0xE0F2E4C0);
+        g.outline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
+        g.text(font, s, x, y, Paper.INK, false);
+    }
+
+    private void drawTitle(GuiGraphicsExtractor g) {
+        int avail = freeRight() - freeLeft();
+        String t = font.plainSubstrByWidth(session.meta.name + "  ·  " + T.dimName(dim), Math.max(20, avail - 40));
+        int w = font.width(t) + 30;
+        if (w > avail) {
+            return;
+        }
+        int cx = (freeLeft() + freeRight()) / 2;
+        int x = cx - w / 2;
+        Paper.panel(g, x, 6, w, 18);
+        ui(x, 6, w, 18);
+        Paper.title(g, font, t, cx, 11);
+    }
+
+    private void drawRulerBar(GuiGraphicsExtractor g) {
+        double total = 0;
+        for (int i = 0; i + 1 < ruler.size(); i++) {
+            total += dist(ruler.get(i), ruler.get(i + 1));
+        }
+        String l1 = T.s("ruler.total", fmt(total), ruler.size());
+        String l2 = T.s("ruler.hint");
+        if (ruler.size() >= 2) {
+            double[] a = ruler.get(0);
+            double[] b = ruler.get(ruler.size() - 1);
+            l1 += "   " + T.s("ruler.direct", fmt(dist(a, b)), (int) Math.round(b[0] - a[0]), (int) Math.round(b[1] - a[1]));
+        }
+        int avail = freeRight() - freeLeft();
+        int w = Math.min(avail, Math.max(font.width(l1), font.width(l2)) + 44);
+        List<FormattedCharSequence> lines = new ArrayList<>(font.split(Component.literal(l1), w - 40));
+        int firstCount = lines.size();
+        lines.addAll(font.split(Component.literal(l2), w - 40));
+        int h = lines.size() * 10 + 10;
+        int x = (freeLeft() + freeRight()) / 2 - w / 2;
+        Paper.panel(g, x, 6, w, h);
+        ui(x, 6, w, h);
+        Paper.icon(g, Paper.tool("ruler"), x + 8, 6 + (h - 16) / 2, 16);
+        int ty = 11;
+        for (int i = 0; i < lines.size(); i++) {
+            g.text(font, lines.get(i), x + 30, ty, i < firstCount ? Paper.INK : Paper.INK_SOFT, false);
+            ty += 10;
+        }
+    }
+
+    private void drawToolbar(GuiGraphicsExtractor g, int mx, int my) {
+        int x = 6;
+        int y = 6;
+        List<Object[]> items = new ArrayList<>();
+        items.add(new Object[]{"list", T.tr("tool.list", keyName(ModKeys.MARKER_LIST)), listOpen, (Runnable) () -> listOpen = !listOpen});
+        items.add(new Object[]{"ruler", T.tr("tool.ruler", keyName(ModKeys.RULER)), tool == Tool.RULER, (Runnable) () -> setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER)});
+        items.add(new Object[]{"quill", T.tr("tool.editor", keyName(ModKeys.EDITOR)), tool == Tool.DRAW, (Runnable) () -> setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW)});
+        items.add(new Object[]{cfg.drawingsVisible ? "eye" : "eye_off", T.tr(cfg.drawingsVisible ? "tool.hide_drawings" : "tool.show_drawings", keyName(ModKeys.TOGGLE_DRAWINGS)), !cfg.drawingsVisible, (Runnable) this::toggleDrawings});
+        items.add(new Object[]{"marker:pin", T.tr(cfg.markersVisible ? "tool.hide_markers" : "tool.show_markers"), !cfg.markersVisible, (Runnable) () -> {
+            cfg.markersVisible = !cfg.markersVisible;
+            cfg.save();
+        }});
+        if (session.isLive()) {
+            items.add(new Object[]{"target", T.tr("tool.center"), false, (Runnable) this::centerOnPlayer});
+        }
+        items.add(new Object[]{"zoom_in", T.tr("tool.zoom_in"), false, (Runnable) () -> zoomBy(1.5f, width / 2.0, height / 2.0)});
+        items.add(new Object[]{"zoom_out", T.tr("tool.zoom_out"), false, (Runnable) () -> zoomBy(1 / 1.5f, width / 2.0, height / 2.0)});
+        items.add(new Object[]{"globe", T.tr("tool.dims"), overlay == Overlay.DIMS, (Runnable) () -> overlay = Overlay.DIMS});
+        items.add(new Object[]{"gear", T.tr("tool.settings"), overlay == Overlay.SETTINGS, (Runnable) () -> overlay = Overlay.SETTINGS});
+        items.add(new Object[]{"close", T.tr("tool.close", keyName(ModKeys.OPEN_MAP)), false, (Runnable) this::onClose});
+
+        int h = items.size() * (TB + 3) + 5;
+        g.fill(x - 3, y - 3, x + TB + 3, y + h - 3, 0x40000000);
+        ui(x - 3, y - 3, TB + 6, h);
+        for (Object[] it : items) {
+            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, TB, TB);
+            String ic = (String) it[0];
+            Paper.iconButton(g, ic.startsWith("marker:") ? Paper.marker(ic.substring(7)) : Paper.tool(ic), x, y, TB, hover, (Boolean) it[2]);
+            if (hover) {
+                tooltip = (Component) it[1];
+            }
+            hit(x, y, TB, TB, (Runnable) it[3]);
+            y += TB + 3;
+        }
+    }
+
+    private static final int DRAW_BAR_W = PAL_COLS * 11 + 15;
+    private static final int DRAW_BAR_H = 64;
+
+    private void drawDrawBar(GuiGraphicsExtractor g, int mx, int my) {
+        int x = (freeLeft() + freeRight()) / 2 - DRAW_BAR_W / 2;
+        drawToolBar(g, mx, my, x, 6, overlay == Overlay.NONE, this::undo,
+                () -> confirm(T.tr("confirm.clear_drawings"), this::clearDrawings), T.tr("draw.clear"));
+    }
+
+    /** Tool selector, line widths and the 60 colour palette. Shared by the map editor and the screenshot editor. */
+    private void drawToolBar(GuiGraphicsExtractor g, int mx, int my, int x, int y, boolean active, Runnable onUndo,
+                             Runnable onClear, Component clearTip) {
+        DrawTool[] tools = DrawTool.values();
+        String[] icons = {"pen", "line", "rect", "circle", "eraser"};
+        Paper.panel(g, x, y, DRAW_BAR_W, DRAW_BAR_H);
+        ui(x, y, DRAW_BAR_W, DRAW_BAR_H);
+        hit(x, y, DRAW_BAR_W, DRAW_BAR_H, () -> {
+        });
+        int cx = x + 7;
+        for (int i = 0; i < tools.length; i++) {
+            DrawTool t = tools[i];
+            boolean hover = active && Paper.inside(mx, my, cx, y + 5, 18, 18);
+            Paper.iconButton(g, Paper.tool(icons[i]), cx, y + 5, 18, hover, drawTool == t);
+            if (hover) {
+                tooltip = T.tr("draw." + icons[i]);
+            }
+            hit(cx, y + 5, 18, 18, () -> drawTool = t);
+            cx += 20;
+        }
+        cx += 4;
+        int dotColor = COLORS[colorIdx] == 0xFFFFFFFF || COLORS[colorIdx] == 0xFFF2E6C8 ? Paper.INK : COLORS[colorIdx];
+        for (int i = 0; i < WIDTHS.length; i++) {
+            int idx = i;
+            if (widthIdx == i) {
+                g.fill(cx, y + 5, cx + 13, y + 23, 0x40B88C2C);
+                g.outline(cx, y + 5, 13, 18, Paper.GOLD);
+            }
+            Paper.dot(g, cx + 6.5f, y + 14, WIDTHS[i] + 1, dotColor);
+            hit(cx, y + 5, 13, 18, () -> widthIdx = idx);
+            cx += 14;
+        }
+        int ux = x + DRAW_BAR_W - 7 - 38;
+        boolean hu = active && Paper.inside(mx, my, ux, y + 5, 18, 18);
+        Paper.iconButton(g, Paper.tool("undo"), ux, y + 5, 18, hu, false);
+        if (hu) {
+            tooltip = T.tr("draw.undo");
+        }
+        hit(ux, y + 5, 18, 18, onUndo);
+        boolean hc = active && Paper.inside(mx, my, ux + 20, y + 5, 18, 18);
+        Paper.iconButton(g, Paper.tool("trash"), ux + 20, y + 5, 18, hc, false);
+        if (hc) {
+            tooltip = clearTip;
+        }
+        hit(ux + 20, y + 5, 18, 18, onClear);
+
+        int py = y + 28;
+        for (int i = 0; i < COLORS.length; i++) {
+            int idx = i;
+            int sx = x + 8 + (i % PAL_COLS) * 11;
+            int sy = py + (i / PAL_COLS) * 11;
+            g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
+            g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
+            if (colorIdx == i) {
+                g.outline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.outline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+            }
+            hit(sx - 1, sy - 1, 11, 11, () -> colorIdx = idx);
+        }
+    }
+
+    private void drawStatus(GuiGraphicsExtractor g, int mx, int my) {
+        int x = 6 + TB + 10 + (listOpen ? listWidth() + 4 : 0);
+        int y = height - 22;
+        String coords;
+        if (mouseOverMap(mx, my)) {
+            coords = "X " + (int) Math.floor(view.wx(mx)) + "   Z " + (int) Math.floor(view.wz(my));
+        } else {
+            coords = "X " + (int) Math.floor(view.cx) + "   Z " + (int) Math.floor(view.cz);
+        }
+        // scale bar
+        int[] nice = {1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000};
+        int len = nice[nice.length - 1];
+        for (int n : nice) {
+            if (n * view.zoom >= 40) {
+                len = n;
+                break;
+            }
+        }
+        int px = Math.round(len * view.zoom);
+        String scale = len + " " + T.s("unit.blocks");
+        int w = font.width(coords) + 16 + px + 8 + font.width(scale) + 12;
+        Paper.panel(g, x, y, w, 16);
+        ui(x, y, w, 16);
+        g.text(font, coords, x + 6, y + 5, Paper.INK, false);
+        int bx = x + 6 + font.width(coords) + 12;
+        g.fill(bx, y + 9, bx + px, y + 11, Paper.INK);
+        g.fill(bx, y + 5, bx + 1, y + 12, Paper.INK);
+        g.fill(bx + px - 1, y + 5, bx + px, y + 12, Paper.INK);
+        g.fill(bx + px / 2, y + 7, bx + px / 2 + 1, y + 11, Paper.INK);
+        g.text(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
+
+        int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0, 0, 48, 48, 64, 64, 64, 64);
+    }
+
+    // ------------------------------------------------------------------ marker list
+
+    private int freeLeft() {
+        return 6 + TB + 8 + (listOpen ? listWidth() + 4 : 0);
+    }
+
+    private int freeRight() {
+        return panel != Panel.NONE ? width - panelWidth() - 10 : width - 6;
+    }
+
+    private int listWidth() {
+        return Math.max(130, Math.min(180, width / 4));
+    }
+
+    private int panelWidth() {
+        return Math.max(150, Math.min(190, width / 3));
+    }
+
+    private List<Marker> sortedMarkers() {
+        String q = search.toLowerCase(Locale.ROOT).trim();
+        List<Marker> list = new ArrayList<>();
+        for (Marker m : session.markers) {
+            if (q.isEmpty() || m.name.toLowerCase(Locale.ROOT).contains(q) || m.description.toLowerCase(Locale.ROOT).contains(q)) {
+                list.add(m);
+            }
+        }
+        double[] ref = referencePoint();
+        Comparator<Marker> byName = Comparator.comparing(m -> m.name.toLowerCase(Locale.ROOT));
+        switch (cfg.markerSort) {
+            case 1 -> list.sort(Comparator.comparingInt((Marker m) -> m.dim.equals(dim) ? 0 : 1)
+                    .thenComparingDouble(m -> Math.hypot(m.x - ref[0], m.z - ref[1])));
+            case 2 -> list.sort(Comparator.comparingLong((Marker m) -> m.created).reversed());
+            case 3 -> list.sort(Comparator.comparingInt((Marker m) -> T.MARKER_ICONS.indexOf(m.icon)).thenComparing(byName));
+            default -> list.sort(byName);
+        }
+        return list;
+    }
+
+    private double[] referencePoint() {
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+            return new double[]{mc.player.getX(), mc.player.getZ()};
+        }
+        return new double[]{view.cx, view.cz};
+    }
+
+    private void drawList(GuiGraphicsExtractor g, int mx, int my) {
+        int lx = 6 + TB + 8;
+        int ly = 6;
+        int lw = listWidth();
+        int lh = height - 12;
+        Paper.panel(g, lx, ly, lw, lh);
+        ui(lx, ly, lw, lh);
+        hit(lx, ly, lw, lh, () -> {
+        });
+        List<Marker> list = sortedMarkers();
+        Paper.title(g, font, T.s("list.title", session.markers.size()), lx + lw / 2, ly + 8);
+
+        // search
+        int sy = ly + 20;
+        Paper.inset(g, lx + 7, sy, lw - 14, 14);
+        Paper.icon(g, Paper.tool("zoom_in"), lx + 9, sy + 2, 10);
+        searchBox.setX(lx + 21);
+        searchBox.setY(sy + 3);
+        searchBox.setWidth(lw - 30);
+        hint(g, searchBox, T.s("list.search_hint"));
+
+        // sort + visibility
+        int by = sy + 18;
+        int bw = lw - 14 - 20;
+        boolean hs = overlay == Overlay.NONE && Paper.inside(mx, my, lx + 7, by, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("sort"), T.tr("sort." + SORTS[cfg.markerSort]), lx + 7, by, bw, 16, hs, true);
+        if (hs) {
+            tooltip = T.tr("list.sort_tip");
+        }
+        hit(lx + 7, by, bw, 16, () -> {
+            cfg.markerSort = (cfg.markerSort + 1) % SORTS.length;
+            cfg.save();
+        }, () -> {
+            cfg.markerSort = (cfg.markerSort + SORTS.length - 1) % SORTS.length;
+            cfg.save();
+        });
+        boolean anyVisible = session.markers.stream().anyMatch(m -> !m.hidden);
+        boolean he = overlay == Overlay.NONE && Paper.inside(mx, my, lx + lw - 25, by, 18, 16);
+        Paper.iconButton(g, Paper.tool(anyVisible ? "eye" : "eye_off"), lx + lw - 25, by, 18, he, false);
+        if (he) {
+            tooltip = T.tr(anyVisible ? "list.hide_all" : "list.show_all");
+        }
+        hit(lx + lw - 25, by, 18, 16, () -> {
+            boolean hide = session.markers.stream().anyMatch(m -> !m.hidden);
+            session.markers.forEach(m -> m.hidden = hide);
+            session.saveMarkers();
+        });
+
+        // rows
+        int top = by + 22;
+        int bottom = ly + lh - 8;
+        int rowH = 22;
+        int areaH = bottom - top;
+        double maxScroll = Math.max(0, list.size() * rowH - areaH);
+        listScroll = Math.max(0, Math.min(maxScroll, listScroll));
+        scroll(lx, top, lw, areaH, d -> listScroll -= d * rowH);
+        Paper.separator(g, lx + 8, top - 3, lw - 16);
+        if (list.isEmpty()) {
+            List<FormattedCharSequence> lines = font.split(T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"), lw - 20);
+            int ty = top + 8;
+            for (FormattedCharSequence l : lines) {
+                g.text(font, l, lx + 10, ty, Paper.INK_SOFT, false);
+                ty += 10;
+            }
+            return;
+        }
+        g.enableScissor(lx + 3, top, lx + lw - 3, bottom);
+        double[] ref = referencePoint();
+        int y = top - (int) listScroll;
+        for (Marker m : list) {
+            if (y + rowH >= top && y <= bottom) {
+                int rx = lx + 6;
+                int rw = lw - 12;
+                boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2) && my >= top && my < bottom;
+                boolean sel = selected != null && selected.id.equals(m.id);
+                if (sel) {
+                    g.fill(rx, y, rx + rw, y + rowH - 2, 0x50B88C2C);
+                    g.outline(rx, y, rw, rowH - 2, Paper.GOLD);
+                } else if (hover) {
+                    g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+                }
+                Paper.icon(g, Paper.marker(m.icon), rx + 2, y + 2, 16, m.hidden ? 0x70FFFFFF : 0xFFFFFFFF);
+                String dist = m.dim.equals(dim) ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short") : T.dimName(m.dim);
+                int dw = font.width(dist);
+                int nameW = rw - 22 - dw - 20;
+                String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
+                g.text(font, name, rx + 21, y + 6, m.hidden ? 0xFF8A7A62 : Paper.INK, false);
+                g.text(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+                int ex = rx + rw - 14;
+                boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
+                Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
+                if (eh) {
+                    tooltip = T.tr(m.hidden ? "marker.show" : "marker.hide");
+                }
+                int clipY = Math.max(y, top);
+                int clipH = Math.min(y + rowH - 2, bottom) - clipY;
+                if (clipH > 0) {
+                    hit(rx, clipY, rw, clipH, () -> openView(m, true), () -> openView(m, true));
+                    if (y + 4 >= top && y + 16 <= bottom) {
+                        hit(ex, y + 4, 12, 12, () -> {
+                            m.hidden = !m.hidden;
+                            session.saveMarkers();
+                        });
+                    }
+                }
+            }
+            y += rowH;
+        }
+        g.disableScissor();
+        if (maxScroll > 0) {
+            int trackH = areaH;
+            int thumbH = Math.max(12, (int) (trackH * (areaH / (double) (list.size() * rowH))));
+            int thumbY = top + (int) ((trackH - thumbH) * (listScroll / maxScroll));
+            g.fill(lx + lw - 5, top, lx + lw - 4, bottom, Paper.INK_FAINT);
+            g.fill(lx + lw - 6, thumbY, lx + lw - 3, thumbY + thumbH, Paper.INK_SOFT);
+        }
+    }
+
+    // ------------------------------------------------------------------ right panel
+
+    private int[] panelRect() {
+        int pw = panelWidth();
+        return new int[]{width - pw - 6, 6, pw, height - 12};
+    }
+
+    private void drawViewPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (selected == null) {
+            panel = Panel.NONE;
+            return;
+        }
+        Marker m = selected;
+        int[] r = panelRect();
+        int px = r[0];
+        int py = r[1];
+        int pw = r[2];
+        int ph = r[3];
+        Paper.panel(g, px, py, pw, ph);
+        ui(px, py, pw, ph);
+        hit(px, py, pw, ph, () -> {
+        });
+        closeButton(g, mx, my, px + pw - 18, py + 5, this::closePanel);
+
+        int cx = px + 9;
+        int cw = pw - 18;
+        int y = py + 10;
+        Paper.inset(g, cx, y, 28, 28);
+        Paper.icon(g, Paper.marker(m.icon), cx + 2, y + 2, 24);
+        List<FormattedCharSequence> nameLines = font.split(Component.literal(m.name.isEmpty() ? T.s("marker.unnamed") : m.name), cw - 36 - 10);
+        int ny = y + (nameLines.size() > 1 ? 1 : 5);
+        for (int i = 0; i < Math.min(2, nameLines.size()); i++) {
+            g.text(font, nameLines.get(i), cx + 34, ny + i * 10, Paper.INK, false);
+        }
+        if (nameLines.size() < 2) {
+            g.text(font, T.iconName(m.icon), cx + 34, y + 17, Paper.INK_SOFT, false);
+        }
+        y += 34;
+        g.text(font, "X " + m.x + "   Y " + m.y + "   Z " + m.z, cx, y, Paper.INK, false);
+        y += 11;
+        String where = T.dimName(m.dim);
+        double[] ref = referencePoint();
+        if (m.dim.equals(dim)) {
+            where += "  ·  " + fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks");
+        }
+        g.text(font, where, cx, y, Paper.INK_SOFT, false);
+        y += 13;
+        Paper.separator(g, cx, y, cw);
+        y += 5;
+
+        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        List<FormattedCharSequence> desc = m.description.isBlank()
+                ? List.of(T.tr("marker.no_desc").getVisualOrderText())
+                : font.split(Component.literal(m.description), cw - 6);
+        int descH = Math.min(desc.size() * 10 + 6, Math.max(30, (int) (ph * 0.28)));
+        Paper.inset(g, cx, y, cw, descH);
+        double maxDesc = Math.max(0, desc.size() * 10 + 6 - descH);
+        descScroll = Math.max(0, Math.min(maxDesc, descScroll));
+        scroll(cx, y, cw, descH, d -> descScroll -= d * 10);
+        g.enableScissor(cx + 1, y + 1, cx + cw - 1, y + descH - 1);
+        int ty = y + 4 - (int) descScroll;
+        for (FormattedCharSequence l : desc) {
+            g.text(font, l, cx + 3, ty, m.description.isBlank() ? 0xFF8A7A62 : Paper.INK, false);
+            ty += 10;
+        }
+        g.disableScissor();
+        y += descH + 6;
+        Paper.separator(g, cx, y, cw);
+        y += 5;
+
+        int buttonsY = py + ph - 8 - 16 * 2 - 4;
+        g.text(font, T.tr("field.shots", m.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        drawShotGrid(g, mx, my, m, cx, y, cw, buttonsY - 6 - y, false);
+
+        int bw = (cw - 4) / 2;
+        int y2 = buttonsY + 20;
+        boolean h2 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("trash"), T.tr("button.delete"), cx, y2, bw, 16, h2, true);
+        hit(cx, y2, bw, 16, () -> confirmDelete(m));
+        boolean h1 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("gear"), T.tr("button.configure"), cx + bw + 4, y2, bw, 16, h1, true);
+        if (h1) {
+            tooltip = T.tr("button.configure_tip");
+        }
+        hit(cx + bw + 4, y2, bw, 16, () -> openEdit(m, false));
+        y2 = buttonsY;
+        boolean h3 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool(m.hidden ? "eye" : "eye_off"), T.tr(m.hidden ? "marker.show" : "marker.hide"), cx, y2, bw, 16, h3, true);
+        hit(cx, y2, bw, 16, () -> {
+            m.hidden = !m.hidden;
+            session.saveMarkers();
+        });
+        boolean h4 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("target"), T.tr("button.goto"), cx + bw + 4, y2, bw, 16, h4, true);
+        hit(cx + bw + 4, y2, bw, 16, () -> centerOn(m));
+    }
+
+    private void drawEditPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (working == null) {
+            panel = Panel.NONE;
+            return;
+        }
+        int[] r = panelRect();
+        int px = r[0];
+        int py = r[1];
+        int pw = r[2];
+        int ph = r[3];
+        Paper.panel(g, px, py, pw, ph);
+        ui(px, py, pw, ph);
+        hit(px, py, pw, ph, () -> setFocused(null));
+        Paper.title(g, font, T.s(workingIsNew ? "edit.new" : "edit.title"), px + pw / 2, py + 8);
+        closeButton(g, mx, my, px + pw - 18, py + 5, this::closePanel);
+        if (!workingIsNew) {
+            boolean ht = overlay == Overlay.NONE && Paper.inside(mx, my, px + 5, py + 5, 13, 13);
+            Paper.iconButton(g, Paper.tool("trash"), px + 5, py + 5, 13, ht, false);
+            if (ht) {
+                tooltip = T.tr("button.delete");
+            }
+            hit(px + 5, py + 5, 13, 13, () -> confirmDelete(selected));
+        }
+
+        int cx = px + 9;
+        int cw = pw - 18;
+        int y = py + 22;
+        g.text(font, T.tr("field.name"), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        Paper.inset(g, cx, y, cw, 16);
+        nameBox.setX(cx + 4);
+        nameBox.setY(y + 4);
+        nameBox.setWidth(cw - 8);
+        hint(g, nameBox, T.s("field.name_hint"));
+        y += 20;
+
+        // icon selector
+        boolean hi = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y, cw, 22);
+        g.fill(cx + 1, y + 1, cx + cw + 1, y + 23, Paper.SHADOW);
+        Paper.tiled(g, Paper.PARCHMENT_DARK, cx, y, cw, 22, cx, y);
+        if (hi) {
+            g.fill(cx, y, cx + cw, y + 22, 0x30FFFFFF);
+        }
+        g.outline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
+        Paper.icon(g, Paper.marker(working.icon), cx + 3, y + 3, 16);
+        g.text(font, font.plainSubstrByWidth(T.s("edit.icon", T.iconName(working.icon)), cw - 34), cx + 23, y + 7, Paper.INK, false);
+        g.text(font, "▼", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
+        int iconY = y;
+        hit(cx, y, cw, 22, () -> {
+            iconPickerY = iconY + 24;
+            iconScroll = 0;
+            iconSearch.setValue("");
+            overlay = Overlay.ICONS;
+            iconSearch.setVisible(true);
+            setFocused(iconSearch);
+        });
+        y += 26;
+
+        // coordinates
+        g.text(font, T.tr("field.coords"), cx, y, Paper.INK_SOFT, false);
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.player != null) {
+            int bx = cx + cw - 12;
+            boolean hp = overlay == Overlay.NONE && Paper.inside(mx, my, bx, y - 2, 12, 12);
+            Paper.icon(g, Paper.tool("target"), bx, y - 2, 12, hp ? 0xFFFFFFFF : 0xB0FFFFFF);
+            if (hp) {
+                tooltip = T.tr("edit.here");
+            }
+            hit(bx, y - 2, 12, 12, () -> {
+                xBox.setValue(Integer.toString(mc.player.getBlockX()));
+                yBox.setValue(Integer.toString(mc.player.getBlockY()));
+                zBox.setValue(Integer.toString(mc.player.getBlockZ()));
+                working.dim = mc.level.dimension().identifier().toString();
+            });
+        }
+        y += 10;
+        int bw = (cw - 8) / 3;
+        EditBox[] boxes = {xBox, yBox, zBox};
+        String[] labels = {"X", "Y", "Z"};
+        for (int i = 0; i < 3; i++) {
+            int bx = cx + i * (bw + 4);
+            Paper.inset(g, bx, y, bw, 16);
+            g.text(font, labels[i], bx + 3, y + 4, Paper.INK_SOFT, false);
+            boxes[i].setX(bx + 11);
+            boxes[i].setY(y + 4);
+            boxes[i].setWidth(bw - 13);
+        }
+        y += 21;
+
+        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        int descH = Math.max(40, Math.min(90, (int) (ph * 0.22)));
+        Paper.inset(g, cx, y, cw, descH);
+        descBox.setX(cx + 1);
+        descBox.setY(y + 1);
+        descBox.setWidth(cw - 2);
+        descBox.setHeight(descH - 2);
+        y += descH + 6;
+
+        int buttonsY = py + ph - 8 - 16;
+        g.text(font, T.tr("field.shots", working.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        drawShotGrid(g, mx, my, working, cx, y, cw, buttonsY - 6 - y, true);
+
+        int b2 = (cw - 4) / 2;
+        boolean h1 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, buttonsY, b2, 16);
+        Paper.iconTextButton(g, font, Paper.tool("check"), T.tr("button.save"), cx, buttonsY, b2, 16, h1, true);
+        hit(cx, buttonsY, b2, 16, this::saveAndView);
+        boolean h2 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + b2 + 4, buttonsY, b2, 16);
+        Paper.iconTextButton(g, font, Paper.tool("close"), T.tr("button.cancel"), cx + b2 + 4, buttonsY, b2, 16, h2, true);
+        hit(cx + b2 + 4, buttonsY, b2, 16, this::cancelEdit);
+    }
+
+    /** Screenshot thumbnails, two per row. In edit mode a "+" tile and delete buttons are shown. */
+    private void drawShotGrid(GuiGraphicsExtractor g, int mx, int my, Marker marker, int x, int y, int w, int h, boolean edit) {
+        List<String> shots = marker.screenshots;
+        if (h < 20) {
+            return;
+        }
+        int gap = 4;
+        int tw = (w - gap) / 2;
+        int th = Math.max(20, tw * 9 / 16);
+        int count = shots.size() + (edit ? 1 : 0);
+        int rows = (count + 1) / 2;
+        double max = Math.max(0, rows * (th + gap) - gap - h);
+        shotsScroll = Math.max(0, Math.min(max, shotsScroll));
+        scroll(x, y, w, h, d -> shotsScroll -= d * (th + gap) / 2.0);
+        if (count == 0) {
+            g.text(font, T.tr("marker.no_shots"), x + 2, y + 2, 0xFF8A7A62, false);
+            return;
+        }
+        g.enableScissor(x - 1, y, x + w + 1, y + h);
+        for (int i = 0; i < count; i++) {
+            int col = i % 2;
+            int row = i / 2;
+            int tx = x + col * (tw + gap);
+            int ty = y + row * (th + gap) - (int) shotsScroll;
+            if (ty + th < y || ty > y + h) {
+                continue;
+            }
+            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, tx, ty, tw, th) && my >= y && my < y + h;
+            int clipY = Math.max(ty, y);
+            int clipH = Math.min(ty + th, y + h) - clipY;
+            if (edit && i == shots.size()) {
+                g.fill(tx, ty, tx + tw, ty + th, hover ? 0x40FFFFFF : 0x20FFFFFF);
+                Paper.dashedLine(g, tx, ty + 0.5f, tx + tw, ty + 0.5f, 1, Paper.INK_SOFT, 3);
+                Paper.dashedLine(g, tx, ty + th - 0.5f, tx + tw, ty + th - 0.5f, 1, Paper.INK_SOFT, 3);
+                Paper.dashedLine(g, tx + 0.5f, ty, tx + 0.5f, ty + th, 1, Paper.INK_SOFT, 3);
+                Paper.dashedLine(g, tx + tw - 0.5f, ty, tx + tw - 0.5f, ty + th, 1, Paper.INK_SOFT, 3);
+                Paper.icon(g, Paper.tool("plus"), tx + (tw - 16) / 2, ty + (th - 16) / 2, 16);
+                if (hover) {
+                    tooltip = T.tr("shots.add_tip");
+                }
+                if (clipH > 0) {
+                    hit(tx, clipY, tw, clipH, this::openPicker);
+                }
+                continue;
+            }
+            String file = shots.get(i);
+            Paper.inset(g, tx, ty, tw, th);
+            ImageCache.Entry e = ImageCache.get(session.screenshot(file), true);
+            if (e.ready()) {
+                ImageCache.drawCover(g, e, tx + 1, ty + 1, tw - 2, th - 2);
+                List<Stroke> ann = marker.shotDrawings == null ? null : marker.shotDrawings.get(file);
+                if (ann != null && !ann.isEmpty() && e.origWidth > 0) {
+                    float sc = Math.max((tw - 2) / (float) e.origWidth, (th - 2) / (float) e.origHeight);
+                    annotView.setRect(tx + 1, ty + 1, tw - 2, th - 2);
+                    annotView.zoom = sc;
+                    annotView.cx = e.origWidth / 2.0;
+                    annotView.cz = e.origHeight / 2.0;
+                    g.enableScissor(tx + 1, Math.max(ty + 1, y), tx + tw - 1, Math.min(ty + th - 1, y + h));
+                    annotView.drawStrokes(g, ann, sc);
+                    g.disableScissor();
+                }
+            } else {
+                String s = e.failed ? "✖" : "…";
+                g.text(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
+            }
+            g.outline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
+            int idx = i;
+            if (clipH > 0) {
+                hit(tx, clipY, tw, clipH, () -> openViewer(marker, idx));
+            }
+            if (edit) {
+                int dx = tx + tw - 12;
+                int dy = ty + 2;
+                boolean dh = hover && Paper.inside(mx, my, dx, dy, 10, 10);
+                g.fill(dx, dy, dx + 10, dy + 10, dh ? 0xE0F6ECD0 : 0xB0F6ECD0);
+                g.outline(dx, dy, 10, 10, Paper.INK);
+                Paper.icon(g, Paper.tool("close"), dx + 1, dy + 1, 8);
+                if (dh) {
+                    tooltip = T.tr("shots.remove");
+                }
+                if (dy >= y && dy + 10 <= y + h) {
+                    hit(dx, dy, 10, 10, () -> {
+                        String f = working.screenshots.remove(idx);
+                        working.shotDrawings.remove(f);
+                        if (addedFiles.remove(f)) {
+                            deleteShot(f);
+                        } else {
+                            removedFiles.add(f);
+                        }
+                    });
+                }
+            }
+        }
+        g.disableScissor();
+    }
+
+    private void hint(GuiGraphicsExtractor g, EditBox box, String text) {
+        if (box.getValue().isEmpty() && !box.isFocused()) {
+            g.text(font, font.plainSubstrByWidth(text, box.getWidth()), box.getX(), box.getY(), 0xFF9A8A70, false);
+        }
+    }
+
+    private void closeButton(GuiGraphicsExtractor g, int mx, int my, int x, int y, Runnable action) {
+        boolean h = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, 13, 13);
+        Paper.iconButton(g, Paper.tool("close"), x, y, 13, h, false);
+        hit(x, y, 13, 13, action);
+    }
+
+    // ------------------------------------------------------------------ overlays
+
+    private void blocker(Runnable onOutside) {
+        hit(0, 0, width, height, onOutside, onOutside);
+    }
+
+    private void drawIconPicker(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        g.fill(0, 0, width, height, 0x60100A05);
+        int cell = 22;
+        int catW = Math.min(100, Math.max(70, width / 6));
+        int ow = Math.min(width - 16, catW + 16 * cell + 34);
+        int gridW = ow - catW - 26;
+        int cols = Math.max(4, gridW / cell);
+        int oh = height - 16;
+        int ox = (width - ow) / 2;
+        int oy = 8;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("edit.choose_icon") + "  (" + T.MARKER_ICONS.size() + ")", ox + ow / 2, oy + 7);
+        boolean hc = Paper.inside(mx, my, ox + ow - 18, oy + 5, 13, 13);
+        Paper.iconButton(g, Paper.tool("close"), ox + ow - 18, oy + 5, 13, hc, false);
+        hit(ox + ow - 18, oy + 5, 13, 13, () -> overlay = Overlay.NONE);
+
+        int gx = ox + catW + 14;
+        // search field
+        int sy = oy + 20;
+        Paper.inset(g, gx, sy, gridW, 15);
+        Paper.icon(g, Paper.tool("zoom_in"), gx + 2, sy + 2, 11);
+        iconSearch.setX(gx + 16);
+        iconSearch.setY(sy + 4);
+        iconSearch.setWidth(gridW - 20);
+        iconSearch.extractRenderState(g, mx, my, 0);
+        if (iconSearch.getValue().isEmpty()) {
+            g.text(font, font.plainSubstrByWidth(T.s("icons.search_hint"), gridW - 26), gx + 20, sy + 4, 0xFF9A8A70, false);
+        }
+
+        int top = sy + 19;
+        int bottom = oy + oh - 8;
+        String query = iconSearch.getValue().trim();
+        Map<String, List<String>> shown = new LinkedHashMap<>();
+        if (query.isEmpty()) {
+            shown.putAll(T.ICON_GROUPS);
+        } else {
+            shown.put("", T.searchIcons(query));
+        }
+
+        // category column
+        int cy0 = sy;
+        String currentGroup = null;
+        for (String gid : T.ICON_GROUPS.keySet()) {
+            Integer off = iconGroupOffsets.get(gid);
+            if (query.isEmpty() && off != null && off <= iconScroll + 4) {
+                currentGroup = gid;
+            }
+        }
+        for (String gid : T.ICON_GROUPS.keySet()) {
+            boolean hover = Paper.inside(mx, my, ox + 8, cy0, catW, 15);
+            boolean cur = gid.equals(currentGroup);
+            if (cur) {
+                g.fill(ox + 8, cy0, ox + 8 + catW, cy0 + 15, 0x50B88C2C);
+                g.outline(ox + 8, cy0, catW, 15, Paper.GOLD);
+            } else if (hover) {
+                g.fill(ox + 8, cy0, ox + 8 + catW, cy0 + 15, 0x30FFFFFF);
+            }
+            String label = font.plainSubstrByWidth(T.groupName(gid), catW - 24);
+            if (hover && !label.equals(T.groupName(gid))) {
+                tooltip = Component.literal(T.groupName(gid));
+            }
+            g.text(font, label, ox + 12, cy0 + 4, cur ? Paper.INK : Paper.INK_SOFT, false);
+            String cnt = Integer.toString(T.ICON_GROUPS.get(gid).size());
+            g.text(font, cnt, ox + 8 + catW - 3 - font.width(cnt), cy0 + 4, 0xFF9A8A70, false);
+            hit(ox + 8, cy0, catW, 15, () -> {
+                iconSearch.setValue("");
+                Integer off = iconGroupOffsets.get(gid);
+                iconScroll = off == null ? 0 : off;
+                Paper.click();
+            });
+            cy0 += 17;
+        }
+        g.fill(ox + catW + 10, sy, ox + catW + 11, bottom, Paper.INK_FAINT);
+
+        // grid
+        int contentH = 0;
+        for (List<String> icons : shown.values()) {
+            contentH += 14 + (icons.size() + cols - 1) / cols * cell + 4;
+        }
+        double max = Math.max(0, contentH - (bottom - top));
+        iconScroll = Math.max(0, Math.min(max, iconScroll));
+        scroll(gx, top, gridW, bottom - top, d -> iconScroll -= d * cell * 2);
+        g.enableScissor(gx - 2, top, gx + gridW + 2, bottom);
+        int y = top - (int) iconScroll;
+        int offset = 0;
+        for (var group : shown.entrySet()) {
+            String gid = group.getKey();
+            List<String> icons = group.getValue();
+            if (query.isEmpty()) {
+                iconGroupOffsets.put(gid, offset);
+            }
+            String title = gid.isEmpty() ? T.s("icons.found", icons.size()) : T.groupName(gid);
+            g.text(font, title, gx, y + 3, Paper.INK_SOFT, false);
+            Paper.separator(g, gx + font.width(title) + 6, y + 7, gridW - font.width(title) - 6);
+            int blockH = 14 + (icons.size() + cols - 1) / cols * cell + 4;
+            y += 14;
+            for (int i = 0; i < icons.size(); i++) {
+                String icon = icons.get(i);
+                int cx = gx + (i % cols) * cell;
+                int cy = y + (i / cols) * cell;
+                if (cy + cell < top || cy > bottom) {
+                    continue;
+                }
+                boolean hover = Paper.inside(mx, my, cx, cy, cell - 2, cell - 2) && my >= top && my < bottom;
+                boolean sel = working != null && icon.equals(working.icon);
+                if (sel) {
+                    g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x50B88C2C);
+                    g.outline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
+                } else if (hover) {
+                    g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
+                    g.outline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
+                }
+                Paper.icon(g, Paper.marker(icon), cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16);
+                if (hover) {
+                    tooltip = Component.literal(T.iconName(icon));
+                }
+                int clipY = Math.max(cy, top);
+                int clipH = Math.min(cy + cell - 2, bottom) - clipY;
+                if (clipH > 0) {
+                    hit(cx, clipY, cell - 2, clipH, () -> {
+                        if (working != null) {
+                            working.icon = icon;
+                        }
+                        overlay = Overlay.NONE;
+                        Paper.click();
+                    });
+                }
+            }
+            y += blockH - 14;
+            offset += blockH;
+        }
+        if (!query.isEmpty() && shown.get("").isEmpty()) {
+            g.text(font, T.s("list.nothing_found"), gx, top + 18, 0xFF8A7A62, false);
+        }
+        g.disableScissor();
+    }
+
+    private void openPicker() {
+        pickerChosen.clear();
+        pickerScroll = 0;
+        pickerFiles = new ArrayList<>();
+        Path dir = Minecraft.getInstance().gameDirectory.toPath().resolve("screenshots");
+        if (Files.isDirectory(dir)) {
+            try (Stream<Path> s = Files.list(dir)) {
+                pickerFiles = s.filter(p -> {
+                            String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+                            return n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg");
+                        })
+                        .sorted(Comparator.comparingLong((Path p) -> p.toFile().lastModified()).reversed())
+                        .limit(300)
+                        .toList();
+            } catch (IOException e) {
+                Storage.LOG.warn("Failed to list screenshots", e);
+            }
+        }
+        overlay = Overlay.PICKER;
+    }
+
+    private void drawShotPicker(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> {
+        });
+        g.fill(0, 0, width, height, 0x70100A05);
+        int ow = Math.min(width - 30, 440);
+        int oh = height - 30;
+        int ox = (width - ow) / 2;
+        int oy = 15;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("shots.title"), ox + ow / 2, oy + 8);
+        List<FormattedCharSequence> hint = font.split(T.tr("shots.hint"), ow - 24);
+        int y = oy + 22;
+        for (FormattedCharSequence l : hint) {
+            g.text(font, l, ox + 12, y, Paper.INK_SOFT, false);
+            y += 10;
+        }
+        y += 4;
+        int bottom = oy + oh - 28;
+        int gx = ox + 10;
+        int gw = ow - 20;
+        int cols = gw >= 330 ? 4 : 3;
+        int gap = 5;
+        int tw = (gw - gap * (cols - 1)) / cols;
+        int th = tw * 9 / 16;
+        int rows = (pickerFiles.size() + cols - 1) / cols;
+        int areaH = bottom - y;
+        double max = Math.max(0, rows * (th + gap) - areaH);
+        pickerScroll = Math.max(0, Math.min(max, pickerScroll));
+        scroll(gx, y, gw, areaH, d -> pickerScroll -= d * (th + gap) / 2.0);
+        if (pickerFiles.isEmpty()) {
+            for (FormattedCharSequence l : font.split(T.tr("shots.empty"), gw - 10)) {
+                g.text(font, l, gx + 4, y + 6, 0xFF8A7A62, false);
+                y += 10;
+            }
+        } else {
+            g.enableScissor(gx - 1, y, gx + gw + 1, bottom);
+            for (int i = 0; i < pickerFiles.size(); i++) {
+                int tx = gx + (i % cols) * (tw + gap);
+                int ty = y + (i / cols) * (th + gap) - (int) pickerScroll;
+                if (ty + th < y || ty > bottom) {
+                    continue;
+                }
+                Path p = pickerFiles.get(i);
+                boolean chosen = pickerChosen.contains(p);
+                boolean hover = Paper.inside(mx, my, tx, ty, tw, th) && my >= y && my < bottom;
+                Paper.inset(g, tx, ty, tw, th);
+                ImageCache.Entry e = ImageCache.get(p, true);
+                if (e.ready()) {
+                    ImageCache.drawCover(g, e, tx + 1, ty + 1, tw - 2, th - 2);
+                }
+                if (chosen) {
+                    g.fill(tx, ty, tx + tw, ty + th, 0x40EACA6C);
+                    Paper.icon(g, Paper.tool("check"), tx + tw - 18, ty + 2, 16);
+                }
+                g.outline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
+                if (hover) {
+                    tooltip = Component.literal(p.getFileName().toString());
+                }
+                int clipY = Math.max(ty, y);
+                int clipH = Math.min(ty + th, bottom) - clipY;
+                if (clipH > 0 && !chosen) {
+                    hit(tx, clipY, tw, clipH, () -> {
+                        pickerChosen.add(p);
+                        importShot(p);
+                        Paper.click();
+                    });
+                }
+            }
+            g.disableScissor();
+        }
+        int bw = 110;
+        int by = oy + oh - 22;
+        boolean h1 = Paper.inside(mx, my, ox + 10, by, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("folder"), T.tr("shots.from_file"), ox + 10, by, bw, 16, h1, true);
+        hit(ox + 10, by, bw, 16, this::openFileDialog);
+        boolean h2 = Paper.inside(mx, my, ox + ow - bw - 10, by, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("check"), T.tr("button.done"), ox + ow - bw - 10, by, bw, 16, h2, true);
+        hit(ox + ow - bw - 10, by, bw, 16, () -> overlay = Overlay.NONE);
+    }
+
+    private void openViewer(Marker marker, int index) {
+        viewerMarker = marker;
+        viewerNames = new ArrayList<>(marker.screenshots);
+        viewerFiles = viewerNames.stream().map(session::screenshot).toList();
+        viewerIndex = index;
+        annotating = false;
+        annotCurrent = null;
+        overlay = Overlay.VIEWER;
+    }
+
+    private void drawViewer(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> {
+            if (!annotating) {
+                overlay = Overlay.NONE;
+            }
+        });
+        g.fill(0, 0, width, height, 0xD0140C06);
+        if (viewerFiles.isEmpty()) {
+            overlay = Overlay.NONE;
+            return;
+        }
+        viewerIndex = Math.floorMod(viewerIndex, viewerFiles.size());
+        Path p = viewerFiles.get(viewerIndex);
+        String name = viewerNames.get(viewerIndex);
+        ImageCache.Entry e = ImageCache.get(p, false);
+        ImageCache.Entry thumb = ImageCache.get(p, true);
+        int top = annotating ? 6 + DRAW_BAR_H + 10 : 14;
+        int maxW = width - 80;
+        int maxH = height - top - 32;
+        ImageCache.Entry show = e.ready() ? e : thumb;
+        int iw = 160;
+        int ih = 90;
+        if (show.ready()) {
+            float s = Math.min(maxW / (float) show.width, maxH / (float) show.height);
+            iw = Math.round(show.width * s);
+            ih = Math.round(show.height * s);
+        }
+        int ix = (width - iw) / 2;
+        int iy = top + (maxH - ih) / 2;
+        viewerRect = new int[]{ix, iy, iw, ih};
+        Paper.panel(g, ix - 6, iy - 6, iw + 12, ih + 12);
+        hit(ix - 6, iy - 6, iw + 12, ih + 12, () -> {
+        });
+        if (show.ready()) {
+            ImageCache.drawFit(g, show, ix, iy, iw, ih);
+            int ow = show.origWidth > 0 ? show.origWidth : show.width;
+            int oh = show.origHeight > 0 ? show.origHeight : show.height;
+            annotView.setRect(ix, iy, iw, ih);
+            annotView.zoom = iw / (float) ow;
+            annotView.cx = ow / 2.0;
+            annotView.cz = oh / 2.0;
+            g.enableScissor(ix, iy, ix + iw, iy + ih);
+            annotView.drawStrokes(g, viewerMarker.drawingsFor(name), annotView.zoom);
+            if (annotCurrent != null) {
+                annotView.drawStroke(g, annotCurrent, annotView.zoom);
+            }
+            g.disableScissor();
+            if (annotating && drawTool == DrawTool.ERASER && Paper.inside(mx, my, ix, iy, iw, ih)) {
+                g.outline(mx - 6, my - 6, 12, 12, Paper.RED);
+            }
+        } else {
+            String s = show.failed ? T.s("shots.failed") : T.s("shots.loading");
+            g.text(font, s, ix + (iw - font.width(s)) / 2, iy + ih / 2 - 4, Paper.INK, false);
+        }
+        if (viewerFiles.size() > 1) {
+            boolean hl = Paper.inside(mx, my, 10, height / 2 - 12, 24, 24);
+            Paper.iconButton(g, Paper.tool("left"), 10, height / 2 - 12, 24, hl, false);
+            hit(10, height / 2 - 12, 24, 24, () -> switchShot(-1));
+            boolean hr = Paper.inside(mx, my, width - 34, height / 2 - 12, 24, 24);
+            Paper.iconButton(g, Paper.tool("right"), width - 34, height / 2 - 12, 24, hr, false);
+            hit(width - 34, height / 2 - 12, 24, 24, () -> switchShot(1));
+        }
+        String cap = T.s(annotating ? "shots.draw_hint" : "shots.counter", viewerIndex + 1, viewerFiles.size());
+        int cw = font.width(cap) + 16;
+        Paper.panel(g, (width - cw) / 2, height - 22, cw, 16);
+        g.text(font, cap, (width - cw) / 2 + 8, height - 18, Paper.INK, false);
+        boolean hc = Paper.inside(mx, my, width - 24, 6, 18, 18);
+        Paper.iconButton(g, Paper.tool("close"), width - 24, 6, 18, hc, false);
+        hit(width - 24, 6, 18, 18, () -> {
+            annotating = false;
+            overlay = Overlay.NONE;
+        });
+        boolean hd = Paper.inside(mx, my, width - 46, 6, 18, 18);
+        Paper.iconButton(g, Paper.tool("quill"), width - 46, 6, 18, hd, annotating);
+        if (hd) {
+            tooltip = T.tr(annotating ? "shots.draw_stop" : "shots.draw");
+        }
+        hit(width - 46, 6, 18, 18, () -> {
+            annotating = !annotating;
+            annotCurrent = null;
+            Paper.click();
+        });
+        if (annotating) {
+            List<Stroke> list = viewerMarker.drawingsFor(name);
+            drawToolBar(g, mx, my, (width - DRAW_BAR_W) / 2, 6, true, this::undo, () -> {
+                if (!list.isEmpty()) {
+                    List<Stroke> copy = new ArrayList<>(list);
+                    list.clear();
+                    undo.push(() -> list.addAll(copy));
+                    annotationsChanged();
+                }
+            }, T.tr("shots.clear_drawings"));
+        }
+    }
+
+    private void switchShot(int d) {
+        viewerIndex += d;
+        annotCurrent = null;
+    }
+
+    /** Drawings of the marker being edited are stored on "Save"; otherwise they are written right away. */
+    private void annotationsChanged() {
+        if (viewerMarker != working) {
+            session.saveMarkers();
+        }
+    }
+
+    private String currentShot() {
+        return viewerNames.get(Math.floorMod(viewerIndex, viewerNames.size()));
+    }
+
+    private boolean annotationPress(double mx, double my, int button) {
+        if (!annotating || button != InputConstants.MOUSE_BUTTON_LEFT || viewerRect == null
+                || !Paper.inside(mx, my, viewerRect[0], viewerRect[1], viewerRect[2], viewerRect[3])) {
+            return false;
+        }
+        annotPressed = true;
+        double wx = annotView.wx(mx);
+        double wz = annotView.wz(my);
+        int c = COLORS[colorIdx];
+        int w = Math.max(1, Math.round(WIDTHS[widthIdx] / annotView.zoom));
+        switch (drawTool) {
+            case ERASER -> {
+                erased = null;
+                eraseShotAt(mx, my);
+            }
+            case PEN -> annotCurrent = new Stroke(Stroke.PEN, c, w, new double[]{wx, wz});
+            case LINE -> annotCurrent = new Stroke(Stroke.LINE, c, w, new double[]{wx, wz, wx, wz});
+            case RECT -> annotCurrent = new Stroke(Stroke.RECT, c, w, new double[]{wx, wz, wx, wz});
+            case CIRCLE -> annotCurrent = new Stroke(Stroke.CIRCLE, c, w, new double[]{wx, wz, wx, wz});
+        }
+        return true;
+    }
+
+    private void annotationDrag(double mx, double my) {
+        if (drawTool == DrawTool.ERASER) {
+            eraseShotAt(mx, my);
+            return;
+        }
+        if (annotCurrent == null) {
+            return;
+        }
+        double wx = annotView.wx(mx);
+        double wz = annotView.wz(my);
+        if (drawTool == DrawTool.PEN) {
+            double[] p = annotCurrent.pts;
+            if (Math.hypot(mx - annotView.sx(p[p.length - 2]), my - annotView.sy(p[p.length - 1])) >= 2) {
+                annotCurrent.addPoint(wx, wz);
+            }
+        } else {
+            annotCurrent.pts[2] = wx;
+            annotCurrent.pts[3] = wz;
+        }
+    }
+
+    private void annotationRelease() {
+        annotPressed = false;
+        List<Stroke> list = viewerMarker.drawingsFor(currentShot());
+        if (drawTool == DrawTool.ERASER) {
+            if (erased != null && !erased.isEmpty()) {
+                List<Stroke> removed = erased;
+                undo.push(() -> list.addAll(removed));
+                annotationsChanged();
+            }
+            erased = null;
+            return;
+        }
+        Stroke s = annotCurrent;
+        annotCurrent = null;
+        if (s == null) {
+            return;
+        }
+        boolean valid = s.type.equals(Stroke.PEN)
+                || Math.hypot(annotView.sx(s.pts[2]) - annotView.sx(s.pts[0]), annotView.sy(s.pts[3]) - annotView.sy(s.pts[1])) > 2;
+        if (valid) {
+            list.add(s);
+            undo.push(() -> list.remove(s));
+            annotationsChanged();
+        }
+    }
+
+    private void eraseShotAt(double mx, double my) {
+        List<Stroke> list = viewerMarker.drawingsFor(currentShot());
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Stroke st = list.get(i);
+            if (annotView.distanceTo(st, mx, my) <= 6 + st.width * annotView.zoom / 2.0) {
+                list.remove(i);
+                if (erased == null) {
+                    erased = new ArrayList<>();
+                }
+                erased.add(st);
+            }
+        }
+    }
+
+    private void confirm(Component text, Runnable action) {
+        confirmText = text;
+        confirmAction = action;
+        overlay = Overlay.CONFIRM;
+    }
+
+    private void drawConfirm(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        g.fill(0, 0, width, height, 0x60100A05);
+        int ow = Math.min(240, width - 20);
+        List<FormattedCharSequence> lines = font.split(confirmText, ow - 24);
+        int oh = lines.size() * 10 + 50;
+        int ox = (width - ow) / 2;
+        int oy = (height - oh) / 2;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        int y = oy + 12;
+        for (FormattedCharSequence l : lines) {
+            g.text(font, l, ox + (ow - font.width(l)) / 2, y, Paper.INK, false);
+            y += 10;
+        }
+        int bw = 80;
+        int by = oy + oh - 24;
+        int bx1 = ox + ow / 2 - bw - 4;
+        int bx2 = ox + ow / 2 + 4;
+        boolean h1 = Paper.inside(mx, my, bx1, by, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("check"), T.tr("button.yes"), bx1, by, bw, 16, h1, true);
+        hit(bx1, by, bw, 16, () -> {
+            overlay = Overlay.NONE;
+            if (confirmAction != null) {
+                confirmAction.run();
+            }
+        });
+        boolean h2 = Paper.inside(mx, my, bx2, by, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("close"), T.tr("button.no"), bx2, by, bw, 16, h2, true);
+        hit(bx2, by, bw, 16, () -> overlay = Overlay.NONE);
+    }
+
+    private void drawSettings(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        String[] corners = {"corner.tr", "corner.tl", "corner.br", "corner.bl"};
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(new Object[]{T.tr("settings.minimap", onOff(cfg.minimapEnabled)), (Runnable) () -> cfg.minimapEnabled = !cfg.minimapEnabled});
+        rows.add(new Object[]{T.tr("settings.size", cfg.minimapSize()), (Runnable) () -> cfg.minimapSizeIndex = (cfg.minimapSizeIndex + 1) % ModConfig.MINIMAP_SIZES.length});
+        rows.add(new Object[]{T.tr("settings.zoom", fmtZoom(cfg.minimapZoom())), (Runnable) () -> cfg.minimapZoomIndex = (cfg.minimapZoomIndex + 1) % ModConfig.MINIMAP_ZOOMS.length});
+        rows.add(new Object[]{T.tr("settings.corner", T.tr(corners[cfg.minimapCorner])), (Runnable) () -> cfg.minimapCorner = (cfg.minimapCorner + 1) % 4});
+        rows.add(new Object[]{T.tr("settings.coords", onOff(cfg.minimapCoords)), (Runnable) () -> cfg.minimapCoords = !cfg.minimapCoords});
+        rows.add(new Object[]{T.tr("settings.mm_markers", onOff(cfg.minimapMarkers)), (Runnable) () -> cfg.minimapMarkers = !cfg.minimapMarkers});
+        int ow = 190;
+        int oh = rows.size() * 19 + 28;
+        int ox = 6 + TB + 8;
+        int oy = Math.min(height - oh - 6, 6 + 9 * (TB + 3));
+        oy = Math.max(6, oy);
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("settings.title"), ox + ow / 2, oy + 8);
+        int y = oy + 22;
+        for (Object[] row : rows) {
+            boolean h = Paper.inside(mx, my, ox + 8, y, ow - 16, 16);
+            Paper.button(g, font, (Component) row[0], ox + 8, y, ow - 16, 16, h, true);
+            Runnable a = (Runnable) row[1];
+            hit(ox + 8, y, ow - 16, 16, () -> {
+                a.run();
+                cfg.save();
+                Paper.click();
+            });
+            y += 19;
+        }
+    }
+
+    private void drawDims(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        List<String> dims = session.knownDims();
+        if (!dims.contains(dim)) {
+            dims.add(dim);
+        }
+        int ow = 150;
+        int oh = dims.size() * 19 + 28;
+        int ox = 6 + TB + 8;
+        int oy = Math.max(6, Math.min(height - oh - 6, 6 + 8 * (TB + 3)));
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("dims.title"), ox + ow / 2, oy + 8);
+        int y = oy + 22;
+        for (String d : dims) {
+            boolean h = Paper.inside(mx, my, ox + 8, y, ow - 16, 16);
+            boolean cur = d.equals(dim);
+            Paper.button(g, font, Component.literal((cur ? "» " : "") + T.dimName(d) + (cur ? " «" : "")), ox + 8, y, ow - 16, 16, h, true);
+            hit(ox + 8, y, ow - 16, 16, () -> {
+                switchDim(d);
+                overlay = Overlay.NONE;
+            });
+            y += 19;
+        }
+    }
+
+    // ------------------------------------------------------------------ actions
+
+    private void setTool(Tool t) {
+        tool = t;
+        if (t != Tool.NONE && freeRight() - freeLeft() < 230) {
+            listOpen = false;
+        }
+        current = null;
+        if (t != Tool.RULER) {
+            ruler.clear();
+        }
+        Paper.click();
+    }
+
+    private void toggleDrawings() {
+        cfg.drawingsVisible = !cfg.drawingsVisible;
+        cfg.save();
+    }
+
+    private void centerOnPlayer() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.level != null) {
+            String d = mc.level.dimension().identifier().toString();
+            if (!d.equals(dim)) {
+                switchDim(d);
+            }
+            view.cx = mc.player.getX();
+            view.cz = mc.player.getZ();
+        }
+    }
+
+    private void centerOn(Marker m) {
+        if (!m.dim.equals(dim)) {
+            switchDim(m.dim);
+        }
+        view.cx = m.x + 0.5;
+        view.cz = m.z + 0.5;
+        if (view.zoom < 1f) {
+            view.zoom = 2f;
+        }
+    }
+
+    private void switchDim(String d) {
+        if (d.equals(dim)) {
+            return;
+        }
+        dim = d;
+        ruler.clear();
+        current = null;
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.player != null && mc.level != null && d.equals(mc.level.dimension().identifier().toString())) {
+            view.cx = mc.player.getX();
+            view.cz = mc.player.getZ();
+        } else {
+            double sx = 0;
+            double sz = 0;
+            int n = 0;
+            for (Marker m : session.markers) {
+                if (m.dim.equals(d)) {
+                    sx += m.x;
+                    sz += m.z;
+                    n++;
+                }
+            }
+            view.cx = n > 0 ? sx / n : 0;
+            view.cz = n > 0 ? sz / n : 0;
+        }
+    }
+
+    private void zoomBy(float factor, double mx, double my) {
+        float z = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.zoom * factor));
+        view.zoomAt(mx, my, z);
+    }
+
+    private void createMarker(int x, int y, int z) {
+        Marker m = new Marker();
+        m.x = x;
+        m.y = y;
+        m.z = z;
+        m.dim = dim;
+        m.name = T.s("marker.default_name", session.markers.size() + 1);
+        session.markers.add(m);
+        openEdit(m, true);
+        Paper.pageTurn();
+    }
+
+    private int surfaceY(int x, int z) {
+        Minecraft mc = Minecraft.getInstance();
+        if (session.isLive() && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+            if (mc.level.hasChunk(x >> 4, z >> 4) && !mc.level.dimensionType().hasCeiling()) {
+                return mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+            }
+            if (mc.player != null) {
+                return mc.player.getBlockY();
+            }
+        }
+        return 64;
+    }
+
+    private void openView(Marker m, boolean center) {
+        commitEdit();
+        selected = m;
+        panel = Panel.VIEW;
+        descScroll = 0;
+        shotsScroll = 0;
+        if (center) {
+            centerOn(m);
+        }
+    }
+
+    private void openEdit(Marker m, boolean isNew) {
+        if (panel == Panel.EDIT && working != null && selected == m) {
+            return;
+        }
+        commitEdit();
+        selected = m;
+        working = m.copy();
+        workingIsNew = isNew;
+        addedFiles.clear();
+        removedFiles.clear();
+        shotsScroll = 0;
+        panel = Panel.EDIT;
+        if (nameBox != null) {
+            fillWidgets();
+            setFocused(nameBox);
+            nameBox.moveCursorToEnd(false);
+        }
+    }
+
+    /** Applies the working copy to the marker (if the edit panel is open). */
+    private void commitEdit() {
+        if (panel != Panel.EDIT || working == null || selected == null) {
+            return;
+        }
+        working.x = parse(xBox.getValue(), working.x);
+        working.y = parse(yBox.getValue(), working.y);
+        working.z = parse(zBox.getValue(), working.z);
+        selected.apply(working);
+        for (String f : removedFiles) {
+            deleteShot(f);
+        }
+        removedFiles.clear();
+        addedFiles.clear();
+        working = null;
+        workingIsNew = false;
+        panel = Panel.NONE;
+        session.saveMarkers();
+    }
+
+    private void saveAndView() {
+        Marker m = selected;
+        commitEdit();
+        if (m != null) {
+            selected = m;
+            panel = Panel.VIEW;
+        }
+        Paper.click();
+    }
+
+    private void cancelEdit() {
+        for (String f : addedFiles) {
+            deleteShot(f);
+        }
+        addedFiles.clear();
+        removedFiles.clear();
+        if (workingIsNew && selected != null) {
+            session.markers.remove(selected);
+            selected = null;
+            panel = Panel.NONE;
+        } else {
+            panel = selected != null ? Panel.VIEW : Panel.NONE;
+        }
+        working = null;
+        workingIsNew = false;
+        setFocused(null);
+    }
+
+    private void closePanel() {
+        commitEdit();
+        panel = Panel.NONE;
+        selected = null;
+        setFocused(null);
+    }
+
+    private void confirmDelete(Marker m) {
+        if (m == null) {
+            return;
+        }
+        confirm(T.tr("confirm.delete_marker", m.name.isEmpty() ? T.s("marker.unnamed") : m.name), () -> {
+            session.markers.remove(m);
+            for (String f : m.screenshots) {
+                deleteShot(f);
+            }
+            if (working != null) {
+                for (String f : working.screenshots) {
+                    deleteShot(f);
+                }
+            }
+            working = null;
+            workingIsNew = false;
+            selected = null;
+            panel = Panel.NONE;
+            setFocused(null);
+            session.saveMarkers();
+        });
+    }
+
+    private void deleteShot(String file) {
+        Path p = session.screenshot(file);
+        Storage.IO.execute(() -> {
+            try {
+                Files.deleteIfExists(p);
+            } catch (IOException e) {
+                Storage.LOG.warn("Failed to delete {}", p, e);
+            }
+        });
+    }
+
+    private void importShot(Path source) {
+        Marker target = working;
+        if (target == null) {
+            return;
+        }
+        ImageCache.importImage(source, session.screenshotsDir()).thenAcceptAsync(name -> {
+            if (name == null) {
+                return;
+            }
+            if (working == target) {
+                target.screenshots.add(name);
+                addedFiles.add(name);
+            } else {
+                deleteShot(name);
+            }
+        }, Minecraft.getInstance());
+    }
+
+    private void openFileDialog() {
+        Path start = Minecraft.getInstance().gameDirectory.toPath().resolve("screenshots");
+        FileDialogs.openImages(T.s("shots.dialog_title"), start, paths -> {
+            for (Path p : paths) {
+                importShot(p);
+            }
+        });
+    }
+
+    @Override
+    public void onFilesDrop(List<Path> files) {
+        if (panel != Panel.EDIT || working == null) {
+            return;
+        }
+        for (Path p : files) {
+            String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+            if (n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg")) {
+                importShot(p);
+            }
+        }
+    }
+
+    private void undo() {
+        Runnable r = undo.poll();
+        if (r != null) {
+            r.run();
+            session.saveStrokes();
+            session.saveMarkers();
+        }
+    }
+
+    private void clearDrawings() {
+        List<Stroke> list = session.strokes(dim);
+        List<Stroke> copy = new ArrayList<>(list);
+        list.clear();
+        undo.push(() -> list.addAll(copy));
+        session.saveStrokes();
+    }
+
+    private void eraseAt(double mx, double my) {
+        List<Stroke> list = session.strokes(dim);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Stroke s = list.get(i);
+            if (view.distanceTo(s, mx, my) <= 6 + s.width / 2.0) {
+                list.remove(i);
+                if (erased == null) {
+                    erased = new ArrayList<>();
+                }
+                erased.add(s);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ input
+
+    private void hit(int x, int y, int w, int h, Runnable left) {
+        hits.add(new Hit(x, y, w, h, left, null));
+    }
+
+    private void hit(int x, int y, int w, int h, Runnable left, Runnable right) {
+        hits.add(new Hit(x, y, w, h, left, right));
+    }
+
+    private void scroll(int x, int y, int w, int h, DoubleConsumer c) {
+        scrolls.add(new ScrollArea(x, y, w, h, c));
+    }
+
+    private void ui(int x, int y, int w, int h) {
+        uiRects.add(new int[]{x, y, w, h});
+    }
+
+    private boolean mouseOverMap(double mx, double my) {
+        if (overlay != Overlay.NONE) {
+            return false;
+        }
+        for (int[] r : lastUiRects) {
+            if (Paper.inside(mx, my, r[0], r[1], r[2], r[3])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Marker hoveredMarker(double mx, double my) {
+        if (!mouseOverMap(mx, my) || pressed && dragging) {
+            return null;
+        }
+        return view.markerAt(session.markers, dim, mx, my, 16);
+    }
+
+    private boolean typing() {
+        GuiEventListener f = getFocused();
+        return f instanceof EditBox e && e.isFocused() && e.isVisible()
+                || f instanceof MultiLineEditBox b && b.isFocused() && b.visible;
+    }
+
+    private void updateWidgetVisibility() {
+        boolean edit = panel == Panel.EDIT && working != null;
+        nameBox.setVisible(edit);
+        xBox.setVisible(edit);
+        yBox.setVisible(edit);
+        zBox.setVisible(edit);
+        descBox.visible = edit;
+        searchBox.setVisible(listOpen);
+        iconSearch.setVisible(overlay == Overlay.ICONS);
+        GuiEventListener f = getFocused();
+        if (f instanceof EditBox e && !e.isVisible() || f instanceof MultiLineEditBox b && !b.visible) {
+            setFocused(null);
+        }
+    }
+
+    private boolean runHits(double mx, double my, int button) {
+        int from = modalStart >= 0 ? modalStart : 0;
+        for (int i = hits.size() - 1; i >= from; i--) {
+            Hit h = hits.get(i);
+            if (Paper.inside(mx, my, h.x, h.y, h.w, h.h)) {
+                Runnable r = button == InputConstants.MOUSE_BUTTON_RIGHT ? h.right : h.left;
+                if (r != null) {
+                    r.run();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+        double mx = e.x();
+        double my = e.y();
+        int button = e.button();
+        if (overlay == Overlay.VIEWER && annotationPress(mx, my, button)) {
+            return true;
+        }
+        if (overlay == Overlay.ICONS && iconSearch.isMouseOver(mx, my)) {
+            setFocused(iconSearch);
+            iconSearch.mouseClicked(e, doubleClick);
+            return true;
+        }
+        if (overlay != Overlay.NONE) {
+            runHits(mx, my, button);
+            return true;
+        }
+        if (super.mouseClicked(e, doubleClick)) {
+            return true;
+        }
+        setFocused(null);
+        if (runHits(mx, my, button)) {
+            return true;
+        }
+        pressed = true;
+        pressButton = button;
+        pressX = mx;
+        pressY = my;
+        pressCX = view.cx;
+        pressCZ = view.cz;
+        dragging = false;
+        if (tool == Tool.DRAW && button == InputConstants.MOUSE_BUTTON_LEFT) {
+            double wx = view.wx(mx);
+            double wz = view.wz(my);
+            int c = COLORS[colorIdx];
+            int w = WIDTHS[widthIdx];
+            switch (drawTool) {
+                case ERASER -> {
+                    erased = null;
+                    eraseAt(mx, my);
+                }
+                case PEN -> current = new Stroke(Stroke.PEN, c, w, new double[]{wx, wz});
+                case LINE -> current = new Stroke(Stroke.LINE, c, w, new double[]{wx, wz, wx, wz});
+                case RECT -> current = new Stroke(Stroke.RECT, c, w, new double[]{wx, wz, wx, wz});
+                case CIRCLE -> current = new Stroke(Stroke.CIRCLE, c, w, new double[]{wx, wz, wx, wz});
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
+        if (annotPressed) {
+            annotationDrag(e.x(), e.y());
+            return true;
+        }
+        if (!pressed) {
+            return super.mouseDragged(e, dx, dy);
+        }
+        double mx = e.x();
+        double my = e.y();
+        if (tool == Tool.DRAW && pressButton == 0) {
+            if (drawTool == DrawTool.ERASER) {
+                eraseAt(mx, my);
+            } else if (current != null) {
+                double wx = view.wx(mx);
+                double wz = view.wz(my);
+                if (drawTool == DrawTool.PEN) {
+                    double[] p = current.pts;
+                    double lx = view.sx(p[p.length - 2]);
+                    double ly = view.sy(p[p.length - 1]);
+                    if (Math.hypot(mx - lx, my - ly) >= 2) {
+                        current.addPoint(wx, wz);
+                    }
+                } else {
+                    current.pts[2] = wx;
+                    current.pts[3] = wz;
+                }
+            }
+            return true;
+        }
+        if (!dragging && Math.hypot(mx - pressX, my - pressY) > 3) {
+            dragging = true;
+        }
+        if (dragging) {
+            view.cx = pressCX - (mx - pressX) / view.zoom;
+            view.cz = pressCZ - (my - pressY) / view.zoom;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent e) {
+        if (annotPressed) {
+            annotationRelease();
+            return true;
+        }
+        if (!pressed) {
+            return super.mouseReleased(e);
+        }
+        pressed = false;
+        double mx = e.x();
+        double my = e.y();
+        if (tool == Tool.DRAW && pressButton == 0) {
+            if (drawTool == DrawTool.ERASER) {
+                if (erased != null && !erased.isEmpty()) {
+                    List<Stroke> list = session.strokes(dim);
+                    List<Stroke> removed = erased;
+                    undo.push(() -> list.addAll(removed));
+                    session.saveStrokes();
+                }
+                erased = null;
+            } else if (current != null) {
+                Stroke s = current;
+                current = null;
+                boolean valid = s.type.equals(Stroke.PEN) || Math.hypot(view.sx(s.pts[2]) - view.sx(s.pts[0]), view.sy(s.pts[3]) - view.sy(s.pts[1])) > 2;
+                if (valid) {
+                    List<Stroke> list = session.strokes(dim);
+                    list.add(s);
+                    undo.push(() -> list.remove(s));
+                    session.saveStrokes();
+                    if (!cfg.drawingsVisible) {
+                        cfg.drawingsVisible = true;
+                        cfg.save();
+                    }
+                }
+            }
+            return true;
+        }
+        if (!dragging) {
+            onMapClick(mx, my, pressButton);
+        }
+        dragging = false;
+        return true;
+    }
+
+    private void onMapClick(double mx, double my, int button) {
+        Marker hit = cfg.markersVisible ? view.markerAt(session.markers, dim, mx, my, 16) : null;
+        if (tool == Tool.RULER) {
+            if (button == InputConstants.MOUSE_BUTTON_LEFT) {
+                double[] p = hit != null ? new double[]{hit.x + 0.5, hit.z + 0.5} : new double[]{view.wx(mx), view.wz(my)};
+                ruler.add(p);
+            } else if (button == InputConstants.MOUSE_BUTTON_RIGHT && !ruler.isEmpty()) {
+                ruler.remove(ruler.size() - 1);
+            }
+            return;
+        }
+        if (tool == Tool.DRAW) {
+            return;
+        }
+        if (button == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (hit != null) {
+                openView(hit, false);
+                Paper.click();
+            } else if (panel != Panel.NONE) {
+                closePanel();
+            }
+        } else if (button == InputConstants.MOUSE_BUTTON_RIGHT) {
+            if (hit != null) {
+                openView(hit, false);
+                Paper.click();
+            } else {
+                int x = (int) Math.floor(view.wx(mx));
+                int z = (int) Math.floor(view.wz(my));
+                createMarker(x, surfaceY(x, z), z);
+            }
+        }
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (overlay != Overlay.NONE && overlay != Overlay.PICKER && overlay != Overlay.ICONS) {
+            return true;
+        }
+        for (int i = scrolls.size() - 1; i >= 0; i--) {
+            ScrollArea a = scrolls.get(i);
+            if (Paper.inside(mx, my, a.x, a.y, a.w, a.h)) {
+                if (overlay == Overlay.PICKER || overlay == Overlay.ICONS || !(getChildAt(mx, my).isPresent() && getChildAt(mx, my).get() == descBox && descBox.visible)) {
+                    a.onScroll.accept(sy);
+                    return true;
+                }
+            }
+        }
+        if (overlay != Overlay.NONE) {
+            return true;
+        }
+        if (super.mouseScrolled(mx, my, sx, sy)) {
+            return true;
+        }
+        if (mouseOverMap(mx, my)) {
+            zoomBy((float) Math.pow(1.2, sy), mx, my);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent e) {
+        int key = e.key();
+        if (overlay == Overlay.CONFIRM) {
+            if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
+                overlay = Overlay.NONE;
+                if (confirmAction != null) {
+                    confirmAction.run();
+                }
+            } else if (e.isEscape()) {
+                overlay = Overlay.NONE;
+            }
+            return true;
+        }
+        if (overlay == Overlay.VIEWER) {
+            if (key == InputConstants.KEY_LEFT) {
+                switchShot(-1);
+            } else if (key == InputConstants.KEY_RIGHT) {
+                switchShot(1);
+            } else if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+                undo();
+            } else if (e.isEscape() && annotating) {
+                annotating = false;
+                annotCurrent = null;
+            } else if (e.isEscape() || ModKeys.OPEN_MAP.matches(e)) {
+                overlay = Overlay.NONE;
+            }
+            return true;
+        }
+        if (overlay == Overlay.ICONS && !e.isEscape()) {
+            setFocused(iconSearch);
+            iconSearch.keyPressed(e);
+            return true;
+        }
+        if (overlay != Overlay.NONE) {
+            if (e.isEscape()) {
+                if (overlay == Overlay.ICONS && !iconSearch.getValue().isEmpty()) {
+                    iconSearch.setValue("");
+                } else {
+                    overlay = Overlay.NONE;
+                    setFocused(null);
+                }
+            }
+            return true;
+        }
+        if (typing()) {
+            if (e.isEscape()) {
+                setFocused(null);
+                return true;
+            }
+            return super.keyPressed(e);
+        }
+        if (e.isEscape()) {
+            if (tool != Tool.NONE) {
+                setTool(Tool.NONE);
+                return true;
+            }
+            onClose();
+            return true;
+        }
+        if (ModKeys.OPEN_MAP.matches(e)) {
+            onClose();
+            return true;
+        }
+        if (ModKeys.MARKER_LIST.matches(e)) {
+            listOpen = !listOpen;
+            return true;
+        }
+        if (ModKeys.RULER.matches(e)) {
+            setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER);
+            return true;
+        }
+        if (ModKeys.EDITOR.matches(e)) {
+            setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW);
+            return true;
+        }
+        if (ModKeys.TOGGLE_DRAWINGS.matches(e)) {
+            toggleDrawings();
+            return true;
+        }
+        if (ModKeys.NEW_MARKER.matches(e)) {
+            newMarkerAtPlayer();
+            return true;
+        }
+        if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+            undo();
+            return true;
+        }
+        if (key == InputConstants.KEY_BACKSPACE && tool == Tool.RULER) {
+            ruler.clear();
+            return true;
+        }
+        if (key == InputConstants.KEY_DELETE && selected != null) {
+            confirmDelete(selected);
+            return true;
+        }
+        if (key == InputConstants.KEY_C) {
+            centerOnPlayer();
+            return true;
+        }
+        if (key == InputConstants.KEY_EQUALS || key == InputConstants.KEY_ADD) {
+            zoomBy(1.5f, width / 2.0, height / 2.0);
+            return true;
+        }
+        if (key == InputConstants.KEY_MINUS || key == SDLScancode.SDL_SCANCODE_KP_MINUS) {
+            zoomBy(1 / 1.5f, width / 2.0, height / 2.0);
+            return true;
+        }
+        return super.keyPressed(e);
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent e) {
+        if (overlay == Overlay.ICONS) {
+            setFocused(iconSearch);
+            return iconSearch.charTyped(e);
+        }
+        if (overlay != Overlay.NONE) {
+            return true;
+        }
+        return super.charTyped(e);
+    }
+
+    // ------------------------------------------------------------------ utils
+
+    private static int parse(String s, int fallback) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private static double dist(double[] a, double[] b) {
+        return Math.hypot(b[0] - a[0], b[1] - a[1]);
+    }
+
+    private static String fmt(double d) {
+        return d >= 100 ? Long.toString(Math.round(d)) : String.format(Locale.ROOT, "%.1f", d);
+    }
+
+    private static String fmtInt(double d) {
+        return Long.toString(Math.round(d));
+    }
+
+    private static String fmtZoom(float z) {
+        return z == Math.round(z) ? "x" + (int) z : "x" + z;
+    }
+
+    private static Component onOff(boolean b) {
+        return T.tr(b ? "on" : "off");
+    }
+
+    private static Component keyName(net.minecraft.client.KeyMapping k) {
+        return k.getTranslatedKeyMessage();
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "mapminecraft-test",
+  "version": "1.0.0",
+  "name": "MapMinecraft client game tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "org.webtrade.mapminecraft.test.MapClientGameTest",
+      "org.webtrade.mapminecraft.test.ThumbnailShots"
+    ]
+  },
+  "depends": {
+    "mapminecraft": "*"
+  }
+}

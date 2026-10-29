@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "mapminecraft",
+  "version": "${version}",
+  "name": "MapMinecraft",
+  "description": "A papyrus-styled world map and minimap with markers, screenshots, ruler and drawing tools. Maps are stored per server and per world.",
+  "authors": ["webtrade"],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/mapminecraft/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.webtrade.mapminecraft.client.MapminecraftClient"
+    ],
+    "main": [
+      "org.webtrade.mapminecraft.Mapminecraft"
+    ]
+  },
+  "mixins": [
+    "mapminecraft.mixins.json",
+    {
+      "config": "mapminecraft.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
