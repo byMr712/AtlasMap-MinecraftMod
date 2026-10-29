@@ -12,6 +12,8 @@ public class Marker {
     public String name = "";
     public String description = "";
     public String icon = "pin";
+    /** Icon tint (0xRRGGBB with full alpha), or 0 for the icon's own colours. */
+    public int color;
     public String dim = "minecraft:overworld";
     public int x;
     public int y = 64;
@@ -28,6 +30,7 @@ public class Marker {
         m.name = name;
         m.description = description;
         m.icon = icon;
+        m.color = color;
         m.dim = dim;
         m.x = x;
         m.y = y;
@@ -43,6 +46,7 @@ public class Marker {
         name = from.name;
         description = from.description;
         icon = from.icon;
+        color = from.color;
         dim = from.dim;
         x = from.x;
         y = from.y;

@@ -11,7 +11,11 @@ import org.webtrade.mapminecraft.client.ModKeys;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.Storage;
 import org.webtrade.mapminecraft.client.data.WorldMeta;
+import org.webtrade.mapminecraft.client.data.ModConfig;
 import org.webtrade.mapminecraft.client.gui.MapScreen;
+import org.webtrade.mapminecraft.client.gui.Paper;
+import org.webtrade.mapminecraft.client.gui.SettingsScreen;
+import org.webtrade.mapminecraft.client.gui.Theme;
 import org.webtrade.mapminecraft.client.gui.WorldsScreen;
 import org.webtrade.mapminecraft.client.map.MapManager;
 import org.webtrade.mapminecraft.client.map.MapSession;
@@ -35,7 +39,7 @@ public class MapClientGameTest implements FabricClientGameTest {
         ctx.waitTicks(60);
         ctx.takeScreenshot("01_title");
 
-        try (TestSingleplayerContext sp = ctx.worldBuilder().setUseConsistentSettings(false).create()) {
+        try (TestSingleplayerContext sp = ctx.worldBuilder().setUseConsistentSettings(false).adjustSettings(s -> s.setAllowCommands(true)).create()) {
             sp.getConnection().waitForChunksRender();
             sp.getServer().runCommand("time set day");
             sp.getServer().runCommand("difficulty peaceful");
@@ -104,11 +108,24 @@ public class MapClientGameTest implements FabricClientGameTest {
             input.scroll(-12);
             ctx.waitTicks(3);
             ctx.takeScreenshot("09a_icon_picker_scrolled");
-            input.typeChars("синий");
+            input.typeChars("дом");
             ctx.waitTicks(3);
             ctx.takeScreenshot("09b_icon_search");
-            input.pressKey(InputConstants.KEY_ESCAPE);
-            input.pressKey(InputConstants.KEY_ESCAPE);
+            // right click on the first found icon opens the colour chooser
+            clickGui(ctx, input, MapClientGameTest::firstIconCell, InputConstants.MOUSE_BUTTON_RIGHT);
+            ctx.waitTicks(3);
+            moveGui(ctx, input, mc -> swatch(mc, 33));
+            ctx.waitTicks(2);
+            ctx.takeScreenshot("09c_color_picker");
+            clickGui(ctx, input, mc -> swatch(mc, 33));
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("09d_recoloured_icon");
+            ctx.runOnClient(mc -> {
+                Marker w = MapManager.live().markers.get(2);
+                if (w.color != 0) {
+                    throw new AssertionError("colour must apply to the edited copy only");
+                }
+            });
 
             // "+" tile opens the screenshot picker
             clickGui(ctx, input, mc -> {
@@ -199,6 +216,60 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(2);
             ctx.takeScreenshot("13_drawing_done");
 
+            // settings: gear in the toolbar, then pick a design by clicking its tile
+            clickGui(ctx, input, mc -> new int[]{16, 6 + 9 * 23 + 10});
+            ctx.waitForScreen(SettingsScreen.class);
+            ctx.waitTicks(5);
+            ctx.takeScreenshot("13a_settings");
+            clickGui(ctx, input, mc -> themeTile(mc, 4));
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("13b_settings_modern_dark");
+            ctx.runOnClient(mc -> {
+                if (!ModConfig.get().theme.equals("modern_dark")) {
+                    throw new AssertionError("theme tile click did not apply, theme=" + ModConfig.get().theme);
+                }
+                ModConfig.get().teleport = true;
+            });
+            input.pressKey(InputConstants.KEY_ESCAPE);
+            ctx.waitForScreen(MapScreen.class);
+            for (Theme theme : Theme.ALL) {
+                ctx.runOnClient(mc -> {
+                    Paper.apply(theme);
+                    MapScreen ms = (MapScreen) mc.gui.screen();
+                    ms.openMarkerList();
+                    ms.showMarker(MapManager.live().markers.get(0));
+                    mc.resizeGui();
+                });
+                ctx.waitTicks(5);
+                ctx.takeScreenshot("theme_" + theme.id());
+            }
+            ctx.runOnClient(mc -> {
+                Paper.apply(Theme.PAPYRUS);
+                ModConfig.get().theme = "papyrus";
+                ModConfig.get().save();
+                mc.resizeGui();
+            });
+            // teleport button at the bottom of the marker card
+            clickGui(ctx, input, mc -> {
+                int w = mc.gui.screen().width;
+                int h = mc.gui.screen().height;
+                int pw = Math.max(150, Math.min(190, w / 3));
+                int buttonsY = 6 + (h - 12) - 8 - 16 * 3 - 4 * 2;
+                return new int[]{w - pw - 6 + pw / 2, buttonsY + 40 + 8};
+            });
+            ctx.waitTicks(40);
+            ctx.runOnClient(mc -> {
+                Marker m = MapManager.live().markers.get(0);
+                double d = Math.hypot(mc.player.getX() - m.x - 0.5, mc.player.getZ() - m.z - 0.5);
+                System.out.println("[MapMinecraft test] teleport distance to marker: " + d + ", screen=" + mc.gui.screen());
+                if (d > 2) {
+                    throw new AssertionError("teleport did not move the player, distance " + d);
+                }
+            });
+            ctx.takeScreenshot("13c_after_teleport");
+            input.pressKey(ModKeys.OPEN_MAP);
+            ctx.waitForScreen(MapScreen.class);
+
             input.pressKey(InputConstants.KEY_ESCAPE);
             ctx.waitTicks(5);
             ctx.takeScreenshot("14_back_ingame");
@@ -227,11 +298,46 @@ public class MapClientGameTest implements FabricClientGameTest {
         ctx.waitTicks(5);
     }
 
+    /** Centre of the first cell in the icon picker grid. */
+    private static int[] firstIconCell(Minecraft mc) {
+        int w = mc.gui.screen().width;
+        int ow = Math.min(w - 16, 18 * 22 + 24);
+        int cols = Math.max(4, (ow - 20) / 22);
+        int gx = (w - ow) / 2 + (ow - cols * 22) / 2 + 1;
+        return new int[]{gx + 10, 8 + 20 + 31 + 11};
+    }
+
+    /** Centre of palette swatch i in the colour chooser. */
+    private static int[] swatch(Minecraft mc, int i) {
+        int ox = (mc.gui.screen().width - (20 * 11 + 16)) / 2;
+        int oy = (mc.gui.screen().height - 110) / 2;
+        return new int[]{ox + 8 + (i % 20) * 11 + 4, oy + 68 + (i / 20) * 11 + 4};
+    }
+
+    /** Centre of theme tile i on the settings screen (two-column layout). */
+    private static int[] themeTile(Minecraft mc, int i) {
+        int w = mc.gui.screen().width;
+        int h = mc.gui.screen().height;
+        int pw = Math.min(w - 16, 430);
+        int px = (w - pw) / 2;
+        int colW = (pw - 30) / 2;
+        int themesH = 12 + 4 * 38;
+        int optionsH = 12 + 6 * 19 + 16 + 2 * 19 + 32;
+        int ph = Math.min(h - 16, Math.max(themesH, optionsH) + 54);
+        int py = (h - ph) / 2;
+        int tw = (colW - 4) / 2;
+        return new int[]{px + 10 + (i % 2) * (tw + 4) + tw / 2, py + 22 + 12 + (i / 2) * 38 + 17};
+    }
+
     private interface Pos {
         int[] get(Minecraft mc);
     }
 
     private static void clickGui(ClientGameTestContext ctx, TestInput input, Pos pos) {
+        clickGui(ctx, input, pos, InputConstants.MOUSE_BUTTON_LEFT);
+    }
+
+    private static void clickGui(ClientGameTestContext ctx, TestInput input, Pos pos, int button) {
         int[] p = ctx.computeOnClient(mc -> {
             int[] g = pos.get(mc);
             int s = mc.getWindow().getGuiScale();
@@ -239,7 +345,7 @@ public class MapClientGameTest implements FabricClientGameTest {
         });
         input.setCursorPos(p[0], p[1]);
         ctx.waitTick();
-        input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        input.pressMouse(button);
         ctx.waitTick();
     }
 

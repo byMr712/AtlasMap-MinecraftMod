@@ -19,6 +19,10 @@ public class ModConfig {
     public boolean drawingsVisible = true;
     public boolean markersVisible = true;
     public int markerSort = 0;
+    public String theme = "papyrus";
+    /** Shows a "Teleport" button on markers (needs command permission). */
+    public boolean teleport = false;
+    public boolean markerLabels = true;
 
     private static ModConfig instance;
 

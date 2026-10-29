@@ -13,41 +13,47 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /** Translation shortcuts and the marker icon catalog (assets/mapminecraft/icons.json). */
 public final class T {
-    /** Marker icons grouped for the icon picker, in display order. */
-    public static final Map<String, List<String>> ICON_GROUPS = new LinkedHashMap<>();
+    /** Marker icons shown in the icon picker, in display order. */
     public static final List<String> MARKER_ICONS = new ArrayList<>();
+    /** Old coloured icon ids, mapped to the icon and tint that replace them. */
+    public static final Map<String, Alias> ALIASES = new HashMap<>();
     private static final Map<String, String[]> ICON_NAMES = new HashMap<>();
-    private static final Map<String, String[]> GROUP_NAMES = new HashMap<>();
+
+    public record Alias(String icon, int color) {
+    }
 
     static {
         try (InputStream in = T.class.getResourceAsStream("/assets/mapminecraft/icons.json")) {
             JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-            for (JsonElement ge : root.getAsJsonArray("groups")) {
-                JsonObject g = ge.getAsJsonObject();
-                String gid = g.get("id").getAsString();
-                GROUP_NAMES.put(gid, new String[]{g.get("ru").getAsString(), g.get("en").getAsString()});
-                List<String> ids = new ArrayList<>();
-                for (JsonElement ie : g.getAsJsonArray("icons")) {
-                    JsonObject i = ie.getAsJsonObject();
-                    String id = i.get("id").getAsString();
-                    ids.add(id);
-                    ICON_NAMES.put(id, new String[]{i.get("ru").getAsString(), i.get("en").getAsString()});
-                }
-                ICON_GROUPS.put(gid, List.copyOf(ids));
-                MARKER_ICONS.addAll(ids);
+            for (JsonElement ie : root.getAsJsonArray("icons")) {
+                MARKER_ICONS.add(readIcon(ie.getAsJsonObject()));
+            }
+            for (JsonElement ie : root.getAsJsonArray("hidden")) {
+                readIcon(ie.getAsJsonObject());
+            }
+            for (var e : root.getAsJsonObject("aliases").entrySet()) {
+                JsonObject a = e.getValue().getAsJsonObject();
+                int color = 0xFF000000 | Integer.parseInt(a.get("color").getAsString().substring(1), 16);
+                ALIASES.put(e.getKey(), new Alias(a.get("icon").getAsString(), color));
             }
         } catch (Exception e) {
             Storage.LOG.error("Failed to load the marker icon catalog", e);
-            ICON_GROUPS.put("basic", List.of("pin"));
-            MARKER_ICONS.add("pin");
+            if (MARKER_ICONS.isEmpty()) {
+                MARKER_ICONS.add("pin");
+            }
         }
+    }
+
+    private static String readIcon(JsonObject i) {
+        String id = i.get("id").getAsString();
+        ICON_NAMES.put(id, new String[]{i.get("ru").getAsString(), i.get("en").getAsString()});
+        return id;
     }
 
     private T() {
@@ -81,11 +87,6 @@ public final class T {
     public static String iconName(String icon) {
         String[] n = ICON_NAMES.get(icon);
         return n == null ? icon : n[langIndex()];
-    }
-
-    public static String groupName(String group) {
-        String[] n = GROUP_NAMES.get(group);
-        return n == null ? group : n[langIndex()];
     }
 
     /** Icons whose name (in any language) or id contains every word of the query. Russian endings are ignored. */

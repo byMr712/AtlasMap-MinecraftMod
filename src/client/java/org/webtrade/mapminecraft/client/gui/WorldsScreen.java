@@ -107,7 +107,7 @@ public class WorldsScreen extends Screen {
             g.nextStratum();
             modalStart = hits.size();
             hits.add(new Hit(0, 0, width, height, () -> toDelete = null));
-            g.fill(0, 0, width, height, 0x60100A05);
+            g.fill(0, 0, width, height, Paper.DIM);
             int ow = Math.min(260, width - 20);
             List<FormattedCharSequence> lines = font.split(T.tr("atlas.confirm_delete", toDelete.name), ow - 24);
             int oh = lines.size() * 10 + 50;
@@ -159,7 +159,7 @@ public class WorldsScreen extends Screen {
         }
         if (list.isEmpty()) {
             for (FormattedCharSequence l : font.split(T.tr(isServers ? "atlas.no_servers" : "atlas.no_worlds"), w - 24)) {
-                g.text(font, l, x + 12, top + 6, 0xFF8A7A62, false);
+                g.text(font, l, x + 12, top + 6, Paper.DISABLED, false);
                 top += 10;
             }
             return new int[]{x, y, w, h};
@@ -181,7 +181,7 @@ public class WorldsScreen extends Screen {
                 String addr = font.plainSubstrByWidth(m.address == null ? "" : m.address, cw - 64);
                 g.text(font, addr, cx + 40, cy + 15, Paper.INK_SOFT, false);
                 String info = T.s("atlas.info", markerCounts.getOrDefault(m.id, 0), df.format(new Date(m.lastPlayed)));
-                g.text(font, font.plainSubstrByWidth(info, cw - 64), cx + 40, cy + 26, 0xFF8A7A62, false);
+                g.text(font, font.plainSubstrByWidth(info, cw - 64), cx + 40, cy + 26, Paper.DISABLED, false);
                 int tx = cx + cw - 20;
                 int ty = cy + (cardH - 16) / 2;
                 boolean th = hover && Paper.inside(mx, my, tx, ty, 16, 16);

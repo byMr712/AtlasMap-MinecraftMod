@@ -1,5 +1,6 @@
 package org.webtrade.mapminecraft.client.map;
 
+import org.webtrade.mapminecraft.client.gui.T;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.Storage;
 import org.webtrade.mapminecraft.client.data.Stroke;
@@ -40,6 +41,14 @@ public class MapSession {
             }
             if (m.icon == null) {
                 m.icon = "pin";
+            }
+            // coloured copies of icons were merged into one tintable icon
+            T.Alias alias = T.ALIASES.get(m.icon);
+            if (alias != null) {
+                m.icon = alias.icon();
+                if (m.color == 0) {
+                    m.color = alias.color();
+                }
             }
         }
     }

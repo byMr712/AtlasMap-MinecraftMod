@@ -30,8 +30,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -79,7 +77,7 @@ public class MapScreen extends Screen {
 
     private enum Panel { NONE, VIEW, EDIT }
 
-    private enum Overlay { NONE, ICONS, PICKER, VIEWER, CONFIRM, SETTINGS, DIMS }
+    private enum Overlay { NONE, ICONS, COLOR, PICKER, VIEWER, CONFIRM, DIMS }
 
     private record Hit(int x, int y, int w, int h, Runnable left, Runnable right) {
     }
@@ -135,7 +133,8 @@ public class MapScreen extends Screen {
     private Runnable confirmAction;
     private int iconPickerY;
     private double iconScroll;
-    private final Map<String, Integer> iconGroupOffsets = new HashMap<>();
+    private Marker colorTarget;
+    private String colorIcon = "pin";
     private EditBox iconSearch;
 
     // widgets
@@ -308,8 +307,21 @@ public class MapScreen extends Screen {
         descBox.setValue(working.description);
     }
 
+    /** Set while the settings screen is shown on top, so the session stays open. */
+    private boolean suspended;
+
+    private void openSettings() {
+        commitEdit();
+        suspended = true;
+        minecraft.gui.setScreen(new SettingsScreen(this));
+    }
+
     @Override
     public void removed() {
+        if (suspended) {
+            suspended = false;
+            return;
+        }
         commitEdit();
         session.meta.lastDim = session.isLive() ? session.meta.lastDim : dim;
         if (!session.isLive()) {
@@ -385,10 +397,10 @@ public class MapScreen extends Screen {
             modalStart = hits.size();
             switch (overlay) {
                 case ICONS -> drawIconPicker(g, mx, my);
+                case COLOR -> drawColorPicker(g, mx, my);
                 case PICKER -> drawShotPicker(g, mx, my);
                 case VIEWER -> drawViewer(g, mx, my);
                 case CONFIRM -> drawConfirm(g, mx, my);
-                case SETTINGS -> drawSettings(g, mx, my);
                 case DIMS -> drawDims(g, mx, my);
                 default -> {
                 }
@@ -420,7 +432,7 @@ public class MapScreen extends Screen {
 
         Marker hovered = hoveredMarker(mx, my);
         if (cfg.markersVisible) {
-            view.drawMarkers(g, font, session.markers, dim, 16, true,
+            view.drawMarkers(g, font, session.markers, dim, 16, cfg.markerLabels,
                     selected == null ? null : selected.id, hovered == null ? null : hovered.id, false);
         } else if (selected != null && selected.dim.equals(dim)) {
             view.drawMarkers(g, font, List.of(selected), dim, 16, true, selected.id, null, false);
@@ -437,7 +449,7 @@ public class MapScreen extends Screen {
 
     private void vignette(GuiGraphicsExtractor g) {
         for (int i = 0; i < 10; i++) {
-            int a = (10 - i) * 7 << 24 | 0x2A1A0C;
+            int a = (10 - i) * 7 << 24 | Paper.VIGNETTE;
             g.fill(0, i * 2, width, i * 2 + 2, a);
             g.fill(0, height - i * 2 - 2, width, height - i * 2, a);
             g.fill(i * 2, 0, i * 2 + 2, height, a);
@@ -482,7 +494,7 @@ public class MapScreen extends Screen {
         int w = font.width(s);
         int x = Math.round(cx - w / 2f);
         int y = Math.round(cy - 5);
-        g.fill(x - 3, y - 2, x + w + 3, y + 10, 0xE0F2E4C0);
+        g.fill(x - 3, y - 2, x + w + 3, y + 10, Paper.a(Paper.CREAM, 0xE0));
         g.outline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
         g.text(font, s, x, y, Paper.INK, false);
     }
@@ -548,7 +560,7 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"zoom_in", T.tr("tool.zoom_in"), false, (Runnable) () -> zoomBy(1.5f, width / 2.0, height / 2.0)});
         items.add(new Object[]{"zoom_out", T.tr("tool.zoom_out"), false, (Runnable) () -> zoomBy(1 / 1.5f, width / 2.0, height / 2.0)});
         items.add(new Object[]{"globe", T.tr("tool.dims"), overlay == Overlay.DIMS, (Runnable) () -> overlay = Overlay.DIMS});
-        items.add(new Object[]{"gear", T.tr("tool.settings"), overlay == Overlay.SETTINGS, (Runnable) () -> overlay = Overlay.SETTINGS});
+        items.add(new Object[]{"gear", T.tr("tool.settings"), false, (Runnable) this::openSettings});
         items.add(new Object[]{"close", T.tr("tool.close", keyName(ModKeys.OPEN_MAP)), false, (Runnable) this::onClose});
 
         int h = items.size() * (TB + 3) + 5;
@@ -600,7 +612,7 @@ public class MapScreen extends Screen {
         for (int i = 0; i < WIDTHS.length; i++) {
             int idx = i;
             if (widthIdx == i) {
-                g.fill(cx, y + 5, cx + 13, y + 23, 0x40B88C2C);
+                g.fill(cx, y + 5, cx + 13, y + 23, Paper.a(Paper.GOLD, 0x40));
                 g.outline(cx, y + 5, 13, 18, Paper.GOLD);
             }
             Paper.dot(g, cx + 6.5f, y + 14, WIDTHS[i] + 1, dotColor);
@@ -793,17 +805,17 @@ public class MapScreen extends Screen {
                 boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2) && my >= top && my < bottom;
                 boolean sel = selected != null && selected.id.equals(m.id);
                 if (sel) {
-                    g.fill(rx, y, rx + rw, y + rowH - 2, 0x50B88C2C);
+                    g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
                     g.outline(rx, y, rw, rowH - 2, Paper.GOLD);
                 } else if (hover) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
                 }
-                Paper.icon(g, Paper.marker(m.icon), rx + 2, y + 2, 16, m.hidden ? 0x70FFFFFF : 0xFFFFFFFF);
+                Paper.markerIcon(g, m.icon, m.color, rx + 2, y + 2, 16, m.hidden ? 0x70 : 0xFF);
                 String dist = m.dim.equals(dim) ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short") : T.dimName(m.dim);
                 int dw = font.width(dist);
                 int nameW = rw - 22 - dw - 20;
                 String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
-                g.text(font, name, rx + 21, y + 6, m.hidden ? 0xFF8A7A62 : Paper.INK, false);
+                g.text(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
                 g.text(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
                 int ex = rx + rw - 14;
                 boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
@@ -863,7 +875,12 @@ public class MapScreen extends Screen {
         int cw = pw - 18;
         int y = py + 10;
         Paper.inset(g, cx, y, 28, 28);
-        Paper.icon(g, Paper.marker(m.icon), cx + 2, y + 2, 24);
+        Paper.markerIcon(g, m.icon, m.color, cx + 2, y + 2, 24, 255);
+        if (overlay == Overlay.NONE && Paper.inside(mx, my, cx, y, 28, 28)) {
+            tooltip = T.tr("color.tip");
+        }
+        hit(cx, y, 28, 28, () -> {
+        }, () -> openColors(m, m.icon));
         List<FormattedCharSequence> nameLines = font.split(Component.literal(m.name.isEmpty() ? T.s("marker.unnamed") : m.name), cw - 36 - 10);
         int ny = y + (nameLines.size() > 1 ? 1 : 5);
         for (int i = 0; i < Math.min(2, nameLines.size()); i++) {
@@ -898,7 +915,7 @@ public class MapScreen extends Screen {
         g.enableScissor(cx + 1, y + 1, cx + cw - 1, y + descH - 1);
         int ty = y + 4 - (int) descScroll;
         for (FormattedCharSequence l : desc) {
-            g.text(font, l, cx + 3, ty, m.description.isBlank() ? 0xFF8A7A62 : Paper.INK, false);
+            g.text(font, l, cx + 3, ty, m.description.isBlank() ? Paper.DISABLED : Paper.INK, false);
             ty += 10;
         }
         g.disableScissor();
@@ -906,7 +923,9 @@ public class MapScreen extends Screen {
         Paper.separator(g, cx, y, cw);
         y += 5;
 
-        int buttonsY = py + ph - 8 - 16 * 2 - 4;
+        boolean tp = cfg.teleport && session.isLive();
+        int rows = tp ? 3 : 2;
+        int buttonsY = py + ph - 8 - 16 * rows - 4 * (rows - 1);
         g.text(font, T.tr("field.shots", m.screenshots.size()), cx, y, Paper.INK_SOFT, false);
         y += 11;
         drawShotGrid(g, mx, my, m, cx, y, cw, buttonsY - 6 - y, false);
@@ -932,6 +951,25 @@ public class MapScreen extends Screen {
         boolean h4 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
         Paper.iconTextButton(g, font, Paper.tool("target"), T.tr("button.goto"), cx + bw + 4, y2, bw, 16, h4, true);
         hit(cx + bw + 4, y2, bw, 16, () -> centerOn(m));
+        if (tp) {
+            int y3 = buttonsY + 40;
+            boolean h5 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y3, cw, 16);
+            Paper.iconTextButton(g, font, Paper.tool("arrow"), T.tr("button.teleport"), cx, y3, cw, 16, h5, true);
+            if (h5) {
+                tooltip = T.tr("button.teleport_tip");
+            }
+            hit(cx, y3, cw, 16, () -> teleportTo(m));
+        }
+    }
+
+    /** Sends a /tp command; it works where the player may use commands (cheats on or operator). */
+    private void teleportTo(Marker m) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+        mc.player.connection.sendCommand("execute in " + m.dim + " run tp @s " + m.x + ".5 " + m.y + " " + m.z + ".5");
+        onClose();
     }
 
     private void drawEditPanel(GuiGraphicsExtractor g, int mx, int my) {
@@ -978,7 +1016,10 @@ public class MapScreen extends Screen {
             g.fill(cx, y, cx + cw, y + 22, 0x30FFFFFF);
         }
         g.outline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
-        Paper.icon(g, Paper.marker(working.icon), cx + 3, y + 3, 16);
+        Paper.markerIcon(g, working.icon, working.color, cx + 3, y + 3, 16, 255);
+        if (hi) {
+            tooltip = T.tr("edit.icon_tip");
+        }
         g.text(font, font.plainSubstrByWidth(T.s("edit.icon", T.iconName(working.icon)), cw - 34), cx + 23, y + 7, Paper.INK, false);
         g.text(font, "▼", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
         int iconY = y;
@@ -989,7 +1030,7 @@ public class MapScreen extends Screen {
             overlay = Overlay.ICONS;
             iconSearch.setVisible(true);
             setFocused(iconSearch);
-        });
+        }, () -> openColors(working, working.icon));
         y += 26;
 
         // coordinates
@@ -1062,7 +1103,7 @@ public class MapScreen extends Screen {
         shotsScroll = Math.max(0, Math.min(max, shotsScroll));
         scroll(x, y, w, h, d -> shotsScroll -= d * (th + gap) / 2.0);
         if (count == 0) {
-            g.text(font, T.tr("marker.no_shots"), x + 2, y + 2, 0xFF8A7A62, false);
+            g.text(font, T.tr("marker.no_shots"), x + 2, y + 2, Paper.DISABLED, false);
             return;
         }
         g.enableScissor(x - 1, y, x + w + 1, y + h);
@@ -1121,7 +1162,7 @@ public class MapScreen extends Screen {
                 int dx = tx + tw - 12;
                 int dy = ty + 2;
                 boolean dh = hover && Paper.inside(mx, my, dx, dy, 10, 10);
-                g.fill(dx, dy, dx + 10, dy + 10, dh ? 0xE0F6ECD0 : 0xB0F6ECD0);
+                g.fill(dx, dy, dx + 10, dy + 10, dh ? Paper.a(Paper.CREAM, 0xE0) : Paper.a(Paper.CREAM, 0xB0));
                 g.outline(dx, dy, 10, 10, Paper.INK);
                 Paper.icon(g, Paper.tool("close"), dx + 1, dy + 1, 8);
                 if (dh) {
@@ -1145,7 +1186,7 @@ public class MapScreen extends Screen {
 
     private void hint(GuiGraphicsExtractor g, EditBox box, String text) {
         if (box.getValue().isEmpty() && !box.isFocused()) {
-            g.text(font, font.plainSubstrByWidth(text, box.getWidth()), box.getX(), box.getY(), 0xFF9A8A70, false);
+            g.text(font, font.plainSubstrByWidth(text, box.getWidth()), box.getX(), box.getY(), Paper.HINT, false);
         }
     }
 
@@ -1163,12 +1204,10 @@ public class MapScreen extends Screen {
 
     private void drawIconPicker(GuiGraphicsExtractor g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
-        g.fill(0, 0, width, height, 0x60100A05);
+        g.fill(0, 0, width, height, Paper.DIM);
         int cell = 22;
-        int catW = Math.min(100, Math.max(70, width / 6));
-        int ow = Math.min(width - 16, catW + 16 * cell + 34);
-        int gridW = ow - catW - 26;
-        int cols = Math.max(4, gridW / cell);
+        int ow = Math.min(width - 16, 18 * cell + 24);
+        int cols = Math.max(4, (ow - 20) / cell);
         int oh = height - 16;
         int ox = (width - ow) / 2;
         int oy = 8;
@@ -1180,7 +1219,8 @@ public class MapScreen extends Screen {
         Paper.iconButton(g, Paper.tool("close"), ox + ow - 18, oy + 5, 13, hc, false);
         hit(ox + ow - 18, oy + 5, 13, 13, () -> overlay = Overlay.NONE);
 
-        int gx = ox + catW + 14;
+        int gx = ox + (ow - cols * cell) / 2 + 1;
+        int gridW = cols * cell - 2;
         // search field
         int sy = oy + 20;
         Paper.inset(g, gx, sy, gridW, 15);
@@ -1190,115 +1230,136 @@ public class MapScreen extends Screen {
         iconSearch.setWidth(gridW - 20);
         iconSearch.extractRenderState(g, mx, my, 0);
         if (iconSearch.getValue().isEmpty()) {
-            g.text(font, font.plainSubstrByWidth(T.s("icons.search_hint"), gridW - 26), gx + 20, sy + 4, 0xFF9A8A70, false);
+            g.text(font, font.plainSubstrByWidth(T.s("icons.search_hint"), gridW - 26), gx + 20, sy + 4, Paper.HINT, false);
         }
+        g.text(font, font.plainSubstrByWidth(T.s("icons.color_hint"), gridW), gx, sy + 19, Paper.INK_SOFT, false);
 
-        int top = sy + 19;
+        int top = sy + 31;
         int bottom = oy + oh - 8;
         String query = iconSearch.getValue().trim();
-        Map<String, List<String>> shown = new LinkedHashMap<>();
-        if (query.isEmpty()) {
-            shown.putAll(T.ICON_GROUPS);
-        } else {
-            shown.put("", T.searchIcons(query));
-        }
-
-        // category column
-        int cy0 = sy;
-        String currentGroup = null;
-        for (String gid : T.ICON_GROUPS.keySet()) {
-            Integer off = iconGroupOffsets.get(gid);
-            if (query.isEmpty() && off != null && off <= iconScroll + 4) {
-                currentGroup = gid;
-            }
-        }
-        for (String gid : T.ICON_GROUPS.keySet()) {
-            boolean hover = Paper.inside(mx, my, ox + 8, cy0, catW, 15);
-            boolean cur = gid.equals(currentGroup);
-            if (cur) {
-                g.fill(ox + 8, cy0, ox + 8 + catW, cy0 + 15, 0x50B88C2C);
-                g.outline(ox + 8, cy0, catW, 15, Paper.GOLD);
-            } else if (hover) {
-                g.fill(ox + 8, cy0, ox + 8 + catW, cy0 + 15, 0x30FFFFFF);
-            }
-            String label = font.plainSubstrByWidth(T.groupName(gid), catW - 24);
-            if (hover && !label.equals(T.groupName(gid))) {
-                tooltip = Component.literal(T.groupName(gid));
-            }
-            g.text(font, label, ox + 12, cy0 + 4, cur ? Paper.INK : Paper.INK_SOFT, false);
-            String cnt = Integer.toString(T.ICON_GROUPS.get(gid).size());
-            g.text(font, cnt, ox + 8 + catW - 3 - font.width(cnt), cy0 + 4, 0xFF9A8A70, false);
-            hit(ox + 8, cy0, catW, 15, () -> {
-                iconSearch.setValue("");
-                Integer off = iconGroupOffsets.get(gid);
-                iconScroll = off == null ? 0 : off;
-                Paper.click();
-            });
-            cy0 += 17;
-        }
-        g.fill(ox + catW + 10, sy, ox + catW + 11, bottom, Paper.INK_FAINT);
-
-        // grid
-        int contentH = 0;
-        for (List<String> icons : shown.values()) {
-            contentH += 14 + (icons.size() + cols - 1) / cols * cell + 4;
-        }
+        List<String> icons = query.isEmpty() ? T.MARKER_ICONS : T.searchIcons(query);
+        int contentH = (icons.size() + cols - 1) / cols * cell;
         double max = Math.max(0, contentH - (bottom - top));
         iconScroll = Math.max(0, Math.min(max, iconScroll));
         scroll(gx, top, gridW, bottom - top, d -> iconScroll -= d * cell * 2);
+        Paper.separator(g, gx, top - 3, gridW);
         g.enableScissor(gx - 2, top, gx + gridW + 2, bottom);
-        int y = top - (int) iconScroll;
-        int offset = 0;
-        for (var group : shown.entrySet()) {
-            String gid = group.getKey();
-            List<String> icons = group.getValue();
-            if (query.isEmpty()) {
-                iconGroupOffsets.put(gid, offset);
+        int y = top + 1 - (int) iconScroll;
+        for (int i = 0; i < icons.size(); i++) {
+            String icon = icons.get(i);
+            int cx = gx + (i % cols) * cell;
+            int cy = y + (i / cols) * cell;
+            if (cy + cell < top || cy > bottom) {
+                continue;
             }
-            String title = gid.isEmpty() ? T.s("icons.found", icons.size()) : T.groupName(gid);
-            g.text(font, title, gx, y + 3, Paper.INK_SOFT, false);
-            Paper.separator(g, gx + font.width(title) + 6, y + 7, gridW - font.width(title) - 6);
-            int blockH = 14 + (icons.size() + cols - 1) / cols * cell + 4;
-            y += 14;
-            for (int i = 0; i < icons.size(); i++) {
-                String icon = icons.get(i);
-                int cx = gx + (i % cols) * cell;
-                int cy = y + (i / cols) * cell;
-                if (cy + cell < top || cy > bottom) {
-                    continue;
-                }
-                boolean hover = Paper.inside(mx, my, cx, cy, cell - 2, cell - 2) && my >= top && my < bottom;
-                boolean sel = working != null && icon.equals(working.icon);
-                if (sel) {
-                    g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x50B88C2C);
-                    g.outline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
-                } else if (hover) {
-                    g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
-                    g.outline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
-                }
-                Paper.icon(g, Paper.marker(icon), cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16);
-                if (hover) {
-                    tooltip = Component.literal(T.iconName(icon));
-                }
-                int clipY = Math.max(cy, top);
-                int clipH = Math.min(cy + cell - 2, bottom) - clipY;
-                if (clipH > 0) {
-                    hit(cx, clipY, cell - 2, clipH, () -> {
-                        if (working != null) {
-                            working.icon = icon;
-                        }
-                        overlay = Overlay.NONE;
-                        Paper.click();
-                    });
-                }
+            boolean hover = Paper.inside(mx, my, cx, cy, cell - 2, cell - 2) && my >= top && my < bottom;
+            boolean sel = working != null && icon.equals(working.icon);
+            if (sel) {
+                g.fill(cx, cy, cx + cell - 2, cy + cell - 2, Paper.a(Paper.GOLD, 0x50));
+                g.outline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
+            } else if (hover) {
+                g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
+                g.outline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
             }
-            y += blockH - 14;
-            offset += blockH;
+            Paper.markerIcon(g, icon, sel ? working.color : 0, cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16, 255);
+            if (hover) {
+                tooltip = Component.literal(T.iconName(icon));
+            }
+            int clipY = Math.max(cy, top);
+            int clipH = Math.min(cy + cell - 2, bottom) - clipY;
+            if (clipH > 0) {
+                hit(cx, clipY, cell - 2, clipH, () -> {
+                    if (working != null) {
+                        working.icon = icon;
+                    }
+                    overlay = Overlay.NONE;
+                    Paper.click();
+                }, () -> openColors(working, icon));
+            }
         }
-        if (!query.isEmpty() && shown.get("").isEmpty()) {
-            g.text(font, T.s("list.nothing_found"), gx, top + 18, 0xFF8A7A62, false);
+        if (icons.isEmpty()) {
+            g.text(font, T.s("list.nothing_found"), gx, top + 8, Paper.DISABLED, false);
         }
         g.disableScissor();
+        if (max > 0) {
+            int trackH = bottom - top;
+            int thumbH = Math.max(12, (int) (trackH * (trackH / (double) contentH)));
+            int thumbY = top + (int) ((trackH - thumbH) * (iconScroll / max));
+            g.fill(ox + ow - 6, top, ox + ow - 5, bottom, Paper.INK_FAINT);
+            g.fill(ox + ow - 7, thumbY, ox + ow - 4, thumbY + thumbH, Paper.INK_SOFT);
+        }
+    }
+
+    /** Opens the colour chooser for an icon of a marker (the edited copy or a saved marker). */
+    private void openColors(Marker target, String icon) {
+        if (target == null) {
+            return;
+        }
+        colorTarget = target;
+        colorIcon = icon;
+        overlay = Overlay.COLOR;
+        Paper.click();
+    }
+
+    private void drawColorPicker(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        g.fill(0, 0, width, height, Paper.DIM);
+        int ow = PAL_COLS * 11 + 16;
+        int oh = 110;
+        int ox = (width - ow) / 2;
+        int oy = (height - oh) / 2;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("color.title"), ox + ow / 2, oy + 7);
+        boolean hc = Paper.inside(mx, my, ox + ow - 18, oy + 5, 13, 13);
+        Paper.iconButton(g, Paper.tool("close"), ox + ow - 18, oy + 5, 13, hc, false);
+        hit(ox + ow - 18, oy + 5, 13, 13, () -> overlay = Overlay.NONE);
+
+        int py = oy + 68;
+        int hovered = -1;
+        for (int i = 0; i < COLORS.length; i++) {
+            int sx = ox + 8 + (i % PAL_COLS) * 11;
+            int sy = py + (i / PAL_COLS) * 11;
+            if (Paper.inside(mx, my, sx - 1, sy - 1, 11, 11)) {
+                hovered = i;
+            }
+        }
+        int current = colorIcon.equals(colorTarget.icon) ? colorTarget.color : 0;
+        int shown = hovered >= 0 ? COLORS[hovered] : current;
+        Paper.inset(g, ox + 8, oy + 22, 40, 40);
+        Paper.markerIcon(g, colorIcon, shown, ox + 12, oy + 26, 32, 255);
+        g.text(font, font.plainSubstrByWidth(T.iconName(colorIcon), ow - 64), ox + 54, oy + 25, Paper.INK, false);
+        int bx = ox + 54;
+        int bw = ow - 62;
+        boolean hr = Paper.inside(mx, my, bx, oy + 42, bw, 16);
+        Paper.button(g, font, T.tr("color.original"), bx, oy + 42, bw, 16, hr, true);
+        hit(bx, oy + 42, bw, 16, () -> applyColor(0));
+        for (int i = 0; i < COLORS.length; i++) {
+            int c = COLORS[i];
+            int sx = ox + 8 + (i % PAL_COLS) * 11;
+            int sy = py + (i / PAL_COLS) * 11;
+            g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
+            g.fill(sx, sy, sx + 9, sy + 9, c);
+            if (c == current || i == hovered) {
+                g.outline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.outline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+            }
+            hit(sx - 1, sy - 1, 11, 11, () -> applyColor(c));
+        }
+    }
+
+    private void applyColor(int color) {
+        Marker m = colorTarget;
+        if (m != null) {
+            m.icon = colorIcon;
+            m.color = color;
+            if (m != working) {
+                session.saveMarkers();
+            }
+        }
+        overlay = Overlay.NONE;
+        Paper.click();
     }
 
     private void openPicker() {
@@ -1325,7 +1386,7 @@ public class MapScreen extends Screen {
     private void drawShotPicker(GuiGraphicsExtractor g, int mx, int my) {
         blocker(() -> {
         });
-        g.fill(0, 0, width, height, 0x70100A05);
+        g.fill(0, 0, width, height, Paper.DIM);
         int ow = Math.min(width - 30, 440);
         int oh = height - 30;
         int ox = (width - ow) / 2;
@@ -1355,7 +1416,7 @@ public class MapScreen extends Screen {
         scroll(gx, y, gw, areaH, d -> pickerScroll -= d * (th + gap) / 2.0);
         if (pickerFiles.isEmpty()) {
             for (FormattedCharSequence l : font.split(T.tr("shots.empty"), gw - 10)) {
-                g.text(font, l, gx + 4, y + 6, 0xFF8A7A62, false);
+                g.text(font, l, gx + 4, y + 6, Paper.DISABLED, false);
                 y += 10;
             }
         } else {
@@ -1375,7 +1436,7 @@ public class MapScreen extends Screen {
                     ImageCache.drawCover(g, e, tx + 1, ty + 1, tw - 2, th - 2);
                 }
                 if (chosen) {
-                    g.fill(tx, ty, tx + tw, ty + th, 0x40EACA6C);
+                    g.fill(tx, ty, tx + tw, ty + th, Paper.a(Paper.GOLD_LIGHT, 0x40));
                     Paper.icon(g, Paper.tool("check"), tx + tw - 18, ty + 2, 16);
                 }
                 g.outline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
@@ -1617,7 +1678,7 @@ public class MapScreen extends Screen {
 
     private void drawConfirm(GuiGraphicsExtractor g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
-        g.fill(0, 0, width, height, 0x60100A05);
+        g.fill(0, 0, width, height, Paper.DIM);
         int ow = Math.min(240, width - 20);
         List<FormattedCharSequence> lines = font.split(confirmText, ow - 24);
         int oh = lines.size() * 10 + 50;
@@ -1646,39 +1707,6 @@ public class MapScreen extends Screen {
         boolean h2 = Paper.inside(mx, my, bx2, by, bw, 16);
         Paper.iconTextButton(g, font, Paper.tool("close"), T.tr("button.no"), bx2, by, bw, 16, h2, true);
         hit(bx2, by, bw, 16, () -> overlay = Overlay.NONE);
-    }
-
-    private void drawSettings(GuiGraphicsExtractor g, int mx, int my) {
-        blocker(() -> overlay = Overlay.NONE);
-        String[] corners = {"corner.tr", "corner.tl", "corner.br", "corner.bl"};
-        List<Object[]> rows = new ArrayList<>();
-        rows.add(new Object[]{T.tr("settings.minimap", onOff(cfg.minimapEnabled)), (Runnable) () -> cfg.minimapEnabled = !cfg.minimapEnabled});
-        rows.add(new Object[]{T.tr("settings.size", cfg.minimapSize()), (Runnable) () -> cfg.minimapSizeIndex = (cfg.minimapSizeIndex + 1) % ModConfig.MINIMAP_SIZES.length});
-        rows.add(new Object[]{T.tr("settings.zoom", fmtZoom(cfg.minimapZoom())), (Runnable) () -> cfg.minimapZoomIndex = (cfg.minimapZoomIndex + 1) % ModConfig.MINIMAP_ZOOMS.length});
-        rows.add(new Object[]{T.tr("settings.corner", T.tr(corners[cfg.minimapCorner])), (Runnable) () -> cfg.minimapCorner = (cfg.minimapCorner + 1) % 4});
-        rows.add(new Object[]{T.tr("settings.coords", onOff(cfg.minimapCoords)), (Runnable) () -> cfg.minimapCoords = !cfg.minimapCoords});
-        rows.add(new Object[]{T.tr("settings.mm_markers", onOff(cfg.minimapMarkers)), (Runnable) () -> cfg.minimapMarkers = !cfg.minimapMarkers});
-        int ow = 190;
-        int oh = rows.size() * 19 + 28;
-        int ox = 6 + TB + 8;
-        int oy = Math.min(height - oh - 6, 6 + 9 * (TB + 3));
-        oy = Math.max(6, oy);
-        Paper.panel(g, ox, oy, ow, oh);
-        hit(ox, oy, ow, oh, () -> {
-        });
-        Paper.title(g, font, T.s("settings.title"), ox + ow / 2, oy + 8);
-        int y = oy + 22;
-        for (Object[] row : rows) {
-            boolean h = Paper.inside(mx, my, ox + 8, y, ow - 16, 16);
-            Paper.button(g, font, (Component) row[0], ox + 8, y, ow - 16, 16, h, true);
-            Runnable a = (Runnable) row[1];
-            hit(ox + 8, y, ow - 16, 16, () -> {
-                a.run();
-                cfg.save();
-                Paper.click();
-            });
-            y += 19;
-        }
     }
 
     private void drawDims(GuiGraphicsExtractor g, int mx, int my) {
@@ -2408,14 +2436,6 @@ public class MapScreen extends Screen {
 
     private static String fmtInt(double d) {
         return Long.toString(Math.round(d));
-    }
-
-    private static String fmtZoom(float z) {
-        return z == Math.round(z) ? "x" + (int) z : "x" + z;
-    }
-
-    private static Component onOff(boolean b) {
-        return T.tr(b ? "on" : "off");
     }
 
     private static Component keyName(net.minecraft.client.KeyMapping k) {

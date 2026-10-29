@@ -14,7 +14,12 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.resources.Identifier;
 import org.webtrade.mapminecraft.client.data.ModConfig;
-import org.webtrade.mapminecraft.client.gui.AtlasButton;
+import org.webtrade.mapminecraft.client.gui.Paper;
+import org.webtrade.mapminecraft.client.gui.SettingsScreen;
+import org.webtrade.mapminecraft.client.gui.T;
+import org.webtrade.mapminecraft.client.gui.Theme;
+import org.webtrade.mapminecraft.client.gui.TitleButton;
+import org.webtrade.mapminecraft.client.gui.WorldsScreen;
 import org.webtrade.mapminecraft.client.gui.MapScreen;
 import org.webtrade.mapminecraft.client.gui.MinimapHud;
 import org.webtrade.mapminecraft.client.map.MapManager;
@@ -37,13 +42,25 @@ public class MapminecraftClient implements ClientModInitializer {
                 Identifier.fromNamespaceAndPath("mapminecraft", "minimap"), new MinimapHud());
 
         ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
+            loadTheme();
             if (screen instanceof TitleScreen) {
                 addAtlasButton(screen, w);
             }
         });
     }
 
+    private static boolean themeLoaded;
+
+    /** Applies the saved UI design once the game directory (and so the config) is available. */
+    private static void loadTheme() {
+        if (!themeLoaded) {
+            themeLoaded = true;
+            Paper.apply(Theme.byId(ModConfig.get().theme));
+        }
+    }
+
     private void onTick(Minecraft mc) {
+        loadTheme();
         MapManager.tick(mc);
         ModConfig cfg = ModConfig.get();
         while (ModKeys.OPEN_MAP.consumeClick()) {
@@ -95,10 +112,14 @@ public class MapminecraftClient implements ClientModInitializer {
         }
         int x = anchor != null ? anchor.getX() + anchor.getWidth() + 4 : width / 2 + 104;
         int y = anchor != null ? anchor.getY() : 100;
-        if (overlaps(widgets, x, y)) {
+        int step = 24;
+        if (overlaps(widgets, x, y) || overlaps(widgets, x + step, y)) {
             x = anchor != null ? anchor.getX() - 24 : width / 2 - 124;
+            step = -24;
         }
-        widgets.add(new AtlasButton(x, y, screen));
+        Minecraft mc = Minecraft.getInstance();
+        widgets.add(new TitleButton(x, y, "map", T.tr("atlas.button"), () -> mc.gui.setScreen(new WorldsScreen(screen))));
+        widgets.add(new TitleButton(x + step, y, "gear", T.tr("tool.settings"), () -> mc.gui.setScreen(new SettingsScreen(screen))));
     }
 
     private static boolean overlaps(List<AbstractWidget> widgets, int x, int y) {

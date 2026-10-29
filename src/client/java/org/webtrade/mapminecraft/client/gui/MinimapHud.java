@@ -64,7 +64,7 @@ public class MinimapHud implements HudElement {
         // north marker
         int nx = x + size / 2;
         g.fill(nx - 5, y - 6, nx + 5, y + 4, Paper.INK);
-        g.fill(nx - 4, y - 5, nx + 4, y + 3, 0xFFEAD8AE);
+        g.fill(nx - 4, y - 5, nx + 4, y + 3, Paper.CREAM);
         g.text(mc.font, "N", nx - 2, y - 4, Paper.RED, false);
 
         if (cfg.minimapCoords) {

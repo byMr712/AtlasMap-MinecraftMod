@@ -12,20 +12,55 @@ import org.joml.Matrix3x2fStack;
 
 /** Drawing helpers for the papyrus look: parchment panels, inked borders, buttons and lines. */
 public final class Paper {
-    public static final Identifier PARCHMENT = id("textures/gui/parchment.png");
-    public static final Identifier PARCHMENT_DARK = id("textures/gui/parchment_dark.png");
     public static final Identifier COMPASS = id("textures/gui/compass.png");
-
-    public static final int INK = 0xFF3A2616;
-    public static final int INK_SOFT = 0xFF6B4A2B;
-    public static final int INK_FAINT = 0x663A2616;
-    public static final int GOLD = 0xFFB88C2C;
-    public static final int GOLD_LIGHT = 0xFFEACA6C;
     public static final int RED = 0xFF9C3B2A;
-    public static final int CREAM = 0xFFF6ECD0;
     public static final int SHADOW = 0x55000000;
 
+    // current theme; reassigned by apply()
+    public static Identifier PARCHMENT;
+    public static Identifier PARCHMENT_DARK;
+    public static int INK;
+    public static int INK_SOFT;
+    public static int INK_FAINT;
+    public static int GOLD;
+    public static int GOLD_LIGHT;
+    public static int CREAM;
+    public static int DISABLED;
+    public static int HINT;
+    public static int DIM;
+    public static int VIGNETTE;
+    private static Theme theme;
+
+    static {
+        apply(Theme.PAPYRUS);
+    }
+
     private Paper() {
+    }
+
+    public static Theme theme() {
+        return theme;
+    }
+
+    public static void apply(Theme t) {
+        theme = t;
+        PARCHMENT = t.panel();
+        PARCHMENT_DARK = t.panelDark();
+        INK = t.ink();
+        INK_SOFT = t.inkSoft();
+        INK_FAINT = a(t.ink(), 0x66);
+        GOLD = t.accent();
+        GOLD_LIGHT = t.accentLight();
+        CREAM = t.cream();
+        DISABLED = t.disabled();
+        HINT = t.hint();
+        DIM = t.darkBg() ? 0x90000000 : 0x60100A05;
+        VIGNETTE = t.vignette();
+    }
+
+    /** The colour with its alpha replaced. */
+    public static int a(int color, int alpha) {
+        return alpha << 24 | color & 0xFFFFFF;
     }
 
     public static Identifier id(String path) {
@@ -37,7 +72,7 @@ public final class Paper {
     }
 
     public static Identifier tool(String icon) {
-        return id("textures/gui/tools/" + icon + ".png");
+        return id((theme.darkBg() ? "textures/gui/tools_light/" : "textures/gui/tools/") + icon + ".png");
     }
 
     /** Tiles a 256x256 texture over a rectangle. */
@@ -73,6 +108,10 @@ public final class Paper {
     }
 
     public static void border(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+        if (!theme.ornate()) {
+            g.outline(x, y, w, h, a(INK, 0x50));
+            return;
+        }
         g.outline(x, y, w, h, INK);
         g.outline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
         corner(g, x - 1, y - 1);
@@ -92,8 +131,8 @@ public final class Paper {
         g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         g.fill(x, y, x + w, y + 1, INK_SOFT);
         g.fill(x, y, x + 1, y + h, INK_SOFT);
-        g.fill(x, y + h - 1, x + w, y + h, 0x80FFF8E0);
-        g.fill(x + w - 1, y, x + w, y + h, 0x80FFF8E0);
+        g.fill(x, y + h - 1, x + w, y + h, 0x50FFFFFF);
+        g.fill(x + w - 1, y, x + w, y + h, 0x50FFFFFF);
     }
 
     /** A decorative separator line with a small diamond in the middle. */
@@ -101,6 +140,15 @@ public final class Paper {
         g.fill(x, y, x + w, y + 1, INK_FAINT);
         int cx = x + w / 2;
         g.fill(cx - 1, y - 1, cx + 2, y + 2, INK_SOFT);
+    }
+
+    /** A marker icon; a non-zero colour repaints it using its grey copy. Alpha (0-255) fades it. */
+    public static void markerIcon(GuiGraphicsExtractor g, String icon, int color, int x, int y, int size, int alpha) {
+        if (color == 0) {
+            icon(g, marker(icon), x, y, size, alpha << 24 | 0xFFFFFF);
+        } else {
+            icon(g, id("textures/gui/markers_tint/" + icon + ".png"), x, y, size, a(color, alpha));
+        }
     }
 
     public static void icon(GuiGraphicsExtractor g, Identifier tex, int x, int y, int size) {
@@ -116,7 +164,7 @@ public final class Paper {
         g.fill(x + 1, y + 1, x + size + 1, y + size + 1, SHADOW);
         tiled(g, selected ? PARCHMENT_DARK : PARCHMENT, x, y, size, size, x * 5, y * 3);
         if (selected) {
-            g.fill(x, y, x + size, y + size, 0x30B88C2C);
+            g.fill(x, y, x + size, y + size, a(GOLD, 0x30));
         }
         if (hovered) {
             g.fill(x, y, x + size, y + size, 0x28FFFFFF);
@@ -137,7 +185,7 @@ public final class Paper {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
         g.outline(x, y, w, h, hovered && enabled ? GOLD : INK);
-        int color = enabled ? INK : 0xFF8A7A62;
+        int color = enabled ? INK : DISABLED;
         String s = font.plainSubstrByWidth(label.getString(), w - 6);
         g.text(font, s, x + (w - font.width(s)) / 2, y + (h - 8) / 2 + 1, color, false);
     }
@@ -156,7 +204,7 @@ public final class Paper {
         int total = is + 3 + font.width(s);
         int sx = x + (w - total) / 2;
         icon(g, icon, sx, y + (h - is) / 2, is, enabled ? 0xFFFFFFFF : 0x80FFFFFF);
-        g.text(font, s, sx + is + 3, y + (h - 8) / 2 + 1, enabled ? INK : 0xFF8A7A62, false);
+        g.text(font, s, sx + is + 3, y + (h - 8) / 2 + 1, enabled ? INK : DISABLED, false);
     }
 
     public static void title(GuiGraphicsExtractor g, Font font, String text, int cx, int y) {

@@ -88,7 +88,7 @@ public class MapView {
         if (zoom < 3f) {
             return;
         }
-        int color = zoom >= 6 ? 0x223A2616 : 0x163A2616;
+        int color = zoom >= 6 ? Paper.a(Paper.INK, 0x22) : Paper.a(Paper.INK, 0x16);
         int bx0 = Math.floorDiv((int) Math.floor(wx(x)), 16) * 16;
         int bz0 = Math.floorDiv((int) Math.floor(wz(y)), 16) * 16;
         for (int bx = bx0; sx(bx) < x + w; bx += 16) {
@@ -265,17 +265,17 @@ public class MapView {
             boolean hovered = m.id.equals(hoveredId);
             if (selected || hovered) {
                 int pad = 2;
-                g.fill(ix - pad, iy - pad, ix + s + pad, iy + s + pad, selected ? 0x60EACA6C : 0x40FFFFFF);
+                g.fill(ix - pad, iy - pad, ix + s + pad, iy + s + pad, selected ? Paper.a(Paper.GOLD_LIGHT, 0x60) : 0x40FFFFFF);
                 g.outline(ix - pad, iy - pad, s + pad * 2, s + pad * 2, selected ? Paper.GOLD : Paper.INK_SOFT);
             }
-            Paper.icon(g, Paper.marker(m.icon), ix, iy, s, outside ? 0xB0FFFFFF : 0xFFFFFFFF);
+            Paper.markerIcon(g, m.icon, m.color, ix, iy, s, outside ? 0xB0 : 0xFF);
             if (labels && !outside && (zoom >= 1.5f || selected || hovered) && !m.name.isEmpty()) {
                 String name = font.plainSubstrByWidth(m.name, 120);
                 int tw = font.width(name);
                 int tx = Math.round(px - tw / 2f);
                 int ty = iy + s + 2;
-                g.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, 0xD0EAD8AE);
-                g.outline(tx - 3, ty - 2, tw + 6, 11, 0x803A2616);
+                g.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, Paper.a(Paper.CREAM, 0xD0));
+                g.outline(tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x80));
                 g.text(font, name, tx, ty, Paper.INK, false);
             }
         }
