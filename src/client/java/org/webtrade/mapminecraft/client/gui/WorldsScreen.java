@@ -173,7 +173,7 @@ public class WorldsScreen extends Screen {
                 int cw = w - 16;
                 boolean hover = toDelete == null && Paper.inside(mx, my, cx, cy, cw, cardH) && my >= top && my < bottom;
                 g.fill(cx, cy, cx + cw, cy + cardH, hover ? 0x40FFFFFF : 0x18FFFFFF);
-                g.renderOutline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
+                Paper.outline(g, cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
                 Paper.inset(g, cx + 4, cy + 4, 30, 30);
                 Paper.icon(g, Paper.tool(isServers ? "globe" : "map"), cx + 7, cy + 7, 24);
                 String name = font.plainSubstrByWidth(m.name == null || m.name.isEmpty() ? m.id : m.name, cw - 64);
