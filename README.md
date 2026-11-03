@@ -1,7 +1,7 @@
 > **Language:** Русский · [English](README.en.md)
 
-# MapMinecraft — карта мира с метками (Fabric 1.21.2)
-### MapMinecraft
+# AtlasMap — карта мира с метками (Fabric 1.21.2)
+### AtlasMap
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.2-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
@@ -10,7 +10,7 @@
 
 Клиентский мод полноэкранная карта мира и миникарта, метки с иконками, описаниями и скриншотами, линейка, рисование на карте, телепорт к меткам и **8 вариантов оформления**.
 
-> Мод сделан с помощью ИИ по идеям автора и зрителей.
+> Мод сделан и портирован с помощью ИИ по идеям автора и зрителей.
 
 ## Ветки
 
@@ -74,7 +74,7 @@
 
 ## Где хранятся данные
 
-`.minecraft/mapminecraft/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и скриншоты меток. Настройки лежат в `.minecraft/config/mapminecraft.json`.
+`.minecraft/atlasmap/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и скриншоты меток. Настройки лежат в `.minecraft/config/atlasmap.json`.
 
 ## Сборка
 
