@@ -35,7 +35,7 @@ public class ThumbnailShots implements FabricClientGameTest {
             mc.getLanguageManager().setSelected("ru_ru");
             mc.options.guiScale().set(4);
             mc.options.bobView().set(false);
-            mc.resizeGui();
+            mc.resizeDisplay();
             ModConfig cfg = ModConfig.get();
             cfg.minimapEnabled = true;
             cfg.minimapSizeIndex = 3;
@@ -51,7 +51,7 @@ public class ThumbnailShots implements FabricClientGameTest {
                 st.setSeed(seed);
             }
         }).create()) {
-            sp.getClientLevel().waitForChunksRender();
+            sp.getClientWorld().waitForChunksRender();
             ctx.runOnClient(mc -> mc.options.renderDistance().set(12));
             for (String c : new String[]{"time set 1500", "weather clear", "difficulty peaceful", "gamemode creative @a",
                     "gamerule advance_time false", "gamerule advance_weather false"}) {
@@ -105,7 +105,7 @@ public class ThumbnailShots implements FabricClientGameTest {
 
             ctx.runOnClient(mc -> {
                 mc.options.guiScale().set(5);
-                mc.resizeGui();
+                mc.resizeDisplay();
                 MapScreen screen = MapScreen.openLive(mc);
                 screen.setCleanMode(true);
                 screen.setView(sx + 8, sz + 6, 1.6f);
@@ -123,14 +123,14 @@ public class ThumbnailShots implements FabricClientGameTest {
             ctx.takeScreenshot("thumb_clean_bigger");
             ctx.runOnClient(mc -> {
                 mc.options.guiScale().set(4);
-                mc.resizeGui();
+                mc.resizeDisplay();
                 ((MapScreen) mc.screen).setView(sx + 8, sz + 6, 1.5f);
             });
             ctx.waitTicks(20);
             ctx.takeScreenshot("thumb_clean_wide");
             ctx.runOnClient(mc -> {
                 mc.options.guiScale().set(3);
-                mc.resizeGui();
+                mc.resizeDisplay();
                 MapScreen screen = (MapScreen) mc.screen;
                 screen.setCleanMode(false);
                 screen.setView(sx + 10, sz + 5, 1.6f);
@@ -312,7 +312,7 @@ public class ThumbnailShots implements FabricClientGameTest {
     private static void cursor(ClientGameTestContext ctx, TestInput input, Pos pos) {
         int[] p = ctx.computeOnClient(mc -> {
             int[] g = pos.get(mc);
-            int s = mc.getWindow().getGuiScale();
+            int s = (int) mc.getWindow().getGuiScale();
             return new int[]{g[0] * s, g[1] * s};
         });
         input.setCursorPos(p[0], p[1]);

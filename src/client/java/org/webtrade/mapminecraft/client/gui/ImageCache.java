@@ -47,7 +47,7 @@ public final class ImageCache {
     /** A dynamic texture sampled linearly so that downscaled photos look smooth. */
     private static final class SmoothTexture extends DynamicTexture {
         SmoothTexture(String label, NativeImage image) {
-            super(image);
+            super(() -> label, image);
             this.setFilter(true, false);
         }
     }

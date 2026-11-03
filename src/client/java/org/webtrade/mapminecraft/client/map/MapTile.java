@@ -22,7 +22,7 @@ public class MapTile {
         this.rx = rx;
         this.rz = rz;
         this.id = ResourceLocation.fromNamespaceAndPath("mapminecraft", "tile/" + key + "/" + rx + "_" + rz);
-        this.texture = new DynamicTexture(image);
+        this.texture = new DynamicTexture(() -> "mapminecraft tile " + key + " " + rx + "," + rz, image);
         Minecraft.getInstance().getTextureManager().register(id, texture);
     }
 

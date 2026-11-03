@@ -21,8 +21,16 @@ loom {
     }
 }
 
-// Fabric API's client gametest module is not published for 1.21, so this branch has no
-// automated client screenshot suite. Build both release JARs with ./gradlew build.
+// Fabric API's client gametest module is available from 1.21.5 onward.
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "mapminecraft-test"
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}
 
 repositories {
     mavenCentral()
@@ -34,6 +42,10 @@ dependencies {
         mappings loom.officialMojangMappings()
     }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API is only used by the optional Fabric client gametests. It is not a
+    // runtime dependency of the released mod; the mod code itself uses only vanilla APIs.
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
 processResources {

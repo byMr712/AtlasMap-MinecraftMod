@@ -33,14 +33,14 @@ public class MapClientGameTest implements FabricClientGameTest {
             mc.options.languageCode = "ru_ru";
             mc.getLanguageManager().setSelected("ru_ru");
             mc.options.guiScale().set(3);
-            mc.resizeGui();
+            mc.resizeDisplay();
         });
         ctx.runOnClient(mc -> mc.reloadResourcePacks());
         ctx.waitTicks(60);
         ctx.takeScreenshot("01_title");
 
         try (TestSingleplayerContext sp = ctx.worldBuilder().setUseConsistentSettings(false).adjustSettings(s -> s.setAllowCommands(true)).create()) {
-            sp.getClientLevel().waitForChunksRender();
+            sp.getClientWorld().waitForChunksRender();
             sp.getServer().runCommand("time set day");
             sp.getServer().runCommand("difficulty peaceful");
             sp.getServer().runCommand("gamemode creative @a");
@@ -238,7 +238,7 @@ public class MapClientGameTest implements FabricClientGameTest {
                     MapScreen ms = (MapScreen) mc.screen;
                     ms.openMarkerList();
                     ms.showMarker(MapManager.live().markers.get(0));
-                    mc.resizeGui();
+                    mc.resizeDisplay();
                 });
                 ctx.waitTicks(5);
                 ctx.takeScreenshot("theme_" + theme.id());
@@ -247,7 +247,7 @@ public class MapClientGameTest implements FabricClientGameTest {
                 Paper.apply(Theme.PAPYRUS);
                 ModConfig.get().theme = "papyrus";
                 ModConfig.get().save();
-                mc.resizeGui();
+                mc.resizeDisplay();
             });
             // teleport button at the bottom of the marker card
             clickGui(ctx, input, mc -> {
@@ -340,7 +340,7 @@ public class MapClientGameTest implements FabricClientGameTest {
     private static void clickGui(ClientGameTestContext ctx, TestInput input, Pos pos, int button) {
         int[] p = ctx.computeOnClient(mc -> {
             int[] g = pos.get(mc);
-            int s = mc.getWindow().getGuiScale();
+            int s = (int) mc.getWindow().getGuiScale();
             return new int[]{g[0] * s, g[1] * s};
         });
         input.setCursorPos(p[0], p[1]);
@@ -352,7 +352,7 @@ public class MapClientGameTest implements FabricClientGameTest {
     private static void moveGui(ClientGameTestContext ctx, TestInput input, Pos pos) {
         int[] p = ctx.computeOnClient(mc -> {
             int[] g = pos.get(mc);
-            int s = mc.getWindow().getGuiScale();
+            int s = (int) mc.getWindow().getGuiScale();
             return new int[]{g[0] * s, g[1] * s};
         });
         input.setCursorPos(p[0], p[1]);
@@ -362,7 +362,7 @@ public class MapClientGameTest implements FabricClientGameTest {
     private static void drag(ClientGameTestContext ctx, TestInput input, Pos pos) {
         int[] pts = ctx.computeOnClient(mc -> {
             int[] g = pos.get(mc);
-            int s = mc.getWindow().getGuiScale();
+            int s = (int) mc.getWindow().getGuiScale();
             int[] out = new int[g.length];
             for (int i = 0; i < g.length; i++) {
                 out[i] = g[i] * s;
