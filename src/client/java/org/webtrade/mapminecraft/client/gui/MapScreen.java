@@ -551,6 +551,9 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"close", T.tr("tool.close", keyName(ModKeys.OPEN_MAP)), false, (Runnable) this::onClose});
 
         int h = items.size() * (TB + 3) + 5;
+        if (Paper.inside(mx, my, x - 3, y - 3, TB + 6, h)) {
+            tooltip = null;
+        }
         g.fill(x - 3, y - 3, x + TB + 3, y + h - 3, 0x40000000);
         ui(x - 3, y - 3, TB + 6, h);
         for (Object[] it : items) {
@@ -721,6 +724,9 @@ public class MapScreen extends Screen {
         int ly = 6;
         int lw = listWidth();
         int lh = height - 12;
+        if (Paper.inside(mx, my, lx, ly, lw, lh)) {
+            tooltip = null;
+        }
         Paper.panel(g, lx, ly, lw, lh);
         ui(lx, ly, lw, lh);
         hit(lx, ly, lw, lh, () -> {
@@ -852,6 +858,9 @@ public class MapScreen extends Screen {
         int py = r[1];
         int pw = r[2];
         int ph = r[3];
+        if (Paper.inside(mx, my, px, py, pw, ph)) {
+            tooltip = null;
+        }
         Paper.panel(g, px, py, pw, ph);
         ui(px, py, pw, ph);
         hit(px, py, pw, ph, () -> {
@@ -969,6 +978,9 @@ public class MapScreen extends Screen {
         int py = r[1];
         int pw = r[2];
         int ph = r[3];
+        if (Paper.inside(mx, my, px, py, pw, ph)) {
+            tooltip = null;
+        }
         Paper.panel(g, px, py, pw, ph);
         ui(px, py, pw, ph);
         hit(px, py, pw, ph, () -> setFocused(null));
