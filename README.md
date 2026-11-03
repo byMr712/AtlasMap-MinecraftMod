@@ -50,8 +50,8 @@
 
 1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.20.1 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **26.3**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
-   - `MapMinecraft-Fabric-26.3-1.2.0.jar` — для Fabric;
-   - `MapMinecraft-NeoForge-26.3-1.2.0.jar` — для NeoForge.
+   - `AtlasMap-Fabric-26.3-v1.0.jar` — для Fabric;
+   - `AtlasMap-NeoForge-26.3-v1.0.jar` — для NeoForge.
 3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
@@ -86,8 +86,8 @@
 
 Команда собирает сразу два файла в `build/libs/`:
 
-- `MapMinecraft-Fabric-26.3-1.2.0.jar`
-- `MapMinecraft-NeoForge-26.3-1.2.0.jar`
+- `AtlasMap-Fabric-26.3-v1.0.jar`
+- `AtlasMap-NeoForge-26.3-v1.0.jar`
 
 Игровые тесты со скриншотами запускаются командой `./gradlew runClientGameTest`, скриншоты сохраняются в `build/run/clientGameTest/screenshots/`.
 

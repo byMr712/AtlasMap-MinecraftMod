@@ -93,10 +93,17 @@ processNeoforgeResources {
     }
 }
 
+def artifactVersion = "v${project.version}"
+
 jar {
+    archiveFileName = "${project.archives_base_name}-${artifactVersion}.jar"
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}" }
     }
+}
+
+tasks.matching { it.name == 'remapJar' }.configureEach {
+    archiveFileName = "${project.archives_base_name}-${artifactVersion}.jar"
 }
 
 tasks.matching { it.name == 'sourcesJar' || it.name == 'remapSourcesJar' || it.name == 'javadocJar' }.configureEach {
@@ -105,7 +112,7 @@ tasks.matching { it.name == 'sourcesJar' || it.name == 'remapSourcesJar' || it.n
 
 task jarNeoForge(type: Jar) {
     dependsOn compileNeoforgeJava, processNeoforgeResources, clientClasses, classes
-    archiveFileName = "${project.archives_base_name.replace('-Fabric-', '-NeoForge-')}-${project.version}.jar"
+    archiveFileName = "${project.archives_base_name.replace('-Fabric-', '-NeoForge-')}-${artifactVersion}.jar"
     destinationDirectory = layout.buildDirectory.dir("libs")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
