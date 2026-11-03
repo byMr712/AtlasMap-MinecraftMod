@@ -205,7 +205,7 @@ public class WorldsScreen extends Screen {
         MapSession s = MapManager.openForViewing(m);
         boolean owns = s != MapManager.live();
         Paper.pageTurn();
-        minecraft.gui.setScreen(new MapScreen(this, s, owns));
+        minecraft.setScreen(new MapScreen(this, s, owns));
     }
 
     @Override
@@ -244,6 +244,6 @@ public class WorldsScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.gui.setScreen(parent);
+        minecraft.setScreen(parent);
     }
 }

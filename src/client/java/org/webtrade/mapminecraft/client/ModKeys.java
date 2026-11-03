@@ -47,6 +47,6 @@ public final class ModKeys {
     }
 
     private static KeyMapping key(String name, int code) {
-        return new KeyMapping("key.mapminecraft." + name, InputConstants.Type.KEYBOARD, code, CATEGORY);
+        return new KeyMapping("key.mapminecraft." + name, InputConstants.Type.KEYSYM, code, CATEGORY);
     }
 }

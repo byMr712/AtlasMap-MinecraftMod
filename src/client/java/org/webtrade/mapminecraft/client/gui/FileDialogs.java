@@ -1,22 +1,19 @@
 package org.webtrade.mapminecraft.client.gui;
 
 import net.minecraft.client.Minecraft;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.sdl.SDLDialog;
-import org.lwjgl.sdl.SDL_DialogFileCallback;
-import org.lwjgl.sdl.SDL_DialogFileFilter;
-import org.lwjgl.system.MemoryUtil;
 import org.webtrade.mapminecraft.client.data.Storage;
 
+import java.awt.FileDialog;
+import java.awt.Frame;
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
-/** Native "open file" dialog via SDL3. It is asynchronous, so the game does not freeze. */
+/** Native "open file" dialog via AWT. It runs on its own thread, so the game does not freeze. */
 public final class FileDialogs {
     private static volatile boolean open;
 
@@ -28,50 +25,34 @@ public final class FileDialogs {
             return;
         }
         open = true;
-        // SDL reads the filters until the callback fires, so they live in malloc'd memory freed there.
-        ByteBuffer name = MemoryUtil.memUTF8("Images");
-        ByteBuffer pattern = MemoryUtil.memUTF8("png;jpg;jpeg");
-        SDL_DialogFileFilter.Buffer filters = SDL_DialogFileFilter.calloc(1);
-        filters.get(0).name(name).pattern(pattern);
-        SDL_DialogFileCallback[] holder = new SDL_DialogFileCallback[1];
-        holder[0] = SDL_DialogFileCallback.create((userdata, filelist, filter) -> {
+        Thread thread = new Thread(() -> {
+            List<Path> paths = new ArrayList<>();
             try {
-                List<Path> paths = new ArrayList<>();
-                if (filelist != 0L) {
-                    for (int i = 0; ; i++) {
-                        long p = MemoryUtil.memGetAddress(filelist + (long) i * PointerBuffer.POINTER_SIZE);
-                        if (p == 0L) {
-                            break;
-                        }
-                        paths.add(Path.of(MemoryUtil.memUTF8(p)));
-                    }
+                FileDialog dialog = new FileDialog((Frame) null, title, FileDialog.LOAD);
+                dialog.setMultipleMode(true);
+                dialog.setFilenameFilter((dir, name) -> {
+                    String lower = name.toLowerCase(Locale.ROOT);
+                    return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+                });
+                Path dir = Files.isDirectory(startDir) ? startDir : startDir.getParent();
+                if (dir != null) {
+                    dialog.setDirectory(dir.toAbsolutePath().toString());
                 }
-                if (!paths.isEmpty()) {
-                    Minecraft.getInstance().execute(() -> onChosen.accept(paths));
+                dialog.setVisible(true);
+                for (File file : dialog.getFiles()) {
+                    paths.add(file.toPath());
                 }
+                dialog.dispose();
             } catch (Throwable e) {
                 Storage.LOG.warn("File dialog failed", e);
             } finally {
-                filters.free();
-                MemoryUtil.memFree(name);
-                MemoryUtil.memFree(pattern);
-                // never free a native closure while it is still running
-                Minecraft.getInstance().execute(holder[0]::free);
+                if (!paths.isEmpty()) {
+                    Minecraft.getInstance().execute(() -> onChosen.accept(paths));
+                }
                 open = false;
             }
-        });
-        try {
-            Path dir = Files.isDirectory(startDir) ? startDir : startDir.getParent();
-            String start = dir.toAbsolutePath() + File.separator;
-            long window = Minecraft.getInstance().getWindow().handle();
-            SDLDialog.SDL_ShowOpenFileDialog(holder[0], 0L, window, filters, start, true);
-        } catch (Throwable e) {
-            Storage.LOG.warn("File dialog failed", e);
-            filters.free();
-            MemoryUtil.memFree(name);
-            MemoryUtil.memFree(pattern);
-            holder[0].free();
-            open = false;
-        }
+        }, "MapMinecraft file dialog");
+        thread.setDaemon(true);
+        thread.start();
     }
 }

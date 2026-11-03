@@ -18,7 +18,7 @@ public class MinimapHud {
         MapSession session = MapManager.live();
         LocalPlayer p = mc.player;
         if (!cfg.minimapEnabled || session == null || p == null || mc.level == null
-                || mc.gui.screen() instanceof MapScreen) {
+                || mc.screen instanceof MapScreen) {
             return;
         }
         String dim = mc.level.dimension().identifier().toString();

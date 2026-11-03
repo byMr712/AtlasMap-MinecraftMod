@@ -51,7 +51,7 @@ public class ThumbnailShots implements FabricClientGameTest {
                 st.setSeed(seed);
             }
         }).create()) {
-            sp.getConnection().waitForChunksRender();
+            sp.getClientLevel().waitForChunksRender();
             ctx.runOnClient(mc -> mc.options.renderDistance().set(12));
             for (String c : new String[]{"time set 1500", "weather clear", "difficulty peaceful", "gamemode creative @a",
                     "gamerule advance_time false", "gamerule advance_weather false"}) {
@@ -115,61 +115,61 @@ public class ThumbnailShots implements FabricClientGameTest {
             cursor(ctx, input, mc -> new int[]{2, 2});
             ctx.waitTicks(10);
             ctx.takeScreenshot("thumb_clean_big");
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).setView(sx + 8, sz - 20, 1.6f));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).setView(sx + 8, sz - 20, 1.6f));
             ctx.waitTicks(20);
             ctx.takeScreenshot("thumb_clean_low");
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).setView(sx + 8, sz + 6, 2.1f));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).setView(sx + 8, sz + 6, 2.1f));
             ctx.waitTicks(20);
             ctx.takeScreenshot("thumb_clean_bigger");
             ctx.runOnClient(mc -> {
                 mc.options.guiScale().set(4);
                 mc.resizeGui();
-                ((MapScreen) mc.gui.screen()).setView(sx + 8, sz + 6, 1.5f);
+                ((MapScreen) mc.screen).setView(sx + 8, sz + 6, 1.5f);
             });
             ctx.waitTicks(20);
             ctx.takeScreenshot("thumb_clean_wide");
             ctx.runOnClient(mc -> {
                 mc.options.guiScale().set(3);
                 mc.resizeGui();
-                MapScreen screen = (MapScreen) mc.gui.screen();
+                MapScreen screen = (MapScreen) mc.screen;
                 screen.setCleanMode(false);
                 screen.setView(sx + 10, sz + 5, 1.6f);
             });
             ctx.waitTicks(20);
-            cursor(ctx, input, mc -> new int[]{mc.gui.screen().width - 30, mc.gui.screen().height / 2 + 40});
+            cursor(ctx, input, mc -> new int[]{mc.screen.width - 30, mc.screen.height / 2 + 40});
             ctx.waitTicks(20);
             ctx.takeScreenshot("thumb_map_overview");
 
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).setView(sx + 20, sz + 25, 3f));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).setView(sx + 20, sz + 25, 3f));
             ctx.waitTicks(30);
             ctx.takeScreenshot("thumb_map_close");
 
             ctx.runOnClient(mc -> {
-                MapScreen screen = (MapScreen) mc.gui.screen();
+                MapScreen screen = (MapScreen) mc.screen;
                 screen.openMarkerList();
                 screen.showMarker(MapManager.live().markers.get(0));
                 screen.setView(MapManager.live().markers.get(0).x, MapManager.live().markers.get(0).z, 2.2f);
             });
             ctx.waitTicks(40);
-            cursor(ctx, input, mc -> new int[]{mc.gui.screen().width / 2 - 20, mc.gui.screen().height - 30});
+            cursor(ctx, input, mc -> new int[]{mc.screen.width / 2 - 20, mc.screen.height - 30});
             ctx.waitTicks(5);
             ctx.takeScreenshot("thumb_map_panels");
 
             // icon picker full of icons
             ctx.runOnClient(mc -> {
-                MapScreen screen = (MapScreen) mc.gui.screen();
+                MapScreen screen = (MapScreen) mc.screen;
                 screen.closePanels();
                 screen.editMarker(MapManager.live().markers.get(0));
             });
             ctx.waitTicks(5);
             input.pressKey(InputConstants.KEY_ESCAPE);
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
+                int w = mc.screen.width;
                 int pw = Math.max(150, Math.min(190, w / 3));
                 return new int[]{w - pw - 6 + 30, 6 + 22 + 10 + 20 + 11};
             });
             ctx.waitTicks(5);
-            cursor(ctx, input, mc -> new int[]{mc.gui.screen().width - 4, mc.gui.screen().height - 4});
+            cursor(ctx, input, mc -> new int[]{mc.screen.width - 4, mc.screen.height - 4});
             ctx.waitTicks(5);
             ctx.takeScreenshot("thumb_icons_top");
             input.scroll(-11);
@@ -178,7 +178,7 @@ public class ThumbnailShots implements FabricClientGameTest {
             input.pressKey(InputConstants.KEY_ESCAPE);
             input.pressKey(InputConstants.KEY_ESCAPE);
             ctx.waitTicks(5);
-            ctx.runOnClient(mc -> mc.gui.setScreen(null));
+            ctx.runOnClient(mc -> mc.setScreen(null));
             ctx.waitTicks(5);
         }
     }

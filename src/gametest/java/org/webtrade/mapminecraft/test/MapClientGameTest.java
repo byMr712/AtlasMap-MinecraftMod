@@ -40,7 +40,7 @@ public class MapClientGameTest implements FabricClientGameTest {
         ctx.takeScreenshot("01_title");
 
         try (TestSingleplayerContext sp = ctx.worldBuilder().setUseConsistentSettings(false).adjustSettings(s -> s.setAllowCommands(true)).create()) {
-            sp.getConnection().waitForChunksRender();
+            sp.getClientLevel().waitForChunksRender();
             sp.getServer().runCommand("time set day");
             sp.getServer().runCommand("difficulty peaceful");
             sp.getServer().runCommand("gamemode creative @a");
@@ -87,11 +87,11 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(5);
             ctx.takeScreenshot("06_marker_list");
 
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).showMarker(MapManager.live().markers.get(2)));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).showMarker(MapManager.live().markers.get(2)));
             ctx.waitTicks(5);
             ctx.takeScreenshot("07_marker_view");
 
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).editMarker(MapManager.live().markers.get(2)));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).editMarker(MapManager.live().markers.get(2)));
             ctx.waitTicks(5);
             input.typeChars(" (изменено)");
             ctx.waitTicks(3);
@@ -99,7 +99,7 @@ public class MapClientGameTest implements FabricClientGameTest {
 
             // open the icon picker by clicking the icon selector in the right panel
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
+                int w = mc.screen.width;
                 int pw = Math.max(150, Math.min(190, w / 3));
                 return new int[]{w - pw - 6 + 30, 6 + 22 + 10 + 20 + 11};
             });
@@ -129,8 +129,8 @@ public class MapClientGameTest implements FabricClientGameTest {
 
             // "+" tile opens the screenshot picker
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
-                int h = mc.gui.screen().height;
+                int w = mc.screen.width;
+                int h = mc.screen.height;
                 int pw = Math.max(150, Math.min(190, w / 3));
                 int ph = h - 12;
                 int descH = Math.max(40, Math.min(90, (int) (ph * 0.22)));
@@ -141,14 +141,14 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("10_screenshot_picker");
             // attach the first screenshot and press "Done"
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
+                int w = mc.screen.width;
                 int ow = Math.min(w - 30, 440);
                 return new int[]{(w - ow) / 2 + 30, 15 + 22 + 20 + 4 + 15};
             });
             ctx.waitTicks(30);
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
-                int h = mc.gui.screen().height;
+                int w = mc.screen.width;
+                int h = mc.screen.height;
                 int ow = Math.min(w - 30, 440);
                 return new int[]{(w - ow) / 2 + ow - 60, 15 + (h - 30) - 22 + 8};
             });
@@ -156,8 +156,8 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("10b_edit_with_shot");
             // open the attached screenshot (first tile) and draw on it
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
-                int h = mc.gui.screen().height;
+                int w = mc.screen.width;
+                int h = mc.screen.height;
                 int pw = Math.max(150, Math.min(190, w / 3));
                 int ph = h - 12;
                 int descH = Math.max(40, Math.min(90, (int) (ph * 0.22)));
@@ -165,12 +165,12 @@ public class MapClientGameTest implements FabricClientGameTest {
                 return new int[]{w - pw - 6 + 9 + 20, y + 10};
             });
             ctx.waitTicks(30);
-            clickGui(ctx, input, mc -> new int[]{mc.gui.screen().width - 46 + 9, 6 + 9});
+            clickGui(ctx, input, mc -> new int[]{mc.screen.width - 46 + 9, 6 + 9});
             ctx.waitTicks(5);
-            clickGui(ctx, input, mc -> new int[]{(mc.gui.screen().width - 235) / 2 + 8 + 2 * 11 + 4, 6 + 28 + 11 + 4});
+            clickGui(ctx, input, mc -> new int[]{(mc.screen.width - 235) / 2 + 8 + 2 * 11 + 4, 6 + 28 + 11 + 4});
             drag(ctx, input, mc -> {
-                int cx = mc.gui.screen().width / 2;
-                int cy = mc.gui.screen().height / 2 + 30;
+                int cx = mc.screen.width / 2;
+                int cy = mc.screen.height / 2 + 30;
                 int[] pts = new int[40];
                 for (int i = 0; i < 20; i++) {
                     pts[i * 2] = cx + (int) (Math.cos(i * 0.33) * 40);
@@ -183,16 +183,16 @@ public class MapClientGameTest implements FabricClientGameTest {
             input.pressKey(InputConstants.KEY_ESCAPE);
             input.pressKey(InputConstants.KEY_ESCAPE);
             ctx.waitTicks(2);
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).showMarker(MapManager.live().markers.get(2)));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).showMarker(MapManager.live().markers.get(2)));
             ctx.waitTicks(10);
             ctx.takeScreenshot("10d_view_with_drawn_shot");
 
             // ruler
             input.pressKey(ModKeys.RULER);
-            clickGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2 - 80, mc.gui.screen().height / 2 + 40});
-            clickGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2 - 10, mc.gui.screen().height / 2 - 30});
-            clickGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2 + 60, mc.gui.screen().height / 2 + 10});
-            moveGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2 + 90, mc.gui.screen().height / 2 + 60});
+            clickGui(ctx, input, mc -> new int[]{mc.screen.width / 2 - 80, mc.screen.height / 2 + 40});
+            clickGui(ctx, input, mc -> new int[]{mc.screen.width / 2 - 10, mc.screen.height / 2 - 30});
+            clickGui(ctx, input, mc -> new int[]{mc.screen.width / 2 + 60, mc.screen.height / 2 + 10});
+            moveGui(ctx, input, mc -> new int[]{mc.screen.width / 2 + 90, mc.screen.height / 2 + 60});
             ctx.waitTicks(3);
             ctx.takeScreenshot("11_ruler");
             input.pressKey(ModKeys.RULER);
@@ -201,8 +201,8 @@ public class MapClientGameTest implements FabricClientGameTest {
             input.pressKey(ModKeys.EDITOR);
             ctx.waitTicks(2);
             drag(ctx, input, mc -> {
-                int cx = mc.gui.screen().width / 2 - 40;
-                int cy = mc.gui.screen().height / 2;
+                int cx = mc.screen.width / 2 - 40;
+                int cy = mc.screen.height / 2;
                 int[] pts = new int[40];
                 for (int i = 0; i < 20; i++) {
                     pts[i * 2] = cx + (int) (Math.cos(i * 0.33) * 30);
@@ -235,7 +235,7 @@ public class MapClientGameTest implements FabricClientGameTest {
             for (Theme theme : Theme.ALL) {
                 ctx.runOnClient(mc -> {
                     Paper.apply(theme);
-                    MapScreen ms = (MapScreen) mc.gui.screen();
+                    MapScreen ms = (MapScreen) mc.screen;
                     ms.openMarkerList();
                     ms.showMarker(MapManager.live().markers.get(0));
                     mc.resizeGui();
@@ -251,8 +251,8 @@ public class MapClientGameTest implements FabricClientGameTest {
             });
             // teleport button at the bottom of the marker card
             clickGui(ctx, input, mc -> {
-                int w = mc.gui.screen().width;
-                int h = mc.gui.screen().height;
+                int w = mc.screen.width;
+                int h = mc.screen.height;
                 int pw = Math.max(150, Math.min(190, w / 3));
                 int buttonsY = 6 + (h - 12) - 8 - 16 * 3 - 4 * 2;
                 return new int[]{w - pw - 6 + pw / 2, buttonsY + 40 + 8};
@@ -261,7 +261,7 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> {
                 Marker m = MapManager.live().markers.get(0);
                 double d = Math.hypot(mc.player.getX() - m.x - 0.5, mc.player.getZ() - m.z - 0.5);
-                System.out.println("[MapMinecraft test] teleport distance to marker: " + d + ", screen=" + mc.gui.screen());
+                System.out.println("[MapMinecraft test] teleport distance to marker: " + d + ", screen=" + mc.screen);
                 if (d > 2) {
                     throw new AssertionError("teleport did not move the player, distance " + d);
                 }
@@ -290,7 +290,7 @@ public class MapClientGameTest implements FabricClientGameTest {
             if (s.markers.size() != 8) {
                 throw new AssertionError("expected 8 markers, got " + s.markers.size());
             }
-            mc.gui.setScreen(new MapScreen(new WorldsScreen(new TitleScreen()), s, true));
+            mc.setScreen(new MapScreen(new WorldsScreen(new TitleScreen()), s, true));
         });
         ctx.waitTicks(20);
         ctx.takeScreenshot("16_offline_map");
@@ -300,7 +300,7 @@ public class MapClientGameTest implements FabricClientGameTest {
 
     /** Centre of the first cell in the icon picker grid. */
     private static int[] firstIconCell(Minecraft mc) {
-        int w = mc.gui.screen().width;
+        int w = mc.screen.width;
         int ow = Math.min(w - 16, 18 * 22 + 24);
         int cols = Math.max(4, (ow - 20) / 22);
         int gx = (w - ow) / 2 + (ow - cols * 22) / 2 + 1;
@@ -309,15 +309,15 @@ public class MapClientGameTest implements FabricClientGameTest {
 
     /** Centre of palette swatch i in the colour chooser. */
     private static int[] swatch(Minecraft mc, int i) {
-        int ox = (mc.gui.screen().width - (20 * 11 + 16)) / 2;
-        int oy = (mc.gui.screen().height - 110) / 2;
+        int ox = (mc.screen.width - (20 * 11 + 16)) / 2;
+        int oy = (mc.screen.height - 110) / 2;
         return new int[]{ox + 8 + (i % 20) * 11 + 4, oy + 68 + (i / 20) * 11 + 4};
     }
 
     /** Centre of theme tile i on the settings screen (two-column layout). */
     private static int[] themeTile(Minecraft mc, int i) {
-        int w = mc.gui.screen().width;
-        int h = mc.gui.screen().height;
+        int w = mc.screen.width;
+        int h = mc.screen.height;
         int pw = Math.min(w - 16, 430);
         int px = (w - pw) / 2;
         int colW = (pw - 30) / 2;

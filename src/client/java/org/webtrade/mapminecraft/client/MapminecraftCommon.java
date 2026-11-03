@@ -46,12 +46,12 @@ public final class MapminecraftCommon {
         }
         ModConfig cfg = ModConfig.get();
         while (ModKeys.OPEN_MAP.consumeClick()) {
-            if (mc.gui.screen() == null) {
+            if (mc.screen == null) {
                 MapScreen.openLive(mc);
             }
         }
         while (ModKeys.MARKER_LIST.consumeClick()) {
-            if (mc.gui.screen() == null) {
+            if (mc.screen == null) {
                 MapScreen s = MapScreen.openLive(mc);
                 if (s != null) {
                     s.openMarkerList();
@@ -59,7 +59,7 @@ public final class MapminecraftCommon {
             }
         }
         while (ModKeys.NEW_MARKER.consumeClick()) {
-            if (mc.gui.screen() == null) {
+            if (mc.screen == null) {
                 MapScreen s = MapScreen.openLive(mc);
                 if (s != null) {
                     s.newMarkerAtPlayer();
@@ -120,9 +120,9 @@ public final class MapminecraftCommon {
         Minecraft mc = Minecraft.getInstance();
         ScreenAccessor accessor = (ScreenAccessor) screen;
         accessor.mapminecraft$addRenderableWidget(new TitleButton(x, y, "map", T.tr("atlas.button"),
-                () -> mc.gui.setScreen(new WorldsScreen(screen))));
+                () -> mc.setScreen(new WorldsScreen(screen))));
         accessor.mapminecraft$addRenderableWidget(new TitleButton(x + step, y, "gear", T.tr("tool.settings"),
-                () -> mc.gui.setScreen(new SettingsScreen(screen))));
+                () -> mc.setScreen(new SettingsScreen(screen))));
     }
 
     private static boolean overlaps(List<AbstractWidget> widgets, int x, int y) {
