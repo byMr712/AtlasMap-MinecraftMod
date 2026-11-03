@@ -73,9 +73,11 @@ public class MapScreen extends Screen {
         return Math.round(a + (b - a) * t);
     }
 
-    private enum Tool { NONE, RULER, DRAW }
+    private enum Tool { NONE, RULER, DRAW, REGION }
 
-    private enum DrawTool { PEN, LINE, RECT, CIRCLE, REGION, ERASER }
+    private enum DrawTool { PEN, LINE, RECT, CIRCLE, ERASER }
+
+    private enum RegionShape { FREEHAND, RECT, CIRCLE }
 
     private enum Panel { NONE, VIEW, EDIT }
 
@@ -107,8 +109,13 @@ public class MapScreen extends Screen {
     // regions
     private final List<double[]> regionPoints = new ArrayList<>();
     private boolean regionDrawing;
+    private RegionShape regionShape = RegionShape.FREEHAND;
     private double regionPressX;
     private double regionPressY;
+    private double regionStartWX;
+    private double regionStartWZ;
+    private double regionCurrentWX;
+    private double regionCurrentWZ;
     private Region editingRegion;
     private boolean regionIsNew;
     private EditBox regionNameBox;
@@ -422,6 +429,8 @@ public class MapScreen extends Screen {
             drawDrawBar(g, mx, my);
         } else if (tool == Tool.RULER) {
             drawRulerBar(g);
+        } else if (tool == Tool.REGION) {
+            drawRegionBar(g, mx, my);
         } else {
             drawTitle(g);
         }
@@ -465,13 +474,11 @@ public class MapScreen extends Screen {
         view.drawTiles(g, layer);
         view.drawGrid(g);
         view.drawRegions(g, font, session.regions(dim), dim, true, selectedRegionId);
-        if (regionDrawing && regionPoints.size() >= 2) {
-            Region preview = new Region();
-            preview.name = "";
-            preview.color = COLORS[colorIdx];
-            preview.dim = dim;
-            preview.pts = flatten(regionPoints);
-            view.drawRegion(g, font, preview, false, true);
+        if (regionDrawing) {
+            Region preview = previewRegion();
+            if (preview != null) {
+                view.drawRegion(g, font, preview, false, true);
+            }
         }
         vignette(g);
         if (cfg.drawingsVisible || tool == Tool.DRAW) {
@@ -614,6 +621,7 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"list", T.tr("tool.list", keyName(ModKeys.MARKER_LIST)), listOpen, (Runnable) () -> listOpen = !listOpen});
         items.add(new Object[]{"ruler", T.tr("tool.ruler", keyName(ModKeys.RULER)), tool == Tool.RULER, (Runnable) () -> setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER)});
         items.add(new Object[]{"quill", T.tr("tool.editor", keyName(ModKeys.EDITOR)), tool == Tool.DRAW, (Runnable) () -> setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW)});
+        items.add(new Object[]{"region", T.tr("tool.regions"), tool == Tool.REGION, (Runnable) () -> setTool(tool == Tool.REGION ? Tool.NONE : Tool.REGION)});
         items.add(new Object[]{cfg.drawingsVisible ? "eye" : "eye_off", T.tr(cfg.drawingsVisible ? "tool.hide_drawings" : "tool.show_drawings", keyName(ModKeys.TOGGLE_DRAWINGS)), !cfg.drawingsVisible, (Runnable) this::toggleDrawings});
         items.add(new Object[]{"marker:pin", T.tr(cfg.markersVisible ? "tool.hide_markers" : "tool.show_markers"), !cfg.markersVisible, (Runnable) () -> {
             cfg.markersVisible = !cfg.markersVisible;
@@ -655,11 +663,36 @@ public class MapScreen extends Screen {
                 () -> confirm(T.tr("confirm.clear_drawings"), this::clearDrawings), T.tr("draw.clear"));
     }
 
+    /** The region tool's top bar: freehand (default), rectangle and circle presets. */
+    private void drawRegionBar(GuiGraphicsExtractor g, int mx, int my) {
+        int w = 76;
+        int h = 28;
+        int x = (freeLeft() + freeRight()) / 2 - w / 2;
+        int y = 6;
+        Paper.panel(g, x, y, w, h);
+        ui(x, y, w, h);
+        hit(x, y, w, h, () -> {
+        });
+        RegionShape[] shapes = {RegionShape.FREEHAND, RegionShape.RECT, RegionShape.CIRCLE};
+        String[] icons = {"pen", "rect", "circle"};
+        String[] tips = {"region.freehand", "region.rect", "region.circle"};
+        for (int i = 0; i < shapes.length; i++) {
+            int bx = x + 5 + i * 22;
+            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, bx, y + 5, 18, 18);
+            Paper.iconButton(g, Paper.tool(icons[i]), bx, y + 5, 18, hover, regionShape == shapes[i]);
+            if (hover) {
+                tooltip = T.tr(tips[i]);
+            }
+            RegionShape shape = shapes[i];
+            hit(bx, y + 5, 18, 18, () -> regionShape = shape);
+        }
+    }
+
     /** Tool selector, line widths and the 60 colour palette. Shared by the map editor and the screenshot editor. */
     private void drawToolBar(GuiGraphics g, int mx, int my, int x, int y, boolean active, Runnable onUndo,
                              Runnable onClear, Component clearTip) {
         DrawTool[] tools = DrawTool.values();
-        String[] icons = {"pen", "line", "rect", "circle", "region", "eraser"};
+        String[] icons = {"pen", "line", "rect", "circle", "eraser"};
         Paper.panel(g, x, y, DRAW_BAR_W, DRAW_BAR_H);
         ui(x, y, DRAW_BAR_W, DRAW_BAR_H);
         hit(x, y, DRAW_BAR_W, DRAW_BAR_H, () -> {
@@ -1830,6 +1863,10 @@ public class MapScreen extends Screen {
 
     private void setTool(Tool t) {
         tool = t;
+        if (t != Tool.REGION) {
+            regionDrawing = false;
+            regionPoints.clear();
+        }
         if (t != Tool.NONE && freeRight() - freeLeft() < 230) {
             listOpen = false;
         }
@@ -2233,13 +2270,19 @@ public class MapScreen extends Screen {
         if (runHits(mx, my, button)) {
             return true;
         }
-        if (tool == Tool.DRAW && drawTool == DrawTool.REGION
+        if (tool == Tool.REGION
                 && button == InputConstants.MOUSE_BUTTON_LEFT && mouseOverMap(mx, my)) {
             regionDrawing = true;
             regionPoints.clear();
             regionPressX = mx;
             regionPressY = my;
-            addRegionPoint(mx, my);
+            regionStartWX = view.wx(mx);
+            regionStartWZ = view.wz(my);
+            regionCurrentWX = regionStartWX;
+            regionCurrentWZ = regionStartWZ;
+            if (regionShape == RegionShape.FREEHAND) {
+                addRegionPoint(mx, my);
+            }
             return true;
         }
         if (panel == Panel.EDIT && working != null && tool == Tool.NONE
@@ -2285,7 +2328,11 @@ public class MapScreen extends Screen {
             return true;
         }
         if (regionDrawing) {
-            addRegionPoint(e.x(), e.y());
+            regionCurrentWX = view.wx(e.x());
+            regionCurrentWZ = view.wz(e.y());
+            if (regionShape == RegionShape.FREEHAND) {
+                addRegionPoint(e.x(), e.y());
+            }
             return true;
         }
         if (markerDrag && working != null) {
@@ -2399,37 +2446,84 @@ public class MapScreen extends Screen {
     }
 
     private void finishRegion(double mx, double my) {
-        List<double[]> points = new ArrayList<>(regionPoints);
-        regionPoints.clear();
         double travelled = Math.hypot(mx - regionPressX, my - regionPressY);
         if (travelled < 3) {
+            regionPoints.clear();
             Region hit = view.regionAt(session.regions(dim), dim, mx, my);
             if (hit != null) {
                 openRegionEditor(hit, false);
             }
             return;
         }
-        if (points.size() < 3) {
-            return;
+        double[] pts;
+        if (regionShape == RegionShape.FREEHAND) {
+            List<double[]> points = new ArrayList<>(regionPoints);
+            double[] first = points.get(0);
+            double[] last = points.get(points.size() - 1);
+            if (Math.hypot(last[0] - first[0], last[1] - first[1]) < 2.5) {
+                points.remove(points.size() - 1);
+            }
+            pts = points.size() >= 3 ? flatten(points) : new double[0];
+        } else {
+            regionCurrentWX = view.wx(mx);
+            regionCurrentWZ = view.wz(my);
+            pts = shapePoints();
         }
-        double[] first = points.get(0);
-        double[] last = points.get(points.size() - 1);
-        if (Math.hypot(last[0] - first[0], last[1] - first[1]) < 2.5) {
-            points.remove(points.size() - 1);
-        }
-        if (points.size() < 3) {
+        regionPoints.clear();
+        if (pts.length < 6) {
             return;
         }
         Region r = new Region();
         r.name = T.s("region.default_name", session.regions(dim).size() + 1);
         r.color = COLORS[colorIdx];
         r.dim = dim;
-        r.pts = flatten(points);
+        r.pts = pts;
         session.regions(dim).add(r);
         session.saveRegions();
         selectedRegionId = r.id;
         Paper.pageTurn();
         openRegionEditor(r, true);
+    }
+
+    /** Builds the polygon of the selected region shape for preview and for the final region. */
+    private double[] shapePoints() {
+        if (regionShape == RegionShape.RECT) {
+            double x1 = Math.min(regionStartWX, regionCurrentWX);
+            double x2 = Math.max(regionStartWX, regionCurrentWX);
+            double z1 = Math.min(regionStartWZ, regionCurrentWZ);
+            double z2 = Math.max(regionStartWZ, regionCurrentWZ);
+            if (x2 - x1 < 1 || z2 - z1 < 1) {
+                return new double[0];
+            }
+            return new double[]{x1, z1, x2, z1, x2, z2, x1, z2};
+        }
+        if (regionShape == RegionShape.CIRCLE) {
+            double radius = Math.hypot(regionCurrentWX - regionStartWX, regionCurrentWZ - regionStartWZ);
+            if (radius < 1) {
+                return new double[0];
+            }
+            int n = 24;
+            double[] p = new double[n * 2];
+            for (int i = 0; i < n; i++) {
+                double a = Math.PI * 2 * i / n;
+                p[i * 2] = regionStartWX + Math.cos(a) * radius;
+                p[i * 2 + 1] = regionStartWZ + Math.sin(a) * radius;
+            }
+            return p;
+        }
+        return flatten(regionPoints);
+    }
+
+    private Region previewRegion() {
+        double[] pts = shapePoints();
+        if (pts.length < 6) {
+            return null;
+        }
+        Region r = new Region();
+        r.color = COLORS[colorIdx];
+        r.dim = dim;
+        r.pts = pts;
+        return r;
     }
 
     private static double[] flatten(List<double[]> points) {
@@ -2519,6 +2613,7 @@ public class MapScreen extends Screen {
         regionNameBox.setX(cx + 4);
         regionNameBox.setY(y + 4);
         regionNameBox.setWidth(cw - 8);
+        regionNameBox.extractRenderState(g, mx, my, 0);
         y += 22;
 
         g.text(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
@@ -2557,6 +2652,9 @@ public class MapScreen extends Screen {
             return;
         }
         if (tool == Tool.DRAW) {
+            return;
+        }
+        if (tool == Tool.REGION) {
             return;
         }
         if (button == InputConstants.MOUSE_BUTTON_LEFT) {
