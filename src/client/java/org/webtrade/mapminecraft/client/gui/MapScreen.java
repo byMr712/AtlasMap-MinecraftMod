@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.levelgen.Heightmap;
 import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.sdl.SDLScancode;
+import org.lwjgl.glfw.GLFW;
 import org.webtrade.mapminecraft.client.ModKeys;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.ModConfig;
@@ -2397,7 +2397,7 @@ public class MapScreen extends Screen {
             zoomBy(1.5f, width / 2.0, height / 2.0);
             return true;
         }
-        if (key == InputConstants.KEY_MINUS || key == SDLScancode.SDL_SCANCODE_KP_MINUS) {
+        if (key == InputConstants.KEY_MINUS || key == GLFW.GLFW_KEY_KP_SUBTRACT) {
             zoomBy(1 / 1.5f, width / 2.0, height / 2.0);
             return true;
         }
