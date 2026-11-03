@@ -1,4 +1,4 @@
-# Extra marker icons for AtlasMap (fill-only grids, the ink outline is added automatically).
+# Extra marker icons for AtlasMapExtended (fill-only grids, the ink outline is added automatically).
 # Imported by gen_textures.py.
 from PIL import Image
 

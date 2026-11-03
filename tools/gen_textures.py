@@ -1,10 +1,10 @@
-# Generates the papyrus-style textures for AtlasMap.
+# Generates the papyrus-style textures for AtlasMapExtended.
 # Run: python tools/gen_textures.py
 import os
 import numpy as np
 from PIL import Image, ImageDraw
 
-ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "client", "resources", "assets", "atlasmap")
+ROOT = os.path.join(os.path.dirname(__file__), "..", "src", "client", "resources", "assets", "atlasmapextended")
 TEX = os.path.join(ROOT, "textures", "gui")
 
 PAL = {

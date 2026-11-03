@@ -4,20 +4,20 @@ import os
 import re
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-OUT = os.path.join(ROOT, "src", "client", "resources", "assets", "atlasmap", "lang")
+OUT = os.path.join(ROOT, "src", "client", "resources", "assets", "atlasmapextended", "lang")
 
 # key: (ru, en)
 K = {
-    "key.category.atlasmap.main": ("Карта (AtlasMap)", "Map (AtlasMap)"),
-    "key.atlasmap.open_map": ("Открыть карту", "Open map"),
-    "key.atlasmap.marker_list": ("Список меток", "Marker list"),
-    "key.atlasmap.new_marker": ("Метка на месте игрока", "Marker at player position"),
-    "key.atlasmap.toggle_minimap": ("Вкл/выкл миникарту", "Toggle minimap"),
-    "key.atlasmap.minimap_zoom_in": ("Миникарта: приблизить", "Minimap: zoom in"),
-    "key.atlasmap.minimap_zoom_out": ("Миникарта: отдалить", "Minimap: zoom out"),
-    "key.atlasmap.ruler": ("Линейка (на карте)", "Ruler (in map)"),
-    "key.atlasmap.editor": ("Редактор рисунков (на карте)", "Drawing editor (in map)"),
-    "key.atlasmap.toggle_drawings": ("Показать/скрыть рисунки (на карте)", "Show/hide drawings (in map)"),
+    "key.category.atlasmapextended.main": ("Карта (AtlasMapExtended)", "Map (AtlasMapExtended)"),
+    "key.atlasmapextended.open_map": ("Открыть карту", "Open map"),
+    "key.atlasmapextended.marker_list": ("Список меток", "Marker list"),
+    "key.atlasmapextended.new_marker": ("Метка на месте игрока", "Marker at player position"),
+    "key.atlasmapextended.toggle_minimap": ("Вкл/выкл миникарту", "Toggle minimap"),
+    "key.atlasmapextended.minimap_zoom_in": ("Миникарта: приблизить", "Minimap: zoom in"),
+    "key.atlasmapextended.minimap_zoom_out": ("Миникарта: отдалить", "Minimap: zoom out"),
+    "key.atlasmapextended.ruler": ("Линейка (на карте)", "Ruler (in map)"),
+    "key.atlasmapextended.editor": ("Редактор рисунков (на карте)", "Drawing editor (in map)"),
+    "key.atlasmapextended.toggle_drawings": ("Показать/скрыть рисунки (на карте)", "Show/hide drawings (in map)"),
     "map.title": ("Карта мира", "World map"),
     "field.name": ("Название", "Name"),
     "field.name_hint": ("Введите название…", "Enter a name…"),
@@ -202,7 +202,7 @@ ICONS = {
 
 
 def full(k):
-    return k if k.startswith("key.") else "atlasmap." + k
+    return k if k.startswith("key.") else "atlasmapextended." + k
 
 
 def main():
@@ -222,7 +222,7 @@ def main():
             if fn.endswith(".java"):
                 src = open(os.path.join(dp, fn), encoding="utf-8").read()
                 used.update(re.findall(r'T\.(?:tr|s)\("([a-z_.]+)"', src))
-    missing = [k for k in sorted(used) if "atlasmap." + k not in en]
+    missing = [k for k in sorted(used) if "atlasmapextended." + k not in en]
     print(len(K), "keys; missing:", missing)
 
 

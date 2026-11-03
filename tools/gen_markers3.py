@@ -1,4 +1,4 @@
-# Icon families that bring AtlasMap to 500 marker icons, plus the icon catalog (icons.json).
+# Icon families that bring AtlasMapExtended to 500 marker icons, plus the icon catalog (icons.json).
 # Called from gen_textures.py: build(MARKERS, PAL, grid_fn, save_fn, root_dir)
 import json
 import math
