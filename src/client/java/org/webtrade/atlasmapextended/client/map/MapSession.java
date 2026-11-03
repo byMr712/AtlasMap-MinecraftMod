@@ -2,6 +2,7 @@ package org.webtrade.atlasmapextended.client.map;
 
 import org.webtrade.atlasmapextended.client.gui.T;
 import org.webtrade.atlasmapextended.client.data.Marker;
+import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Storage;
 import org.webtrade.atlasmapextended.client.data.Stroke;
 import org.webtrade.atlasmapextended.client.data.WorldMeta;
@@ -23,6 +24,7 @@ public class MapSession {
     public final Path dir;
     public final List<Marker> markers;
     private final Map<String, List<Stroke>> strokes;
+    private final Map<String, List<Region>> regions;
     private final Map<String, MapLayer> layers = new HashMap<>();
     boolean live;
 
@@ -32,6 +34,8 @@ public class MapSession {
         this.markers = new ArrayList<>(Storage.readJson(dir.resolve("markers.json"), Storage.MARKER_LIST, List.<Marker>of()));
         this.strokes = new HashMap<>(Storage.readJson(dir.resolve("drawings.json"), Storage.STROKE_MAP, Map.<String, List<Stroke>>of()));
         this.strokes.replaceAll((k, v) -> new ArrayList<>(v));
+        this.regions = new HashMap<>(Storage.readJson(dir.resolve("regions.json"), Storage.REGION_MAP, Map.<String, List<Region>>of()));
+        this.regions.replaceAll((k, v) -> new ArrayList<>(v));
         for (Marker m : markers) {
             if (m.screenshots == null) {
                 m.screenshots = new ArrayList<>();
@@ -67,6 +71,10 @@ public class MapSession {
 
     public List<Stroke> strokes(String dim) {
         return strokes.computeIfAbsent(dim, d -> new ArrayList<>());
+    }
+
+    public List<Region> regions(String dim) {
+        return regions.computeIfAbsent(dim, d -> new ArrayList<>());
     }
 
     public Path screenshotsDir() {
@@ -109,6 +117,7 @@ public class MapSession {
             out.add(m.dim);
         }
         layers.keySet().forEach(out::add);
+        regions.keySet().forEach(out::add);
         if (out.isEmpty()) {
             out.add("minecraft:overworld");
         }
@@ -132,6 +141,12 @@ public class MapSession {
         Map<String, List<Stroke>> copy = new HashMap<>();
         strokes.forEach((k, v) -> copy.put(k, new ArrayList<>(v)));
         Storage.writeJsonAsync(dir.resolve("drawings.json"), copy);
+    }
+
+    public void saveRegions() {
+        Map<String, List<Region>> copy = new HashMap<>();
+        regions.forEach((k, v) -> copy.put(k, new ArrayList<>(v)));
+        Storage.writeJsonAsync(dir.resolve("regions.json"), copy);
     }
 
     public void saveMeta() {
