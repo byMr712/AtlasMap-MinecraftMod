@@ -5,11 +5,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelResource;
 import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Storage;
+import org.webtrade.atlasmapextended.client.gui.RegionToast;
+import org.webtrade.atlasmapextended.client.gui.T;
 import org.webtrade.atlasmapextended.client.data.WorldMeta;
 
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ public final class MapManager {
     private static MapSession live;
     private static String liveDim;
     private static String lastRegion;
+    private static String lastRegionName;
     private static final LongLinkedOpenHashSet queue = new LongLinkedOpenHashSet();
     private static int ticks;
 
@@ -42,6 +44,7 @@ public final class MapManager {
         live.live = true;
         liveDim = null;
         lastRegion = null;
+        lastRegionName = null;
         queue.clear();
         live.saveMeta();
     }
@@ -62,6 +65,7 @@ public final class MapManager {
         }
         liveDim = null;
         lastRegion = null;
+        lastRegionName = null;
         queue.clear();
     }
 
@@ -89,6 +93,8 @@ public final class MapManager {
         int pcz = mc.player.getBlockZ() >> 4;
         if (!dim.equals(liveDim)) {
             liveDim = dim;
+            lastRegion = null;
+            lastRegionName = null;
             queue.clear();
             int r = mc.options.getEffectiveRenderDistance();
             enqueueAround(pcx, pcz, r);
@@ -105,13 +111,16 @@ public final class MapManager {
                     break;
                 }
             }
-            if (inside != null && !inside.id.equals(lastRegion)) {
-                lastRegion = inside.id;
-                String name = inside.name == null || inside.name.isBlank() ? "Region" : inside.name;
-                int rgb = inside.color & 0xFFFFFF;
-                mc.gui.hud.setOverlayMessage(Component.literal(name).withStyle(s -> s.withColor(rgb)), false);
-            } else if (inside == null) {
+            if (inside != null) {
+                if (!inside.id.equals(lastRegion)) {
+                    lastRegion = inside.id;
+                    lastRegionName = inside.name == null || inside.name.isBlank() ? "Region" : inside.name;
+                    RegionToast.show(T.s("region.enter_title"), lastRegionName);
+                }
+            } else if (lastRegion != null) {
+                RegionToast.show(T.s("region.exit_title"), lastRegionName);
                 lastRegion = null;
+                lastRegionName = null;
             }
         }
 
