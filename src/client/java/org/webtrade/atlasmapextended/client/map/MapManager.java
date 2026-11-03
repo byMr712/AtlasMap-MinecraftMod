@@ -5,8 +5,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelResource;
+import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Storage;
 import org.webtrade.atlasmapextended.client.data.WorldMeta;
 
@@ -18,6 +20,7 @@ public final class MapManager {
 
     private static MapSession live;
     private static String liveDim;
+    private static String lastRegion;
     private static final LongLinkedOpenHashSet queue = new LongLinkedOpenHashSet();
     private static int ticks;
 
@@ -38,6 +41,7 @@ public final class MapManager {
         live = MapSession.open(meta);
         live.live = true;
         liveDim = null;
+        lastRegion = null;
         queue.clear();
         live.saveMeta();
     }
@@ -52,10 +56,12 @@ public final class MapManager {
             live.saveMeta();
             live.saveMarkers();
             live.saveStrokes();
+            live.saveRegions();
             live.close();
             live = null;
         }
         liveDim = null;
+        lastRegion = null;
         queue.clear();
     }
 
@@ -90,6 +96,23 @@ public final class MapManager {
         ticks++;
         if (ticks % 40 == 0) {
             enqueueAround(pcx, pcz, 2);
+        }
+        if (ticks % 10 == 0) {
+            Region inside = null;
+            for (Region r : live.regions(dim)) {
+                if (!r.hidden && r.dim.equals(dim) && r.contains(mc.player.getX(), mc.player.getZ())) {
+                    inside = r;
+                    break;
+                }
+            }
+            if (inside != null && !inside.id.equals(lastRegion)) {
+                lastRegion = inside.id;
+                String name = inside.name == null || inside.name.isBlank() ? "Region" : inside.name;
+                int rgb = inside.color & 0xFFFFFF;
+                mc.gui.hud.setOverlayMessage(Component.literal(name).withStyle(s -> s.withColor(rgb)), false);
+            } else if (inside == null) {
+                lastRegion = null;
+            }
         }
 
         MapLayer layer = live.layer(dim);

@@ -52,6 +52,7 @@ public class MinimapHud {
         if (cfg.drawingsVisible) {
             view.drawStrokes(g, session.strokes(dim), 0.75f);
         }
+        view.drawRegions(g, mc.font, session.regions(dim), dim, false, null);
         if (cfg.minimapMarkers && cfg.markersVisible) {
             view.drawMarkers(g, mc.font, session.markers, dim, 10, false, null, null, true);
         }
