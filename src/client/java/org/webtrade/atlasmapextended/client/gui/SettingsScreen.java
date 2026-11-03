@@ -44,8 +44,11 @@ public class SettingsScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
-        // Opened from the world map: show the game world behind the settings, not the map.
-        if (parent != null && !(parent instanceof MapScreen)) {
+        // Opened from the world map: keep the world (and minimap HUD) visible behind the settings.
+        if (parent instanceof MapScreen) {
+            return;
+        }
+        if (parent != null) {
             parent.extractBackground(g, -1, -1, pt);
             parent.extractRenderState(g, -1, -1, pt);
         } else {
