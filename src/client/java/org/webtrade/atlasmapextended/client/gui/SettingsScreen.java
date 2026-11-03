@@ -44,7 +44,8 @@ public class SettingsScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
-        if (parent != null) {
+        // Opened from the world map: show the game world behind the settings, not the map.
+        if (parent != null && !(parent instanceof MapScreen)) {
             parent.extractBackground(g, -1, -1, pt);
             parent.extractRenderState(g, -1, -1, pt);
         } else {
