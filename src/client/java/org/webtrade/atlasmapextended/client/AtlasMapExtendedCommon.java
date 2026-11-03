@@ -10,6 +10,7 @@ import org.webtrade.atlasmapextended.client.data.ModConfig;
 import org.webtrade.atlasmapextended.client.gui.MapScreen;
 import org.webtrade.atlasmapextended.client.gui.MinimapHud;
 import org.webtrade.atlasmapextended.client.gui.Paper;
+import org.webtrade.atlasmapextended.client.gui.RegionToast;
 import org.webtrade.atlasmapextended.client.gui.SettingsScreen;
 import org.webtrade.atlasmapextended.client.gui.T;
 import org.webtrade.atlasmapextended.client.gui.Theme;
@@ -41,6 +42,7 @@ public final class AtlasMapExtendedCommon {
     public static void onTick(Minecraft mc) {
         loadTheme();
         MapManager.tick(mc);
+        RegionToast.tick();
         if (ModKeys.OPEN_MAP == null) {
             return;
         }
@@ -94,6 +96,7 @@ public final class AtlasMapExtendedCommon {
 
     public static void renderMinimap(GuiGraphicsExtractor g, DeltaTracker delta) {
         MINIMAP.render(g, delta);
+        RegionToast.render(g, Minecraft.getInstance().font);
     }
 
     public static void addAtlasButton(Screen screen) {
