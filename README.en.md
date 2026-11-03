@@ -1,6 +1,5 @@
 > **Language:** [Русский](README.md) · English
 
-# AtlasMapExtended — World Map with Markers (Fabric 1.21.10)
 ### AtlasMapExtended
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.10-blue.svg)
