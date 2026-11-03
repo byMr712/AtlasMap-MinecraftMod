@@ -1,9 +1,9 @@
 > **Language:** Русский · [English](README.en.md)
 
-# MapMinecraft — карта мира с метками (Fabric 26.1)
+# MapMinecraft — карта мира с метками (Fabric 26.1.1)
 ### MapMinecraft
 ![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
-![Minecraft](https://img.shields.io/badge/Minecraft-26.1-blue.svg)
+![Minecraft](https://img.shields.io/badge/Minecraft-26.1.1-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
 ![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -48,10 +48,10 @@
 
 Мод работает на **Fabric** и **NeoForge**. Fabric API и другие библиотеки не требуются.
 
-1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.20.1 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **26.1**.
+1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.20.1 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **26.1.1**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
-   - `AtlasMap-Fabric-26.1-v1.0.jar` — для Fabric;
-   - `AtlasMap-NeoForge-26.1-v1.0.jar` — для NeoForge.
+   - `AtlasMap-Fabric-26.1.1-v1.0.jar` — для Fabric;
+   - `AtlasMap-NeoForge-26.1.1-v1.0.jar` — для NeoForge.
 3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
@@ -86,8 +86,8 @@
 
 Команда собирает сразу два файла в `build/libs/`:
 
-- `AtlasMap-Fabric-26.1-v1.0.jar`
-- `AtlasMap-NeoForge-26.1-v1.0.jar`
+- `AtlasMap-Fabric-26.1.1-v1.0.jar`
+- `AtlasMap-NeoForge-26.1.1-v1.0.jar`
 
 Игровые тесты со скриншотами запускаются командой `./gradlew runClientGameTest`, скриншоты сохраняются в `build/run/clientGameTest/screenshots/`.
 
