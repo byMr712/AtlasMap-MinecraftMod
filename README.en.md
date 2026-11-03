@@ -1,9 +1,9 @@
 > **Language:** [Русский](README.md) · English
 
-# MapMinecraft — World Map with Markers (Fabric 26.1.1)
+# MapMinecraft — World Map with Markers (Fabric 26.1.2)
 ### MapMinecraft
 ![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
-![Minecraft](https://img.shields.io/badge/Minecraft-26.1.1-blue.svg)
+![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
 ![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -48,10 +48,10 @@ A client-side mod full-screen world map and minimap, markers with icons, descrip
 
 The mod runs on **Fabric** and **NeoForge**. Fabric API and other libraries are not required.
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) (0.20.1 or newer) or [NeoForge](https://neoforged.net/) for Minecraft **26.1.1**.
+1. Install [Fabric Loader](https://fabricmc.net/use/) (0.20.1 or newer) or [NeoForge](https://neoforged.net/) for Minecraft **26.1.2**.
 2. Place one JAR for your loader into the `mods` folder:
-   - `AtlasMap-Fabric-26.1.1-v1.0.jar` for Fabric;
-   - `AtlasMap-NeoForge-26.1.1-v1.0.jar` for NeoForge.
+   - `AtlasMap-Fabric-26.1.2-v1.0.jar` for Fabric;
+   - `AtlasMap-NeoForge-26.1.2-v1.0.jar` for NeoForge.
 3. Launch the game.
 
 The mod is client-side only; no need to install it on a server.
@@ -86,8 +86,8 @@ JDK 25 or newer is required.
 
 The command builds both files in `build/libs/`:
 
-- `AtlasMap-Fabric-26.1.1-v1.0.jar`
-- `AtlasMap-NeoForge-26.1.1-v1.0.jar`
+- `AtlasMap-Fabric-26.1.2-v1.0.jar`
+- `AtlasMap-NeoForge-26.1.2-v1.0.jar`
 
 Game tests with screenshots are run with `./gradlew runClientGameTest`; screenshots are saved to `build/run/clientGameTest/screenshots/`.
 
