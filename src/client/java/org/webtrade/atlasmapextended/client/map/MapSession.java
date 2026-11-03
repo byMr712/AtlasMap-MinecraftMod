@@ -77,6 +77,13 @@ public class MapSession {
         return regions.computeIfAbsent(dim, d -> new ArrayList<>());
     }
 
+    /** Every region of every dimension, for the object list. */
+    public List<Region> allRegions() {
+        List<Region> out = new ArrayList<>();
+        regions.values().forEach(out::addAll);
+        return out;
+    }
+
     public Path screenshotsDir() {
         return dir.resolve("screenshots");
     }
