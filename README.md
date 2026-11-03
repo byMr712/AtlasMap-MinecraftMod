@@ -1,7 +1,7 @@
 > **Language:** Русский · [English](README.en.md)
 
-# AtlasMap — карта мира с метками (Fabric 1.21.10)
-### AtlasMap
+# AtlasMapExtended — карта мира с метками (Fabric 1.21.10)
+### AtlasMapExtended
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.10-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
@@ -50,8 +50,8 @@
 
 1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.19.5 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **1.21.10**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
-   - `AtlasMap-Fabric-1.21.10-v1.0.jar` — для Fabric;
-   - `AtlasMap-NeoForge-1.21.10-v1.0.jar` — для NeoForge.
+   - `AtlasMapExtended-Fabric-1.21.10-v1.0.jar` — для Fabric;
+   - `AtlasMapExtended-NeoForge-1.21.10-v1.0.jar` — для NeoForge.
 3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
@@ -74,7 +74,7 @@
 
 ## Где хранятся данные
 
-`.minecraft/atlasmap/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и скриншоты меток. Настройки лежат в `.minecraft/config/atlasmap.json`.
+`.minecraft/atlasmapextended/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и скриншоты меток. Настройки лежат в `.minecraft/config/atlasmapextended.json`.
 
 ## Сборка
 
@@ -86,12 +86,12 @@
 
 Команда собирает сразу два файла в `build/libs/`:
 
-- `AtlasMap-Fabric-1.21.10-v1.0.jar`
-- `AtlasMap-NeoForge-1.21.10-v1.0.jar`
+- `AtlasMapExtended-Fabric-1.21.10-v1.0.jar`
+- `AtlasMapExtended-NeoForge-1.21.10-v1.0.jar`
 
 Игровые тесты со скриншотами доступны в ветках `26.1` и `26.3` (в Fabric API для 1.21 нет client-gametest модуля).
 
 ## Авторы и лицензии
 
-- **Автор мода:** [erkinpaw](https://github.com/erkinpaw/atlasmap) · **Лицензия:** [MIT](https://github.com/erkinpaw/atlasmap/blob/main/LICENSE).  
-- **Автор порта на Fabric/Neoforge 1.21:** [Mr712](https://github.com/byMr712/AtlasMap-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).
+- **Автор мода:** [erkinpaw](https://github.com/erkinpaw/atlasmapextended) · **Лицензия:** [MIT](https://github.com/erkinpaw/atlasmapextended/blob/main/LICENSE).  
+- **Автор порта на Fabric/Neoforge 1.21:** [Mr712](https://github.com/byMr712/AtlasMapExtended-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).
