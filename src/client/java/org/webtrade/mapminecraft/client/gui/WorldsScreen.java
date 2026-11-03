@@ -69,7 +69,7 @@ public class WorldsScreen extends Screen {
             g.fill(i * 2, 0, i * 2 + 2, height, a);
             g.fill(width - i * 2 - 2, 0, width - i * 2, height, a);
         }
-        g.blit(Paper.COMPASS, width - 70, height - 70, 0, 0, 64f, 64f, 56, 56, 64, 64);
+        g.blit(Paper.COMPASS, width - 70, height - 70, 56, 56, 0, 0, 64, 64, 64, 64);
         Paper.icon(g, Paper.tool("map"), width / 2 - font.width(title) / 2 - 24, 10, 16);
         Paper.title(g, font, title.getString(), width / 2, 14);
         List<FormattedCharSequence> sub = font.split(T.tr("atlas.subtitle"), width - 40);
@@ -170,7 +170,7 @@ public class WorldsScreen extends Screen {
                 int cw = w - 16;
                 boolean hover = toDelete == null && Paper.inside(mx, my, cx, cy, cw, cardH) && my >= top && my < bottom;
                 g.fill(cx, cy, cx + cw, cy + cardH, hover ? 0x40FFFFFF : 0x18FFFFFF);
-                g.renderOutline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
+                Paper.outline(g, cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
                 Paper.inset(g, cx + 4, cy + 4, 30, 30);
                 Paper.icon(g, Paper.tool(isServers ? "globe" : "map"), cx + 7, cy + 7, 24);
                 String name = font.plainSubstrByWidth(m.name == null || m.name.isEmpty() ? m.id : m.name, cw - 64);
