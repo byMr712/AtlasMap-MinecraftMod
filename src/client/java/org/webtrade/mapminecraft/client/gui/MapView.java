@@ -266,7 +266,7 @@ public class MapView {
             if (selected || hovered) {
                 int pad = 2;
                 g.fill(ix - pad, iy - pad, ix + s + pad, iy + s + pad, selected ? Paper.a(Paper.GOLD_LIGHT, 0x60) : 0x40FFFFFF);
-                g.renderOutline(ix - pad, iy - pad, s + pad * 2, s + pad * 2, selected ? Paper.GOLD : Paper.INK_SOFT);
+                Paper.outline(g, ix - pad, iy - pad, s + pad * 2, s + pad * 2, selected ? Paper.GOLD : Paper.INK_SOFT);
             }
             Paper.markerIcon(g, m.icon, m.color, ix, iy, s, outside ? 0xB0 : 0xFF);
             if (labels && !outside && (zoom >= 1.5f || selected || hovered) && !m.name.isEmpty()) {
@@ -275,7 +275,7 @@ public class MapView {
                 int tx = Math.round(px - tw / 2f);
                 int ty = iy + s + 2;
                 g.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, Paper.a(Paper.CREAM, 0xD0));
-                g.renderOutline(tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x80));
+                Paper.outline(g, tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x80));
                 g.drawString(font, name, tx, ty, Paper.INK, false);
             }
         }
@@ -304,7 +304,7 @@ public class MapView {
         pose.pushPose();
         pose.translate(sx, sy, 0);
         pose.mulPose(Axis.ZP.rotation((float) Math.toRadians(yaw + 180)));
-        g.blit(Paper.tool("arrow"), -size / 2, -size / 2, 0, 0, 16f, 16f, size, size, 16, 16);
+        g.blit(Paper.tool("arrow"), -size / 2, -size / 2, size, size, 0, 0, 16, 16, 16, 16);
         pose.popPose();
     }
 
