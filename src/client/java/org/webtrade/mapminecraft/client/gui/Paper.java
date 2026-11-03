@@ -5,6 +5,7 @@ import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -91,7 +92,7 @@ public final class Paper {
             int u = u0;
             while (xx < w) {
                 int cw = Math.min(256 - u, w - xx);
-                g.blit(tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
+                g.blit(RenderType::guiTextured, tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
                 xx += cw;
                 u = 0;
             }
@@ -152,18 +153,11 @@ public final class Paper {
     }
 
     public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size) {
-        g.blit(tex, x, y, 0, 0, 16f, 16f, size, size, 16, 16);
+        g.blit(RenderType::guiTextured, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16);
     }
 
     public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size, int color) {
-        setColor(g, color);
-        g.blit(tex, x, y, 0, 0, 16f, 16f, size, size, 16, 16);
-        g.setColor(1f, 1f, 1f, 1f);
-    }
-
-    private static void setColor(GuiGraphics g, int color) {
-        g.setColor(((color >> 16) & 0xFF) / 255f, ((color >> 8) & 0xFF) / 255f,
-                (color & 0xFF) / 255f, ((color >> 24) & 0xFF) / 255f);
+        g.blit(RenderType::guiTextured, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16, color);
     }
 
     /** Square icon button. */

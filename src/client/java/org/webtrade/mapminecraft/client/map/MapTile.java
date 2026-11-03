@@ -28,8 +28,8 @@ public class MapTile {
 
     public void setPixel(int x, int z, int argb) {
         NativeImage img = texture.getPixels();
-        if (img != null && img.getPixelRGBA(x, z) != argb) {
-            img.setPixelRGBA(x, z, argb);
+        if (img != null && img.getPixel(x, z) != argb) {
+            img.setPixel(x, z, argb);
             textureDirty = true;
             diskDirty = true;
         }
@@ -37,7 +37,7 @@ public class MapTile {
 
     public int getPixel(int x, int z) {
         NativeImage img = texture.getPixels();
-        return img == null ? 0 : img.getPixelRGBA(x, z);
+        return img == null ? 0 : img.getPixel(x, z);
     }
 
     public void touch() {

@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -664,7 +665,7 @@ public class MapScreen extends Screen {
         g.drawString(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
-        g.blit(Paper.COMPASS, right - 52, height - 56, 0, 0, 64f, 64f, 48, 48, 64, 64);
+        g.blit(RenderType::guiTextured, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 64, 64, 48, 48, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list

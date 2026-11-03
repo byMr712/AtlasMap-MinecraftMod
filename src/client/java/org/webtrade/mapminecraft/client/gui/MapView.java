@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.Stroke;
 import org.webtrade.mapminecraft.client.map.MapLayer;
@@ -77,7 +78,7 @@ public class MapView {
                 pose.pushPose();
                 pose.translate(sx(rx * (double) MapTile.SIZE), sy(rz * (double) MapTile.SIZE), 0);
                 pose.scale(zoom, zoom, 1f);
-                g.blit(t.id, 0, 0, 0f, 0f, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
+                g.blit(RenderType::guiTextured, t.id, 0, 0, 0f, 0f, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
                 pose.popPose();
             }
         }
@@ -304,7 +305,7 @@ public class MapView {
         pose.pushPose();
         pose.translate(sx, sy, 0);
         pose.mulPose(Axis.ZP.rotation((float) Math.toRadians(yaw + 180)));
-        g.blit(Paper.tool("arrow"), -size / 2, -size / 2, 0, 0, 16f, 16f, size, size, 16, 16);
+        g.blit(RenderType::guiTextured, Paper.tool("arrow"), -size / 2, -size / 2, 0f, 0f, 16, 16, size, size, 16, 16);
         pose.popPose();
     }
 
