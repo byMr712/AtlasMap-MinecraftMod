@@ -124,6 +124,8 @@ public final class Storage {
     }.getType();
     public static final Type STROKE_MAP = new TypeToken<java.util.Map<String, List<Stroke>>>() {
     }.getType();
+    public static final Type REGION_MAP = new TypeToken<java.util.Map<String, List<Region>>>() {
+    }.getType();
 
     /** Lists all stored worlds, most recently played first. */
     public static List<WorldMeta> listWorlds() {
