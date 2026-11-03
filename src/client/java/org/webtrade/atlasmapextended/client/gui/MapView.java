@@ -386,6 +386,36 @@ public class MapView {
         return null;
     }
 
+    /** The region whose map label is under the cursor. */
+    public Region regionLabelAt(Font font, List<Region> regions, String dim, double mx, double my) {
+        for (int i = regions.size() - 1; i >= 0; i--) {
+            Region r = regions.get(i);
+            if (r.hidden || !r.dim.equals(dim) || r.name.isBlank() || r.pointCount() < 3) {
+                continue;
+            }
+            float minX = Float.MAX_VALUE;
+            float maxX = -Float.MAX_VALUE;
+            float minY = Float.MAX_VALUE;
+            float maxY = -Float.MAX_VALUE;
+            for (int p = 0; p < r.pointCount(); p++) {
+                float px = sx(r.pts[p * 2]);
+                float py = sy(r.pts[p * 2 + 1]);
+                minX = Math.min(minX, px);
+                maxX = Math.max(maxX, px);
+                minY = Math.min(minY, py);
+                maxY = Math.max(maxY, py);
+            }
+            String name = font.plainSubstrByWidth(r.name, 140);
+            int tw = font.width(name);
+            int tx = Math.round((minX + maxX) / 2f - tw / 2f);
+            int ty = Math.round((minY + maxY) / 2f - 4);
+            if (mx >= tx - 3 && mx <= tx + tw + 3 && my >= ty - 2 && my <= ty + 9) {
+                return r;
+            }
+        }
+        return null;
+    }
+
     public void drawPlayer(GuiGraphicsExtractor g, double px, double pz, float yaw, int size) {
         float sx = sx(px);
         float sy = sy(pz);
