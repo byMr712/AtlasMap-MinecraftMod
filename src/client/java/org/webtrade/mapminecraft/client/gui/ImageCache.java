@@ -1,13 +1,10 @@
 package org.webtrade.mapminecraft.client.gui;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.webtrade.mapminecraft.client.data.Storage;
 
 import java.io.InputStream;
@@ -32,7 +29,7 @@ public final class ImageCache {
     private static final Map<String, Entry> ENTRIES = new HashMap<>();
 
     public static final class Entry {
-        public Identifier id;
+        public ResourceLocation id;
         public int width;
         public int height;
         /** Size of the source image (before thumbnail scaling). */
@@ -49,8 +46,8 @@ public final class ImageCache {
     /** A dynamic texture sampled linearly so that downscaled photos look smooth. */
     private static final class SmoothTexture extends DynamicTexture {
         SmoothTexture(String label, NativeImage image) {
-            super(() -> label, image);
-            this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+            super(image);
+            this.setFilter(true, false);
         }
     }
 
@@ -92,7 +89,7 @@ public final class ImageCache {
                 img.close();
                 return;
             }
-            Identifier id = Identifier.fromNamespaceAndPath("mapminecraft", "image/" + COUNTER.incrementAndGet());
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("mapminecraft", "image/" + COUNTER.incrementAndGet());
             entry.width = img.getWidth();
             entry.height = img.getHeight();
             mc.getTextureManager().register(id, new SmoothTexture("mapminecraft image", img));
@@ -102,7 +99,7 @@ public final class ImageCache {
     }
 
     /** Draws the image fitted into the box, keeping its aspect ratio. */
-    public static void drawFit(GuiGraphicsExtractor g, Entry e, int x, int y, int w, int h) {
+    public static void drawFit(GuiGraphics g, Entry e, int x, int y, int w, int h) {
         if (e == null || !e.ready()) {
             return;
         }
@@ -111,11 +108,11 @@ public final class ImageCache {
         int dh = Math.max(1, Math.round(e.height * s));
         int dx = x + (w - dw) / 2;
         int dy = y + (h - dh) / 2;
-        g.blit(RenderPipelines.GUI_TEXTURED, e.id, dx, dy, 0, 0, dw, dh, e.width, e.height, e.width, e.height);
+        g.blit(e.id, dx, dy, 0, 0, e.width, e.height, dw, dh, e.width, e.height);
     }
 
     /** Draws the image covering the box (cropping the overflow). */
-    public static void drawCover(GuiGraphicsExtractor g, Entry e, int x, int y, int w, int h) {
+    public static void drawCover(GuiGraphics g, Entry e, int x, int y, int w, int h) {
         if (e == null || !e.ready()) {
             return;
         }
@@ -124,7 +121,7 @@ public final class ImageCache {
         int vh = Math.max(1, Math.round(h / s));
         int u = (e.width - uw) / 2;
         int v = (e.height - vh) / 2;
-        g.blit(RenderPipelines.GUI_TEXTURED, e.id, x, y, u, v, w, h, uw, vh, e.width, e.height);
+        g.blit(e.id, x, y, u, v, uw, vh, w, h, e.width, e.height);
     }
 
     public static void clear() {

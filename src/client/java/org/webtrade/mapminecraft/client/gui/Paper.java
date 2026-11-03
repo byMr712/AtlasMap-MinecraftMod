@@ -1,24 +1,24 @@
 package org.webtrade.mapminecraft.client.gui;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import org.joml.Matrix3x2fStack;
 
 /** Drawing helpers for the papyrus look: parchment panels, inked borders, buttons and lines. */
 public final class Paper {
-    public static final Identifier COMPASS = id("textures/gui/compass.png");
+    public static final ResourceLocation COMPASS = id("textures/gui/compass.png");
     public static final int RED = 0xFF9C3B2A;
     public static final int SHADOW = 0x55000000;
 
     // current theme; reassigned by apply()
-    public static Identifier PARCHMENT;
-    public static Identifier PARCHMENT_DARK;
+    public static ResourceLocation PARCHMENT;
+    public static ResourceLocation PARCHMENT_DARK;
     public static int INK;
     public static int INK_SOFT;
     public static int INK_FAINT;
@@ -63,24 +63,24 @@ public final class Paper {
         return alpha << 24 | color & 0xFFFFFF;
     }
 
-    public static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath("mapminecraft", path);
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath("mapminecraft", path);
     }
 
-    public static Identifier marker(String icon) {
+    public static ResourceLocation marker(String icon) {
         return id("textures/gui/markers/" + icon + ".png");
     }
 
-    public static Identifier tool(String icon) {
+    public static ResourceLocation tool(String icon) {
         return id((theme.darkBg() ? "textures/gui/tools_light/" : "textures/gui/tools/") + icon + ".png");
     }
 
     /** Tiles a 256x256 texture over a rectangle. */
-    public static void tiled(GuiGraphicsExtractor g, Identifier tex, int x, int y, int w, int h) {
+    public static void tiled(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h) {
         tiled(g, tex, x, y, w, h, 0, 0);
     }
 
-    public static void tiled(GuiGraphicsExtractor g, Identifier tex, int x, int y, int w, int h, int offX, int offY) {
+    public static void tiled(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h, int offX, int offY) {
         int u0 = Math.floorMod(offX, 256);
         int v0 = Math.floorMod(offY, 256);
         int yy = 0;
@@ -91,7 +91,7 @@ public final class Paper {
             int u = u0;
             while (xx < w) {
                 int cw = Math.min(256 - u, w - xx);
-                g.blit(RenderPipelines.GUI_TEXTURED, tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
+                g.blit(tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
                 xx += cw;
                 u = 0;
             }
@@ -101,33 +101,33 @@ public final class Paper {
     }
 
     /** A parchment sheet with a double inked border and gilded corners. */
-    public static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+    public static void panel(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x + 2, y + 2, x + w + 2, y + h + 2, SHADOW);
         tiled(g, PARCHMENT, x, y, w, h, x * 3, y * 7);
         border(g, x, y, w, h);
     }
 
-    public static void border(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+    public static void border(GuiGraphics g, int x, int y, int w, int h) {
         if (!theme.ornate()) {
-            g.outline(x, y, w, h, a(INK, 0x50));
+            g.renderOutline(x, y, w, h, a(INK, 0x50));
             return;
         }
-        g.outline(x, y, w, h, INK);
-        g.outline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
+        g.renderOutline(x, y, w, h, INK);
+        g.renderOutline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
         corner(g, x - 1, y - 1);
         corner(g, x + w - 4, y - 1);
         corner(g, x - 1, y + h - 4);
         corner(g, x + w - 4, y + h - 4);
     }
 
-    private static void corner(GuiGraphicsExtractor g, int x, int y) {
+    private static void corner(GuiGraphics g, int x, int y) {
         g.fill(x, y, x + 5, y + 5, INK);
         g.fill(x + 1, y + 1, x + 4, y + 4, GOLD);
         g.fill(x + 2, y + 2, x + 3, y + 3, GOLD_LIGHT);
     }
 
     /** A sunken area used behind text fields and image slots. */
-    public static void inset(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+    public static void inset(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         g.fill(x, y, x + w, y + 1, INK_SOFT);
         g.fill(x, y, x + 1, y + h, INK_SOFT);
@@ -136,14 +136,14 @@ public final class Paper {
     }
 
     /** A decorative separator line with a small diamond in the middle. */
-    public static void separator(GuiGraphicsExtractor g, int x, int y, int w) {
+    public static void separator(GuiGraphics g, int x, int y, int w) {
         g.fill(x, y, x + w, y + 1, INK_FAINT);
         int cx = x + w / 2;
         g.fill(cx - 1, y - 1, cx + 2, y + 2, INK_SOFT);
     }
 
     /** A marker icon; a non-zero colour repaints it using its grey copy. Alpha (0-255) fades it. */
-    public static void markerIcon(GuiGraphicsExtractor g, String icon, int color, int x, int y, int size, int alpha) {
+    public static void markerIcon(GuiGraphics g, String icon, int color, int x, int y, int size, int alpha) {
         if (color == 0) {
             icon(g, marker(icon), x, y, size, alpha << 24 | 0xFFFFFF);
         } else {
@@ -151,16 +151,23 @@ public final class Paper {
         }
     }
 
-    public static void icon(GuiGraphicsExtractor g, Identifier tex, int x, int y, int size) {
-        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0, 0, size, size, 16, 16, 16, 16);
+    public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size) {
+        g.blit(tex, x, y, 0, 0, 16f, 16f, size, size, 16, 16);
     }
 
-    public static void icon(GuiGraphicsExtractor g, Identifier tex, int x, int y, int size, int color) {
-        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0, 0, size, size, 16, 16, 16, 16, color);
+    public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size, int color) {
+        setColor(g, color);
+        g.blit(tex, x, y, 0, 0, 16f, 16f, size, size, 16, 16);
+        g.setColor(1f, 1f, 1f, 1f);
+    }
+
+    private static void setColor(GuiGraphics g, int color) {
+        g.setColor(((color >> 16) & 0xFF) / 255f, ((color >> 8) & 0xFF) / 255f,
+                (color & 0xFF) / 255f, ((color >> 24) & 0xFF) / 255f);
     }
 
     /** Square icon button. */
-    public static void iconButton(GuiGraphicsExtractor g, Identifier icon, int x, int y, int size, boolean hovered, boolean selected) {
+    public static void iconButton(GuiGraphics g, ResourceLocation icon, int x, int y, int size, boolean hovered, boolean selected) {
         g.fill(x + 1, y + 1, x + size + 1, y + size + 1, SHADOW);
         tiled(g, selected ? PARCHMENT_DARK : PARCHMENT, x, y, size, size, x * 5, y * 3);
         if (selected) {
@@ -169,79 +176,79 @@ public final class Paper {
         if (hovered) {
             g.fill(x, y, x + size, y + size, 0x28FFFFFF);
         }
-        g.outline(x, y, size, size, selected ? GOLD : INK);
+        g.renderOutline(x, y, size, size, selected ? GOLD : INK);
         if (hovered || selected) {
-            g.outline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
+            g.renderOutline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
         }
         int is = size >= 20 ? 16 : size - 4;
         icon(g, icon, x + (size - is) / 2, y + (size - is) / 2, is);
     }
 
     /** Text button in parchment style. */
-    public static void button(GuiGraphicsExtractor g, Font font, Component label, int x, int y, int w, int h, boolean hovered, boolean enabled) {
+    public static void button(GuiGraphics g, Font font, Component label, int x, int y, int w, int h, boolean hovered, boolean enabled) {
         g.fill(x + 1, y + 1, x + w + 1, y + h + 1, SHADOW);
         tiled(g, PARCHMENT_DARK, x, y, w, h, x * 5, y * 3);
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.outline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int color = enabled ? INK : DISABLED;
         String s = font.plainSubstrByWidth(label.getString(), w - 6);
-        g.text(font, s, x + (w - font.width(s)) / 2, y + (h - 8) / 2 + 1, color, false);
+        g.drawString(font, s, x + (w - font.width(s)) / 2, y + (h - 8) / 2 + 1, color, false);
     }
 
     /** Button with an icon and a label. */
-    public static void iconTextButton(GuiGraphicsExtractor g, Font font, Identifier icon, Component label, int x, int y, int w, int h,
+    public static void iconTextButton(GuiGraphics g, Font font, ResourceLocation icon, Component label, int x, int y, int w, int h,
                                       boolean hovered, boolean enabled) {
         g.fill(x + 1, y + 1, x + w + 1, y + h + 1, SHADOW);
         tiled(g, PARCHMENT_DARK, x, y, w, h, x * 5, y * 3);
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.outline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int is = Math.min(16, h - 4);
         String s = font.plainSubstrByWidth(label.getString(), w - is - 10);
         int total = is + 3 + font.width(s);
         int sx = x + (w - total) / 2;
         icon(g, icon, sx, y + (h - is) / 2, is, enabled ? 0xFFFFFFFF : 0x80FFFFFF);
-        g.text(font, s, sx + is + 3, y + (h - 8) / 2 + 1, enabled ? INK : DISABLED, false);
+        g.drawString(font, s, sx + is + 3, y + (h - 8) / 2 + 1, enabled ? INK : DISABLED, false);
     }
 
-    public static void title(GuiGraphicsExtractor g, Font font, String text, int cx, int y) {
+    public static void title(GuiGraphics g, Font font, String text, int cx, int y) {
         int w = font.width(text);
-        g.text(font, text, cx - w / 2, y, INK, false);
+        g.drawString(font, text, cx - w / 2, y, INK, false);
         g.fill(cx - w / 2 - 12, y + 4, cx - w / 2 - 4, y + 5, INK_SOFT);
         g.fill(cx + w / 2 + 4, y + 4, cx + w / 2 + 12, y + 5, INK_SOFT);
     }
 
     /** Draws a straight line of the given thickness using a rotated, scaled quad. */
-    public static void line(GuiGraphicsExtractor g, float x1, float y1, float x2, float y2, float width, int color) {
+    public static void line(GuiGraphics g, float x1, float y1, float x2, float y2, float width, int color) {
         float dx = x2 - x1;
         float dy = y2 - y1;
         float len = (float) Math.sqrt(dx * dx + dy * dy);
         if (len < 0.01f) {
             return;
         }
-        Matrix3x2fStack pose = g.pose();
-        pose.pushMatrix();
-        pose.translate(x1, y1);
-        pose.rotate((float) Math.atan2(dy, dx));
-        pose.translate(0, -width / 2f);
-        pose.scale(len, width);
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(x1, y1, 0);
+        pose.mulPose(Axis.ZP.rotation((float) Math.atan2(dy, dx)));
+        pose.translate(0, -width / 2f, 0);
+        pose.scale(len, width, 1f);
         g.fill(0, 0, 1, 1, color);
-        pose.popMatrix();
+        pose.popPose();
     }
 
-    public static void dot(GuiGraphicsExtractor g, float x, float y, float size, int color) {
-        Matrix3x2fStack pose = g.pose();
-        pose.pushMatrix();
-        pose.translate(x - size / 2f, y - size / 2f);
-        pose.scale(size, size);
+    public static void dot(GuiGraphics g, float x, float y, float size, int color) {
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(x - size / 2f, y - size / 2f, 0);
+        pose.scale(size, size, 1f);
         g.fill(0, 0, 1, 1, color);
-        pose.popMatrix();
+        pose.popPose();
     }
 
-    public static void dashedLine(GuiGraphicsExtractor g, float x1, float y1, float x2, float y2, float width, int color, float dash) {
+    public static void dashedLine(GuiGraphics g, float x1, float y1, float x2, float y2, float width, int color, float dash) {
         float dx = x2 - x1;
         float dy = y2 - y1;
         float len = (float) Math.sqrt(dx * dx + dy * dy);

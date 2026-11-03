@@ -2,7 +2,7 @@ package org.webtrade.mapminecraft.client.gui;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import org.webtrade.mapminecraft.client.data.ModConfig;
 import org.webtrade.mapminecraft.client.map.MapManager;
@@ -12,7 +12,7 @@ import org.webtrade.mapminecraft.client.map.MapSession;
 public class MinimapHud {
     private final MapView view = new MapView();
 
-    public void render(GuiGraphicsExtractor g, DeltaTracker delta) {
+    public void render(GuiGraphics g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         ModConfig cfg = ModConfig.get();
         MapSession session = MapManager.live();
@@ -21,7 +21,7 @@ public class MinimapHud {
                 || mc.screen instanceof MapScreen) {
             return;
         }
-        String dim = mc.level.dimension().identifier().toString();
+        String dim = mc.level.dimension().location().toString();
         float pt = delta.getGameTimeDeltaPartialTick(true);
         double px = p.xo + (p.getX() - p.xo) * pt;
         double pz = p.zo + (p.getZ() - p.zo) * pt;
@@ -56,18 +56,18 @@ public class MinimapHud {
             view.drawMarkers(g, mc.font, session.markers, dim, 10, false, null, null, true);
         }
         g.disableScissor();
-        g.outline(x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
+        g.renderOutline(x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
         view.drawPlayer(g, px, pz, p.getYRot(), 12);
 
         // north marker
         int nx = x + size / 2;
         g.fill(nx - 5, y - 6, nx + 5, y + 4, Paper.INK);
         g.fill(nx - 4, y - 5, nx + 4, y + 3, Paper.CREAM);
-        g.text(mc.font, "N", nx - 2, y - 4, Paper.RED, false);
+        g.drawString(mc.font, "N", nx - 2, y - 4, Paper.RED, false);
 
         if (cfg.minimapCoords) {
             String c = p.getBlockX() + ", " + p.getBlockY() + ", " + p.getBlockZ();
-            g.text(mc.font, c, x + (size - mc.font.width(c)) / 2, y + size + 3, Paper.INK, false);
+            g.drawString(mc.font, c, x + (size - mc.font.width(c)) / 2, y + size + 3, Paper.INK, false);
         }
     }
 }

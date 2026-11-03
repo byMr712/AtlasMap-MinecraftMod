@@ -1,14 +1,11 @@
 package org.webtrade.mapminecraft.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -173,7 +170,7 @@ public class MapScreen extends Screen {
         this.view.zoom = lastZoom;
         Minecraft mc = Minecraft.getInstance();
         if (session.isLive() && mc.player != null && mc.level != null) {
-            dim = mc.level.dimension().identifier().toString();
+            dim = mc.level.dimension().location().toString();
             view.cx = mc.player.getX();
             view.cz = mc.player.getZ();
         }
@@ -239,7 +236,6 @@ public class MapScreen extends Screen {
         nameBox = new EditBox(font, 0, 0, 100, 12, T.tr("field.name"));
         nameBox.setBordered(false);
         nameBox.setTextColor(Paper.INK);
-        nameBox.setTextShadow(false);
         nameBox.setMaxLength(64);
         nameBox.setResponder(s -> {
             if (working != null) {
@@ -249,14 +245,7 @@ public class MapScreen extends Screen {
         xBox = coordBox();
         yBox = coordBox();
         zBox = coordBox();
-        descBox = MultiLineEditBox.builder()
-                .setTextColor(Paper.INK)
-                .setCursorColor(Paper.INK)
-                .setTextShadow(false)
-                .setShowBackground(false)
-                .setShowDecorations(false)
-                .setPlaceholder(T.tr("field.desc_hint"))
-                .build(font, 100, 60, T.tr("field.desc"));
+        descBox = new MultiLineEditBox(font, 0, 0, 100, 60, T.tr("field.desc_hint"), T.tr("field.desc"));
         descBox.setCharacterLimit(4000);
         descBox.setValueListener(s -> {
             if (working != null) {
@@ -266,7 +255,6 @@ public class MapScreen extends Screen {
         searchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search"));
         searchBox.setBordered(false);
         searchBox.setTextColor(Paper.INK);
-        searchBox.setTextShadow(false);
         searchBox.setValue(search);
         searchBox.setResponder(s -> {
             search = s;
@@ -281,7 +269,6 @@ public class MapScreen extends Screen {
         iconSearch = new EditBox(font, 0, 0, 100, 12, T.tr("icons.search_hint"));
         iconSearch.setBordered(false);
         iconSearch.setTextColor(Paper.INK);
-        iconSearch.setTextShadow(false);
         iconSearch.setResponder(v -> iconScroll = 0);
         addWidget(iconSearch);
         if (working != null) {
@@ -294,7 +281,6 @@ public class MapScreen extends Screen {
         EditBox b = new EditBox(font, 0, 0, 30, 12, Component.empty());
         b.setBordered(false);
         b.setTextColor(Paper.INK);
-        b.setTextShadow(false);
         b.setMaxLength(9);
         return b;
     }
@@ -349,13 +335,13 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
     }
 
     // ------------------------------------------------------------------ rendering
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         this.mouseX = mx;
         this.mouseY = my;
         hits.clear();
@@ -370,7 +356,6 @@ public class MapScreen extends Screen {
             lastUiRects = new ArrayList<>();
             return;
         }
-        g.nextStratum();
 
         drawToolbar(g, mx, my);
         if (tool == Tool.DRAW) {
@@ -390,10 +375,9 @@ public class MapScreen extends Screen {
         } else if (panel == Panel.EDIT) {
             drawEditPanel(g, mx, my);
         }
-        super.extractRenderState(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
+        super.render(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
 
         if (overlay != Overlay.NONE) {
-            g.nextStratum();
             modalStart = hits.size();
             switch (overlay) {
                 case ICONS -> drawIconPicker(g, mx, my);
@@ -407,12 +391,12 @@ public class MapScreen extends Screen {
             }
         }
         if (tooltip != null) {
-            g.setTooltipForNextFrame(font, tooltip, mx, my);
+            g.renderTooltip(font, tooltip, mx, my);
         }
         lastUiRects = new ArrayList<>(uiRects);
     }
 
-    private void drawMap(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawMap(GuiGraphics g, int mx, int my) {
         view.setRect(0, 0, width, height);
         MapLayer layer = session.layer(dim);
         view.drawBackground(g);
@@ -426,7 +410,7 @@ public class MapScreen extends Screen {
             view.drawStroke(g, current, 1f);
         }
         if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
-            g.outline(mx - 6, my - 6, 12, 12, Paper.RED);
+            g.renderOutline(mx - 6, my - 6, 12, 12, Paper.RED);
         }
         drawRuler(g, mx, my);
 
@@ -438,7 +422,7 @@ public class MapScreen extends Screen {
             view.drawMarkers(g, font, List.of(selected), dim, 16, true, selected.id, null, false);
         }
         Minecraft mc = Minecraft.getInstance();
-        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().location().toString())) {
             view.drawPlayer(g, mc.player.getX(), mc.player.getZ(), mc.player.getYRot(), 16);
         }
         if (hovered != null && overlay == Overlay.NONE) {
@@ -447,7 +431,7 @@ public class MapScreen extends Screen {
         }
     }
 
-    private void vignette(GuiGraphicsExtractor g) {
+    private void vignette(GuiGraphics g) {
         for (int i = 0; i < 10; i++) {
             int a = (10 - i) * 7 << 24 | Paper.VIGNETTE;
             g.fill(0, i * 2, width, i * 2 + 2, a);
@@ -457,7 +441,7 @@ public class MapScreen extends Screen {
         }
     }
 
-    private void drawRuler(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawRuler(GuiGraphics g, int mx, int my) {
         if (ruler.isEmpty()) {
             return;
         }
@@ -490,16 +474,16 @@ public class MapScreen extends Screen {
         }
     }
 
-    private void label(GuiGraphicsExtractor g, String s, float cx, float cy) {
+    private void label(GuiGraphics g, String s, float cx, float cy) {
         int w = font.width(s);
         int x = Math.round(cx - w / 2f);
         int y = Math.round(cy - 5);
         g.fill(x - 3, y - 2, x + w + 3, y + 10, Paper.a(Paper.CREAM, 0xE0));
-        g.outline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
-        g.text(font, s, x, y, Paper.INK, false);
+        g.renderOutline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
+        g.drawString(font, s, x, y, Paper.INK, false);
     }
 
-    private void drawTitle(GuiGraphicsExtractor g) {
+    private void drawTitle(GuiGraphics g) {
         int avail = freeRight() - freeLeft();
         String t = font.plainSubstrByWidth(session.meta.name + "  ·  " + T.dimName(dim), Math.max(20, avail - 40));
         int w = font.width(t) + 30;
@@ -513,7 +497,7 @@ public class MapScreen extends Screen {
         Paper.title(g, font, t, cx, 11);
     }
 
-    private void drawRulerBar(GuiGraphicsExtractor g) {
+    private void drawRulerBar(GuiGraphics g) {
         double total = 0;
         for (int i = 0; i + 1 < ruler.size(); i++) {
             total += dist(ruler.get(i), ruler.get(i + 1));
@@ -537,12 +521,12 @@ public class MapScreen extends Screen {
         Paper.icon(g, Paper.tool("ruler"), x + 8, 6 + (h - 16) / 2, 16);
         int ty = 11;
         for (int i = 0; i < lines.size(); i++) {
-            g.text(font, lines.get(i), x + 30, ty, i < firstCount ? Paper.INK : Paper.INK_SOFT, false);
+            g.drawString(font, lines.get(i), x + 30, ty, i < firstCount ? Paper.INK : Paper.INK_SOFT, false);
             ty += 10;
         }
     }
 
-    private void drawToolbar(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawToolbar(GuiGraphics g, int mx, int my) {
         int x = 6;
         int y = 6;
         List<Object[]> items = new ArrayList<>();
@@ -581,14 +565,14 @@ public class MapScreen extends Screen {
     private static final int DRAW_BAR_W = PAL_COLS * 11 + 15;
     private static final int DRAW_BAR_H = 64;
 
-    private void drawDrawBar(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawDrawBar(GuiGraphics g, int mx, int my) {
         int x = (freeLeft() + freeRight()) / 2 - DRAW_BAR_W / 2;
         drawToolBar(g, mx, my, x, 6, overlay == Overlay.NONE, this::undo,
                 () -> confirm(T.tr("confirm.clear_drawings"), this::clearDrawings), T.tr("draw.clear"));
     }
 
     /** Tool selector, line widths and the 60 colour palette. Shared by the map editor and the screenshot editor. */
-    private void drawToolBar(GuiGraphicsExtractor g, int mx, int my, int x, int y, boolean active, Runnable onUndo,
+    private void drawToolBar(GuiGraphics g, int mx, int my, int x, int y, boolean active, Runnable onUndo,
                              Runnable onClear, Component clearTip) {
         DrawTool[] tools = DrawTool.values();
         String[] icons = {"pen", "line", "rect", "circle", "eraser"};
@@ -613,7 +597,7 @@ public class MapScreen extends Screen {
             int idx = i;
             if (widthIdx == i) {
                 g.fill(cx, y + 5, cx + 13, y + 23, Paper.a(Paper.GOLD, 0x40));
-                g.outline(cx, y + 5, 13, 18, Paper.GOLD);
+                g.renderOutline(cx, y + 5, 13, 18, Paper.GOLD);
             }
             Paper.dot(g, cx + 6.5f, y + 14, WIDTHS[i] + 1, dotColor);
             hit(cx, y + 5, 13, 18, () -> widthIdx = idx);
@@ -641,14 +625,14 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
             if (colorIdx == i) {
-                g.outline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.outline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                g.renderOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.renderOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> colorIdx = idx);
         }
     }
 
-    private void drawStatus(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawStatus(GuiGraphics g, int mx, int my) {
         int x = 6 + TB + 10 + (listOpen ? listWidth() + 4 : 0);
         int y = height - 22;
         String coords;
@@ -671,16 +655,16 @@ public class MapScreen extends Screen {
         int w = font.width(coords) + 16 + px + 8 + font.width(scale) + 12;
         Paper.panel(g, x, y, w, 16);
         ui(x, y, w, 16);
-        g.text(font, coords, x + 6, y + 5, Paper.INK, false);
+        g.drawString(font, coords, x + 6, y + 5, Paper.INK, false);
         int bx = x + 6 + font.width(coords) + 12;
         g.fill(bx, y + 9, bx + px, y + 11, Paper.INK);
         g.fill(bx, y + 5, bx + 1, y + 12, Paper.INK);
         g.fill(bx + px - 1, y + 5, bx + px, y + 12, Paper.INK);
         g.fill(bx + px / 2, y + 7, bx + px / 2 + 1, y + 11, Paper.INK);
-        g.text(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
+        g.drawString(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
-        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0, 0, 48, 48, 64, 64, 64, 64);
+        g.blit(Paper.COMPASS, right - 52, height - 56, 0, 0, 64f, 64f, 48, 48, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list
@@ -723,13 +707,13 @@ public class MapScreen extends Screen {
 
     private double[] referencePoint() {
         Minecraft mc = Minecraft.getInstance();
-        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+        if (session.isLive() && mc.player != null && mc.level != null && dim.equals(mc.level.dimension().location().toString())) {
             return new double[]{mc.player.getX(), mc.player.getZ()};
         }
         return new double[]{view.cx, view.cz};
     }
 
-    private void drawList(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawList(GuiGraphics g, int mx, int my) {
         int lx = 6 + TB + 8;
         int ly = 6;
         int lw = listWidth();
@@ -790,7 +774,7 @@ public class MapScreen extends Screen {
             List<FormattedCharSequence> lines = font.split(T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"), lw - 20);
             int ty = top + 8;
             for (FormattedCharSequence l : lines) {
-                g.text(font, l, lx + 10, ty, Paper.INK_SOFT, false);
+                g.drawString(font, l, lx + 10, ty, Paper.INK_SOFT, false);
                 ty += 10;
             }
             return;
@@ -806,7 +790,7 @@ public class MapScreen extends Screen {
                 boolean sel = selected != null && selected.id.equals(m.id);
                 if (sel) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                    g.outline(rx, y, rw, rowH - 2, Paper.GOLD);
+                    g.renderOutline(rx, y, rw, rowH - 2, Paper.GOLD);
                 } else if (hover) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
                 }
@@ -815,8 +799,8 @@ public class MapScreen extends Screen {
                 int dw = font.width(dist);
                 int nameW = rw - 22 - dw - 20;
                 String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
-                g.text(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
-                g.text(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+                g.drawString(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
+                g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
                 int ex = rx + rw - 14;
                 boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
                 Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
@@ -854,7 +838,7 @@ public class MapScreen extends Screen {
         return new int[]{width - pw - 6, 6, pw, height - 12};
     }
 
-    private void drawViewPanel(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawViewPanel(GuiGraphics g, int mx, int my) {
         if (selected == null) {
             panel = Panel.NONE;
             return;
@@ -884,25 +868,25 @@ public class MapScreen extends Screen {
         List<FormattedCharSequence> nameLines = font.split(Component.literal(m.name.isEmpty() ? T.s("marker.unnamed") : m.name), cw - 36 - 10);
         int ny = y + (nameLines.size() > 1 ? 1 : 5);
         for (int i = 0; i < Math.min(2, nameLines.size()); i++) {
-            g.text(font, nameLines.get(i), cx + 34, ny + i * 10, Paper.INK, false);
+            g.drawString(font, nameLines.get(i), cx + 34, ny + i * 10, Paper.INK, false);
         }
         if (nameLines.size() < 2) {
-            g.text(font, T.iconName(m.icon), cx + 34, y + 17, Paper.INK_SOFT, false);
+            g.drawString(font, T.iconName(m.icon), cx + 34, y + 17, Paper.INK_SOFT, false);
         }
         y += 34;
-        g.text(font, "X " + m.x + "   Y " + m.y + "   Z " + m.z, cx, y, Paper.INK, false);
+        g.drawString(font, "X " + m.x + "   Y " + m.y + "   Z " + m.z, cx, y, Paper.INK, false);
         y += 11;
         String where = T.dimName(m.dim);
         double[] ref = referencePoint();
         if (m.dim.equals(dim)) {
             where += "  ·  " + fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks");
         }
-        g.text(font, where, cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, where, cx, y, Paper.INK_SOFT, false);
         y += 13;
         Paper.separator(g, cx, y, cw);
         y += 5;
 
-        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
         y += 11;
         List<FormattedCharSequence> desc = m.description.isBlank()
                 ? List.of(T.tr("marker.no_desc").getVisualOrderText())
@@ -915,7 +899,7 @@ public class MapScreen extends Screen {
         g.enableScissor(cx + 1, y + 1, cx + cw - 1, y + descH - 1);
         int ty = y + 4 - (int) descScroll;
         for (FormattedCharSequence l : desc) {
-            g.text(font, l, cx + 3, ty, m.description.isBlank() ? Paper.DISABLED : Paper.INK, false);
+            g.drawString(font, l, cx + 3, ty, m.description.isBlank() ? Paper.DISABLED : Paper.INK, false);
             ty += 10;
         }
         g.disableScissor();
@@ -926,7 +910,7 @@ public class MapScreen extends Screen {
         boolean tp = cfg.teleport && session.isLive();
         int rows = tp ? 3 : 2;
         int buttonsY = py + ph - 8 - 16 * rows - 4 * (rows - 1);
-        g.text(font, T.tr("field.shots", m.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.shots", m.screenshots.size()), cx, y, Paper.INK_SOFT, false);
         y += 11;
         drawShotGrid(g, mx, my, m, cx, y, cw, buttonsY - 6 - y, false);
 
@@ -972,7 +956,7 @@ public class MapScreen extends Screen {
         onClose();
     }
 
-    private void drawEditPanel(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawEditPanel(GuiGraphics g, int mx, int my) {
         if (working == null) {
             panel = Panel.NONE;
             return;
@@ -999,7 +983,7 @@ public class MapScreen extends Screen {
         int cx = px + 9;
         int cw = pw - 18;
         int y = py + 22;
-        g.text(font, T.tr("field.name"), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.name"), cx, y, Paper.INK_SOFT, false);
         y += 10;
         Paper.inset(g, cx, y, cw, 16);
         nameBox.setX(cx + 4);
@@ -1015,13 +999,13 @@ public class MapScreen extends Screen {
         if (hi) {
             g.fill(cx, y, cx + cw, y + 22, 0x30FFFFFF);
         }
-        g.outline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
+        g.renderOutline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
         Paper.markerIcon(g, working.icon, working.color, cx + 3, y + 3, 16, 255);
         if (hi) {
             tooltip = T.tr("edit.icon_tip");
         }
-        g.text(font, font.plainSubstrByWidth(T.s("edit.icon", T.iconName(working.icon)), cw - 34), cx + 23, y + 7, Paper.INK, false);
-        g.text(font, "▼", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
+        g.drawString(font, font.plainSubstrByWidth(T.s("edit.icon", T.iconName(working.icon)), cw - 34), cx + 23, y + 7, Paper.INK, false);
+        g.drawString(font, "▼", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
         int iconY = y;
         hit(cx, y, cw, 22, () -> {
             iconPickerY = iconY + 24;
@@ -1034,7 +1018,7 @@ public class MapScreen extends Screen {
         y += 26;
 
         // coordinates
-        g.text(font, T.tr("field.coords"), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.coords"), cx, y, Paper.INK_SOFT, false);
         Minecraft mc = Minecraft.getInstance();
         if (session.isLive() && mc.player != null) {
             int bx = cx + cw - 12;
@@ -1047,7 +1031,7 @@ public class MapScreen extends Screen {
                 xBox.setValue(Integer.toString(mc.player.getBlockX()));
                 yBox.setValue(Integer.toString(mc.player.getBlockY()));
                 zBox.setValue(Integer.toString(mc.player.getBlockZ()));
-                working.dim = mc.level.dimension().identifier().toString();
+                working.dim = mc.level.dimension().location().toString();
             });
         }
         y += 10;
@@ -1057,14 +1041,14 @@ public class MapScreen extends Screen {
         for (int i = 0; i < 3; i++) {
             int bx = cx + i * (bw + 4);
             Paper.inset(g, bx, y, bw, 16);
-            g.text(font, labels[i], bx + 3, y + 4, Paper.INK_SOFT, false);
+            g.drawString(font, labels[i], bx + 3, y + 4, Paper.INK_SOFT, false);
             boxes[i].setX(bx + 11);
             boxes[i].setY(y + 4);
             boxes[i].setWidth(bw - 13);
         }
         y += 21;
 
-        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
         y += 10;
         int descH = Math.max(40, Math.min(90, (int) (ph * 0.22)));
         Paper.inset(g, cx, y, cw, descH);
@@ -1075,7 +1059,7 @@ public class MapScreen extends Screen {
         y += descH + 6;
 
         int buttonsY = py + ph - 8 - 16;
-        g.text(font, T.tr("field.shots", working.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.tr("field.shots", working.screenshots.size()), cx, y, Paper.INK_SOFT, false);
         y += 11;
         drawShotGrid(g, mx, my, working, cx, y, cw, buttonsY - 6 - y, true);
 
@@ -1089,7 +1073,7 @@ public class MapScreen extends Screen {
     }
 
     /** Screenshot thumbnails, two per row. In edit mode a "+" tile and delete buttons are shown. */
-    private void drawShotGrid(GuiGraphicsExtractor g, int mx, int my, Marker marker, int x, int y, int w, int h, boolean edit) {
+    private void drawShotGrid(GuiGraphics g, int mx, int my, Marker marker, int x, int y, int w, int h, boolean edit) {
         List<String> shots = marker.screenshots;
         if (h < 20) {
             return;
@@ -1103,7 +1087,7 @@ public class MapScreen extends Screen {
         shotsScroll = Math.max(0, Math.min(max, shotsScroll));
         scroll(x, y, w, h, d -> shotsScroll -= d * (th + gap) / 2.0);
         if (count == 0) {
-            g.text(font, T.tr("marker.no_shots"), x + 2, y + 2, Paper.DISABLED, false);
+            g.drawString(font, T.tr("marker.no_shots"), x + 2, y + 2, Paper.DISABLED, false);
             return;
         }
         g.enableScissor(x - 1, y, x + w + 1, y + h);
@@ -1151,9 +1135,9 @@ public class MapScreen extends Screen {
                 }
             } else {
                 String s = e.failed ? "✖" : "…";
-                g.text(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
+                g.drawString(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
             }
-            g.outline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
+            g.renderOutline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
             int idx = i;
             if (clipH > 0) {
                 hit(tx, clipY, tw, clipH, () -> openViewer(marker, idx));
@@ -1163,7 +1147,7 @@ public class MapScreen extends Screen {
                 int dy = ty + 2;
                 boolean dh = hover && Paper.inside(mx, my, dx, dy, 10, 10);
                 g.fill(dx, dy, dx + 10, dy + 10, dh ? Paper.a(Paper.CREAM, 0xE0) : Paper.a(Paper.CREAM, 0xB0));
-                g.outline(dx, dy, 10, 10, Paper.INK);
+                g.renderOutline(dx, dy, 10, 10, Paper.INK);
                 Paper.icon(g, Paper.tool("close"), dx + 1, dy + 1, 8);
                 if (dh) {
                     tooltip = T.tr("shots.remove");
@@ -1184,13 +1168,13 @@ public class MapScreen extends Screen {
         g.disableScissor();
     }
 
-    private void hint(GuiGraphicsExtractor g, EditBox box, String text) {
+    private void hint(GuiGraphics g, EditBox box, String text) {
         if (box.getValue().isEmpty() && !box.isFocused()) {
-            g.text(font, font.plainSubstrByWidth(text, box.getWidth()), box.getX(), box.getY(), Paper.HINT, false);
+            g.drawString(font, font.plainSubstrByWidth(text, box.getWidth()), box.getX(), box.getY(), Paper.HINT, false);
         }
     }
 
-    private void closeButton(GuiGraphicsExtractor g, int mx, int my, int x, int y, Runnable action) {
+    private void closeButton(GuiGraphics g, int mx, int my, int x, int y, Runnable action) {
         boolean h = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, 13, 13);
         Paper.iconButton(g, Paper.tool("close"), x, y, 13, h, false);
         hit(x, y, 13, 13, action);
@@ -1202,7 +1186,7 @@ public class MapScreen extends Screen {
         hit(0, 0, width, height, onOutside, onOutside);
     }
 
-    private void drawIconPicker(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawIconPicker(GuiGraphics g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
         g.fill(0, 0, width, height, Paper.DIM);
         int cell = 22;
@@ -1228,11 +1212,11 @@ public class MapScreen extends Screen {
         iconSearch.setX(gx + 16);
         iconSearch.setY(sy + 4);
         iconSearch.setWidth(gridW - 20);
-        iconSearch.extractRenderState(g, mx, my, 0);
+        iconSearch.render(g, mx, my, 0);
         if (iconSearch.getValue().isEmpty()) {
-            g.text(font, font.plainSubstrByWidth(T.s("icons.search_hint"), gridW - 26), gx + 20, sy + 4, Paper.HINT, false);
+            g.drawString(font, font.plainSubstrByWidth(T.s("icons.search_hint"), gridW - 26), gx + 20, sy + 4, Paper.HINT, false);
         }
-        g.text(font, font.plainSubstrByWidth(T.s("icons.color_hint"), gridW), gx, sy + 19, Paper.INK_SOFT, false);
+        g.drawString(font, font.plainSubstrByWidth(T.s("icons.color_hint"), gridW), gx, sy + 19, Paper.INK_SOFT, false);
 
         int top = sy + 31;
         int bottom = oy + oh - 8;
@@ -1256,10 +1240,10 @@ public class MapScreen extends Screen {
             boolean sel = working != null && icon.equals(working.icon);
             if (sel) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, Paper.a(Paper.GOLD, 0x50));
-                g.outline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
+                g.renderOutline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
             } else if (hover) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
-                g.outline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
+                g.renderOutline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
             }
             Paper.markerIcon(g, icon, sel ? working.color : 0, cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16, 255);
             if (hover) {
@@ -1278,7 +1262,7 @@ public class MapScreen extends Screen {
             }
         }
         if (icons.isEmpty()) {
-            g.text(font, T.s("list.nothing_found"), gx, top + 8, Paper.DISABLED, false);
+            g.drawString(font, T.s("list.nothing_found"), gx, top + 8, Paper.DISABLED, false);
         }
         g.disableScissor();
         if (max > 0) {
@@ -1301,7 +1285,7 @@ public class MapScreen extends Screen {
         Paper.click();
     }
 
-    private void drawColorPicker(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawColorPicker(GuiGraphics g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
         g.fill(0, 0, width, height, Paper.DIM);
         int ow = PAL_COLS * 11 + 16;
@@ -1329,7 +1313,7 @@ public class MapScreen extends Screen {
         int shown = hovered >= 0 ? COLORS[hovered] : current;
         Paper.inset(g, ox + 8, oy + 22, 40, 40);
         Paper.markerIcon(g, colorIcon, shown, ox + 12, oy + 26, 32, 255);
-        g.text(font, font.plainSubstrByWidth(T.iconName(colorIcon), ow - 64), ox + 54, oy + 25, Paper.INK, false);
+        g.drawString(font, font.plainSubstrByWidth(T.iconName(colorIcon), ow - 64), ox + 54, oy + 25, Paper.INK, false);
         int bx = ox + 54;
         int bw = ow - 62;
         boolean hr = Paper.inside(mx, my, bx, oy + 42, bw, 16);
@@ -1342,8 +1326,8 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, c);
             if (c == current || i == hovered) {
-                g.outline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.outline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                g.renderOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.renderOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> applyColor(c));
         }
@@ -1383,7 +1367,7 @@ public class MapScreen extends Screen {
         overlay = Overlay.PICKER;
     }
 
-    private void drawShotPicker(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawShotPicker(GuiGraphics g, int mx, int my) {
         blocker(() -> {
         });
         g.fill(0, 0, width, height, Paper.DIM);
@@ -1398,7 +1382,7 @@ public class MapScreen extends Screen {
         List<FormattedCharSequence> hint = font.split(T.tr("shots.hint"), ow - 24);
         int y = oy + 22;
         for (FormattedCharSequence l : hint) {
-            g.text(font, l, ox + 12, y, Paper.INK_SOFT, false);
+            g.drawString(font, l, ox + 12, y, Paper.INK_SOFT, false);
             y += 10;
         }
         y += 4;
@@ -1416,7 +1400,7 @@ public class MapScreen extends Screen {
         scroll(gx, y, gw, areaH, d -> pickerScroll -= d * (th + gap) / 2.0);
         if (pickerFiles.isEmpty()) {
             for (FormattedCharSequence l : font.split(T.tr("shots.empty"), gw - 10)) {
-                g.text(font, l, gx + 4, y + 6, Paper.DISABLED, false);
+                g.drawString(font, l, gx + 4, y + 6, Paper.DISABLED, false);
                 y += 10;
             }
         } else {
@@ -1439,7 +1423,7 @@ public class MapScreen extends Screen {
                     g.fill(tx, ty, tx + tw, ty + th, Paper.a(Paper.GOLD_LIGHT, 0x40));
                     Paper.icon(g, Paper.tool("check"), tx + tw - 18, ty + 2, 16);
                 }
-                g.outline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
+                g.renderOutline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
                 if (hover) {
                     tooltip = Component.literal(p.getFileName().toString());
                 }
@@ -1475,7 +1459,7 @@ public class MapScreen extends Screen {
         overlay = Overlay.VIEWER;
     }
 
-    private void drawViewer(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawViewer(GuiGraphics g, int mx, int my) {
         blocker(() -> {
             if (!annotating) {
                 overlay = Overlay.NONE;
@@ -1523,11 +1507,11 @@ public class MapScreen extends Screen {
             }
             g.disableScissor();
             if (annotating && drawTool == DrawTool.ERASER && Paper.inside(mx, my, ix, iy, iw, ih)) {
-                g.outline(mx - 6, my - 6, 12, 12, Paper.RED);
+                g.renderOutline(mx - 6, my - 6, 12, 12, Paper.RED);
             }
         } else {
             String s = show.failed ? T.s("shots.failed") : T.s("shots.loading");
-            g.text(font, s, ix + (iw - font.width(s)) / 2, iy + ih / 2 - 4, Paper.INK, false);
+            g.drawString(font, s, ix + (iw - font.width(s)) / 2, iy + ih / 2 - 4, Paper.INK, false);
         }
         if (viewerFiles.size() > 1) {
             boolean hl = Paper.inside(mx, my, 10, height / 2 - 12, 24, 24);
@@ -1540,7 +1524,7 @@ public class MapScreen extends Screen {
         String cap = T.s(annotating ? "shots.draw_hint" : "shots.counter", viewerIndex + 1, viewerFiles.size());
         int cw = font.width(cap) + 16;
         Paper.panel(g, (width - cw) / 2, height - 22, cw, 16);
-        g.text(font, cap, (width - cw) / 2 + 8, height - 18, Paper.INK, false);
+        g.drawString(font, cap, (width - cw) / 2 + 8, height - 18, Paper.INK, false);
         boolean hc = Paper.inside(mx, my, width - 24, 6, 18, 18);
         Paper.iconButton(g, Paper.tool("close"), width - 24, 6, 18, hc, false);
         hit(width - 24, 6, 18, 18, () -> {
@@ -1676,7 +1660,7 @@ public class MapScreen extends Screen {
         overlay = Overlay.CONFIRM;
     }
 
-    private void drawConfirm(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawConfirm(GuiGraphics g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
         g.fill(0, 0, width, height, Paper.DIM);
         int ow = Math.min(240, width - 20);
@@ -1689,7 +1673,7 @@ public class MapScreen extends Screen {
         });
         int y = oy + 12;
         for (FormattedCharSequence l : lines) {
-            g.text(font, l, ox + (ow - font.width(l)) / 2, y, Paper.INK, false);
+            g.drawString(font, l, ox + (ow - font.width(l)) / 2, y, Paper.INK, false);
             y += 10;
         }
         int bw = 80;
@@ -1709,7 +1693,7 @@ public class MapScreen extends Screen {
         hit(bx2, by, bw, 16, () -> overlay = Overlay.NONE);
     }
 
-    private void drawDims(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawDims(GuiGraphics g, int mx, int my) {
         blocker(() -> overlay = Overlay.NONE);
         List<String> dims = session.knownDims();
         if (!dims.contains(dim)) {
@@ -1758,7 +1742,7 @@ public class MapScreen extends Screen {
     private void centerOnPlayer() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && mc.level != null) {
-            String d = mc.level.dimension().identifier().toString();
+            String d = mc.level.dimension().location().toString();
             if (!d.equals(dim)) {
                 switchDim(d);
             }
@@ -1786,7 +1770,7 @@ public class MapScreen extends Screen {
         ruler.clear();
         current = null;
         Minecraft mc = Minecraft.getInstance();
-        if (session.isLive() && mc.player != null && mc.level != null && d.equals(mc.level.dimension().identifier().toString())) {
+        if (session.isLive() && mc.player != null && mc.level != null && d.equals(mc.level.dimension().location().toString())) {
             view.cx = mc.player.getX();
             view.cz = mc.player.getZ();
         } else {
@@ -1824,7 +1808,7 @@ public class MapScreen extends Screen {
 
     private int surfaceY(int x, int z) {
         Minecraft mc = Minecraft.getInstance();
-        if (session.isLive() && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
+        if (session.isLive() && mc.level != null && dim.equals(mc.level.dimension().location().toString())) {
             if (mc.level.hasChunk(x >> 4, z >> 4) && !mc.level.dimensionType().hasCeiling()) {
                 return mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
             }
@@ -2099,23 +2083,22 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
-        double mx = e.x();
-        double my = e.y();
-        int button = e.button();
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        double mx = mouseX;
+        double my = mouseY;
         if (overlay == Overlay.VIEWER && annotationPress(mx, my, button)) {
             return true;
         }
         if (overlay == Overlay.ICONS && iconSearch.isMouseOver(mx, my)) {
             setFocused(iconSearch);
-            iconSearch.mouseClicked(e, doubleClick);
+            iconSearch.mouseClicked(mouseX, mouseY, button);
             return true;
         }
         if (overlay != Overlay.NONE) {
             runHits(mx, my, button);
             return true;
         }
-        if (super.mouseClicked(e, doubleClick)) {
+        if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         setFocused(null);
@@ -2149,16 +2132,16 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (annotPressed) {
-            annotationDrag(e.x(), e.y());
+            annotationDrag(mouseX, mouseY);
             return true;
         }
         if (!pressed) {
-            return super.mouseDragged(e, dx, dy);
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
-        double mx = e.x();
-        double my = e.y();
+        double mx = mouseX;
+        double my = mouseY;
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 eraseAt(mx, my);
@@ -2190,17 +2173,17 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent e) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (annotPressed) {
             annotationRelease();
             return true;
         }
         if (!pressed) {
-            return super.mouseReleased(e);
+            return super.mouseReleased(mouseX, mouseY, button);
         }
         pressed = false;
-        double mx = e.x();
-        double my = e.y();
+        double mx = mouseX;
+        double my = mouseY;
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 if (erased != null && !erased.isEmpty()) {
@@ -2294,15 +2277,15 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent e) {
-        int key = e.key();
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        int key = keyCode;
         if (overlay == Overlay.CONFIRM) {
             if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
                 overlay = Overlay.NONE;
                 if (confirmAction != null) {
                     confirmAction.run();
                 }
-            } else if (e.isEscape()) {
+            } else if (keyCode == InputConstants.KEY_ESCAPE) {
                 overlay = Overlay.NONE;
             }
             return true;
@@ -2312,23 +2295,23 @@ public class MapScreen extends Screen {
                 switchShot(-1);
             } else if (key == InputConstants.KEY_RIGHT) {
                 switchShot(1);
-            } else if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+            } else if (key == InputConstants.KEY_Z && hasControlDown()) {
                 undo();
-            } else if (e.isEscape() && annotating) {
+            } else if (keyCode == InputConstants.KEY_ESCAPE && annotating) {
                 annotating = false;
                 annotCurrent = null;
-            } else if (e.isEscape() || ModKeys.OPEN_MAP.matches(e)) {
+            } else if (keyCode == InputConstants.KEY_ESCAPE || ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
                 overlay = Overlay.NONE;
             }
             return true;
         }
-        if (overlay == Overlay.ICONS && !e.isEscape()) {
+        if (overlay == Overlay.ICONS && keyCode != InputConstants.KEY_ESCAPE) {
             setFocused(iconSearch);
-            iconSearch.keyPressed(e);
+            iconSearch.keyPressed(keyCode, scanCode, modifiers);
             return true;
         }
         if (overlay != Overlay.NONE) {
-            if (e.isEscape()) {
+            if (keyCode == InputConstants.KEY_ESCAPE) {
                 if (overlay == Overlay.ICONS && !iconSearch.getValue().isEmpty()) {
                     iconSearch.setValue("");
                 } else {
@@ -2339,13 +2322,13 @@ public class MapScreen extends Screen {
             return true;
         }
         if (typing()) {
-            if (e.isEscape()) {
+            if (keyCode == InputConstants.KEY_ESCAPE) {
                 setFocused(null);
                 return true;
             }
-            return super.keyPressed(e);
+            return super.keyPressed(keyCode, scanCode, modifiers);
         }
-        if (e.isEscape()) {
+        if (keyCode == InputConstants.KEY_ESCAPE) {
             if (tool != Tool.NONE) {
                 setTool(Tool.NONE);
                 return true;
@@ -2353,31 +2336,31 @@ public class MapScreen extends Screen {
             onClose();
             return true;
         }
-        if (ModKeys.OPEN_MAP.matches(e)) {
+        if (ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
             onClose();
             return true;
         }
-        if (ModKeys.MARKER_LIST.matches(e)) {
+        if (ModKeys.MARKER_LIST.matches(keyCode, scanCode)) {
             listOpen = !listOpen;
             return true;
         }
-        if (ModKeys.RULER.matches(e)) {
+        if (ModKeys.RULER.matches(keyCode, scanCode)) {
             setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER);
             return true;
         }
-        if (ModKeys.EDITOR.matches(e)) {
+        if (ModKeys.EDITOR.matches(keyCode, scanCode)) {
             setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW);
             return true;
         }
-        if (ModKeys.TOGGLE_DRAWINGS.matches(e)) {
+        if (ModKeys.TOGGLE_DRAWINGS.matches(keyCode, scanCode)) {
             toggleDrawings();
             return true;
         }
-        if (ModKeys.NEW_MARKER.matches(e)) {
+        if (ModKeys.NEW_MARKER.matches(keyCode, scanCode)) {
             newMarkerAtPlayer();
             return true;
         }
-        if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+        if (key == InputConstants.KEY_Z && hasControlDown()) {
             undo();
             return true;
         }
@@ -2401,19 +2384,19 @@ public class MapScreen extends Screen {
             zoomBy(1 / 1.5f, width / 2.0, height / 2.0);
             return true;
         }
-        return super.keyPressed(e);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean charTyped(CharacterEvent e) {
+    public boolean charTyped(char chr, int modifiers) {
         if (overlay == Overlay.ICONS) {
             setFocused(iconSearch);
-            return iconSearch.charTyped(e);
+            return iconSearch.charTyped(chr, modifiers);
         }
         if (overlay != Overlay.NONE) {
             return true;
         }
-        return super.charTyped(e);
+        return super.charTyped(chr, modifiers);
     }
 
     // ------------------------------------------------------------------ utils

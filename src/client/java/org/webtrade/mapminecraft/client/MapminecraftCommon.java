@@ -2,7 +2,7 @@ package org.webtrade.mapminecraft.client;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
@@ -92,7 +92,7 @@ public final class MapminecraftCommon {
         }
     }
 
-    public static void renderMinimap(GuiGraphicsExtractor g, DeltaTracker delta) {
+    public static void renderMinimap(GuiGraphics g, DeltaTracker delta) {
         MINIMAP.render(g, delta);
     }
 

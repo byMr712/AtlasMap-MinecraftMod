@@ -1,10 +1,8 @@
 package org.webtrade.mapminecraft.client.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.util.FormattedCharSequence;
 import org.webtrade.mapminecraft.client.data.Storage;
 import org.webtrade.mapminecraft.client.data.WorldMeta;
@@ -56,11 +54,11 @@ public class WorldsScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         hits.clear();
         modalStart = -1;
         Paper.tiled(g, Paper.PARCHMENT, 0, 0, width, height);
@@ -71,13 +69,13 @@ public class WorldsScreen extends Screen {
             g.fill(i * 2, 0, i * 2 + 2, height, a);
             g.fill(width - i * 2 - 2, 0, width - i * 2, height, a);
         }
-        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Paper.COMPASS, width - 70, height - 70, 0, 0, 56, 56, 64, 64, 64, 64);
+        g.blit(Paper.COMPASS, width - 70, height - 70, 0, 0, 64f, 64f, 56, 56, 64, 64);
         Paper.icon(g, Paper.tool("map"), width / 2 - font.width(title) / 2 - 24, 10, 16);
         Paper.title(g, font, title.getString(), width / 2, 14);
         List<FormattedCharSequence> sub = font.split(T.tr("atlas.subtitle"), width - 40);
         int sy = 28;
         for (FormattedCharSequence l : sub) {
-            g.text(font, l, (width - font.width(l)) / 2, sy, Paper.INK_SOFT, false);
+            g.drawString(font, l, (width - font.width(l)) / 2, sy, Paper.INK_SOFT, false);
             sy += 10;
         }
 
@@ -104,7 +102,6 @@ public class WorldsScreen extends Screen {
         hits.add(new Hit((width - bw) / 2, height - 26, bw, 18, this::onClose));
 
         if (toDelete != null) {
-            g.nextStratum();
             modalStart = hits.size();
             hits.add(new Hit(0, 0, width, height, () -> toDelete = null));
             g.fill(0, 0, width, height, Paper.DIM);
@@ -118,7 +115,7 @@ public class WorldsScreen extends Screen {
             }));
             int y = oy + 12;
             for (FormattedCharSequence l : lines) {
-                g.text(font, l, ox + (ow - font.width(l)) / 2, y, Paper.INK, false);
+                g.drawString(font, l, ox + (ow - font.width(l)) / 2, y, Paper.INK, false);
                 y += 10;
             }
             int b = 80;
@@ -140,11 +137,11 @@ public class WorldsScreen extends Screen {
         }
     }
 
-    private int[] drawColumn(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, int h, String title, String icon,
+    private int[] drawColumn(GuiGraphics g, int mx, int my, int x, int y, int w, int h, String title, String icon,
                              List<WorldMeta> list, boolean isServers) {
         Paper.panel(g, x, y, w, h);
         Paper.icon(g, icon.startsWith("marker:") ? Paper.marker(icon.substring(7)) : Paper.tool(icon), x + 8, y + 5, 12);
-        g.text(font, title + "  (" + list.size() + ")", x + 24, y + 8, Paper.INK, false);
+        g.drawString(font, title + "  (" + list.size() + ")", x + 24, y + 8, Paper.INK, false);
         Paper.separator(g, x + 8, y + 21, w - 16);
         int top = y + 26;
         int bottom = y + h - 6;
@@ -159,7 +156,7 @@ public class WorldsScreen extends Screen {
         }
         if (list.isEmpty()) {
             for (FormattedCharSequence l : font.split(T.tr(isServers ? "atlas.no_servers" : "atlas.no_worlds"), w - 24)) {
-                g.text(font, l, x + 12, top + 6, Paper.DISABLED, false);
+                g.drawString(font, l, x + 12, top + 6, Paper.DISABLED, false);
                 top += 10;
             }
             return new int[]{x, y, w, h};
@@ -173,15 +170,15 @@ public class WorldsScreen extends Screen {
                 int cw = w - 16;
                 boolean hover = toDelete == null && Paper.inside(mx, my, cx, cy, cw, cardH) && my >= top && my < bottom;
                 g.fill(cx, cy, cx + cw, cy + cardH, hover ? 0x40FFFFFF : 0x18FFFFFF);
-                g.outline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
+                g.renderOutline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
                 Paper.inset(g, cx + 4, cy + 4, 30, 30);
                 Paper.icon(g, Paper.tool(isServers ? "globe" : "map"), cx + 7, cy + 7, 24);
                 String name = font.plainSubstrByWidth(m.name == null || m.name.isEmpty() ? m.id : m.name, cw - 64);
-                g.text(font, name, cx + 40, cy + 5, Paper.INK, false);
+                g.drawString(font, name, cx + 40, cy + 5, Paper.INK, false);
                 String addr = font.plainSubstrByWidth(m.address == null ? "" : m.address, cw - 64);
-                g.text(font, addr, cx + 40, cy + 15, Paper.INK_SOFT, false);
+                g.drawString(font, addr, cx + 40, cy + 15, Paper.INK_SOFT, false);
                 String info = T.s("atlas.info", markerCounts.getOrDefault(m.id, 0), df.format(new Date(m.lastPlayed)));
-                g.text(font, font.plainSubstrByWidth(info, cw - 64), cx + 40, cy + 26, Paper.DISABLED, false);
+                g.drawString(font, font.plainSubstrByWidth(info, cw - 64), cx + 40, cy + 26, Paper.DISABLED, false);
                 int tx = cx + cw - 20;
                 int ty = cy + (cardH - 16) / 2;
                 boolean th = hover && Paper.inside(mx, my, tx, ty, 16, 16);
@@ -209,18 +206,18 @@ public class WorldsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int from = modalStart >= 0 ? modalStart : 0;
         for (int i = hits.size() - 1; i >= from; i--) {
             Hit h = hits.get(i);
-            if (Paper.inside(e.x(), e.y(), h.x, h.y, h.w, h.h)) {
-                if (e.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (Paper.inside(mouseX, mouseY, h.x, h.y, h.w, h.h)) {
+                if (button == InputConstants.MOUSE_BUTTON_LEFT) {
                     h.action.run();
                 }
                 return true;
             }
         }
-        return super.mouseClicked(e, doubleClick);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
@@ -234,12 +231,12 @@ public class WorldsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent e) {
-        if (toDelete != null && e.isEscape()) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (toDelete != null && keyCode == InputConstants.KEY_ESCAPE) {
             toDelete = null;
             return true;
         }
-        return super.keyPressed(e);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

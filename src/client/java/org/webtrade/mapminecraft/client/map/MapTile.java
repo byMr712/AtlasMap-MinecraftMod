@@ -3,7 +3,7 @@ package org.webtrade.mapminecraft.client.map;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /** A 256x256 block region of the map, one pixel per block, backed by a GPU texture. */
 public class MapTile {
@@ -12,7 +12,7 @@ public class MapTile {
 
     public final int rx;
     public final int rz;
-    public final Identifier id;
+    public final ResourceLocation id;
     private final DynamicTexture texture;
     boolean textureDirty;
     boolean diskDirty;
@@ -21,15 +21,15 @@ public class MapTile {
     MapTile(String key, int rx, int rz, NativeImage image) {
         this.rx = rx;
         this.rz = rz;
-        this.id = Identifier.fromNamespaceAndPath("mapminecraft", "tile/" + key + "/" + rx + "_" + rz);
-        this.texture = new DynamicTexture(() -> "mapminecraft tile " + key + " " + rx + "," + rz, image);
+        this.id = ResourceLocation.fromNamespaceAndPath("mapminecraft", "tile/" + key + "/" + rx + "_" + rz);
+        this.texture = new DynamicTexture(image);
         Minecraft.getInstance().getTextureManager().register(id, texture);
     }
 
     public void setPixel(int x, int z, int argb) {
         NativeImage img = texture.getPixels();
-        if (img != null && img.getPixel(x, z) != argb) {
-            img.setPixel(x, z, argb);
+        if (img != null && img.getPixelRGBA(x, z) != argb) {
+            img.setPixelRGBA(x, z, argb);
             textureDirty = true;
             diskDirty = true;
         }
@@ -37,7 +37,7 @@ public class MapTile {
 
     public int getPixel(int x, int z) {
         NativeImage img = texture.getPixels();
-        return img == null ? 0 : img.getPixel(x, z);
+        return img == null ? 0 : img.getPixelRGBA(x, z);
     }
 
     public void touch() {

@@ -69,7 +69,7 @@ public final class MapManager {
 
     public static void onChunkLoad(ClientLevel level, LevelChunk chunk) {
         if (live != null && level == Minecraft.getInstance().level) {
-            queue.add(MapLayer.pack(chunk.getPos().x(), chunk.getPos().z()));
+            queue.add(MapLayer.pack(chunk.getPos().x, chunk.getPos().z));
         }
     }
 
@@ -78,7 +78,7 @@ public final class MapManager {
             return;
         }
         ClientLevel level = mc.level;
-        String dim = level.dimension().identifier().toString();
+        String dim = level.dimension().location().toString();
         int pcx = mc.player.getBlockX() >> 4;
         int pcz = mc.player.getBlockZ() >> 4;
         if (!dim.equals(liveDim)) {

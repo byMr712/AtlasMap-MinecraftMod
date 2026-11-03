@@ -22,7 +22,7 @@ public final class ChunkScanner {
         int bx = cp.getMinBlockX();
         int bz = cp.getMinBlockZ();
         boolean ceiling = level.dimensionType().hasCeiling();
-        int minY = level.getMinY();
+        int minY = level.getMinBuildHeight();
         int ceilingStart = minY + level.dimensionType().logicalHeight() - 10;
 
         int[] heights = new int[256];

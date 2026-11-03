@@ -1,9 +1,8 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.webtrade.mapminecraft.client.data.ModConfig;
@@ -43,20 +42,19 @@ public class SettingsScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
         if (parent != null) {
-            parent.extractBackground(g, -1, -1, pt);
-            parent.extractRenderState(g, -1, -1, pt);
+            parent.renderBackground(g, -1, -1, pt);
+            parent.render(g, -1, -1, pt);
         } else {
-            super.extractBackground(g, mx, my, pt);
+            super.renderBackground(g, mx, my, pt);
         }
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         hits.clear();
         tooltip = null;
-        g.nextStratum();
         g.fill(0, 0, width, height, Paper.DIM);
 
         int pw = Math.min(width - 16, 430);
@@ -104,11 +102,11 @@ public class SettingsScreen extends Screen {
         hit(bx, by, bw, 16, this::onClose);
 
         if (tooltip != null) {
-            g.setTooltipForNextFrame(font, tooltip, mx, my);
+            g.renderTooltip(font, tooltip, mx, my);
         }
     }
 
-    private void drawThemes(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, int top, int bottom) {
+    private void drawThemes(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom) {
         section(g, T.s("settings.design"), x, y, w);
         y += 12;
         int tw = (w - 4) / 2;
@@ -121,16 +119,16 @@ public class SettingsScreen extends Screen {
             g.fill(tx + 1, ty + 1, tx + tw + 1, ty + TILE_H + 1, Paper.SHADOW);
             Paper.tiled(g, t.panel(), tx, ty, tw, TILE_H, tx * 3, ty * 7);
             Paper.tiled(g, t.panelDark(), tx + 4, ty + TILE_H - 14, 26, 10, tx, ty);
-            g.outline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
+            g.renderOutline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
             g.fill(tx + 34, ty + TILE_H - 10, tx + tw - 6, ty + TILE_H - 8, t.accent());
             String name = font.plainSubstrByWidth(T.s("theme." + t.id()), tw - 10);
-            g.text(font, name, tx + 5, ty + 5, t.ink(), false);
+            g.drawString(font, name, tx + 5, ty + 5, t.ink(), false);
             if (cur) {
-                g.outline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
-                g.outline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
+                g.renderOutline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
+                g.renderOutline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
                 Paper.icon(g, Paper.tool("check"), tx + tw - 15, ty + 3, 12);
             } else {
-                g.outline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
+                g.renderOutline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
             }
             hit(tx, ty, tw, TILE_H, () -> {
                 cfg.theme = t.id();
@@ -140,7 +138,7 @@ public class SettingsScreen extends Screen {
         }
     }
 
-    private void drawOptions(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, int top, int bottom) {
+    private void drawOptions(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom) {
         String[] corners = {"corner.tr", "corner.tl", "corner.br", "corner.bl"};
         section(g, T.s("settings.minimap_section"), x, y, w);
         y += 12;
@@ -160,12 +158,12 @@ public class SettingsScreen extends Screen {
         }
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.labels", onOff(cfg.markerLabels)), () -> cfg.markerLabels = !cfg.markerLabels);
         for (FormattedCharSequence l : font.split(T.tr("settings.teleport_note"), w)) {
-            g.text(font, l, x, y + 1, Paper.HINT, false);
+            g.drawString(font, l, x, y + 1, Paper.HINT, false);
             y += 10;
         }
     }
 
-    private int option(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, int top, int bottom, Component label, Runnable action) {
+    private int option(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom, Component label, Runnable action) {
         boolean h = Paper.inside(mx, my, x, y, w, 16) && my >= top && my < bottom;
         Paper.button(g, font, label, x, y, w, 16, h, true);
         if (y + 16 > top && y < bottom) {
@@ -177,8 +175,8 @@ public class SettingsScreen extends Screen {
         return y + ROW;
     }
 
-    private void section(GuiGraphicsExtractor g, String text, int x, int y, int w) {
-        g.text(font, text, x, y, Paper.INK_SOFT, false);
+    private void section(GuiGraphics g, String text, int x, int y, int w) {
+        g.drawString(font, text, x, y, Paper.INK_SOFT, false);
         int tw = font.width(text);
         g.fill(x + tw + 5, y + 4, x + w, y + 5, Paper.INK_FAINT);
     }
@@ -188,16 +186,16 @@ public class SettingsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (int i = hits.size() - 1; i >= 0; i--) {
             Hit h = hits.get(i);
-            if (Paper.inside(e.x(), e.y(), h.x, h.y, h.w, h.h)) {
+            if (Paper.inside(mouseX, mouseY, h.x, h.y, h.w, h.h)) {
                 h.action.run();
                 Paper.click();
                 return true;
             }
         }
-        return super.mouseClicked(e, doubleClick);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
@@ -207,12 +205,12 @@ public class SettingsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent e) {
-        if (e.isEscape()) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
-        return super.keyPressed(e);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     static Component onOff(boolean b) {

@@ -1,9 +1,9 @@
 > **Language:** Русский · [English](README.en.md)
 
-# MapMinecraft — карта мира с метками (Fabric 26.1)
+# MapMinecraft — карта мира с метками (Fabric 1.21)
 ### MapMinecraft
-![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
-![Minecraft](https://img.shields.io/badge/Minecraft-26.1-blue.svg)
+![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
 ![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -11,6 +11,14 @@
 Клиентский мод полноэкранная карта мира и миникарта, метки с иконками, описаниями и скриншотами, линейка, рисование на карте, телепорт к меткам и **8 вариантов оформления**.
 
 > Мод сделан с помощью ИИ по идеям автора и зрителей.
+
+## Ветки
+
+| Ветка | Minecraft | Java | Загрузчики |
+| :---: | :---: | :---: | :---: |
+| `26.3` | 26.3 | 25+ | Fabric, NeoForge |
+| `26.1` | 26.1 | 25+ | Fabric, NeoForge |
+| `1.21` | 1.21 | 21+ | Fabric, NeoForge |
 
 ## Галерея
 | Карта мира | Миникарта |
@@ -40,10 +48,10 @@
 
 Мод работает на **Fabric** и **NeoForge**. Fabric API и другие библиотеки не требуются.
 
-1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.20.1 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **26.1**.
+1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.19.5 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **1.21**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
-   - `MapMinecraft-Fabric-26.1-1.2.0.jar` — для Fabric;
-   - `MapMinecraft-NeoForge-26.1-1.2.0.jar` — для NeoForge.
+   - `MapMinecraft-Fabric-1.21-1.2.0.jar` — для Fabric;
+   - `MapMinecraft-NeoForge-1.21-1.2.0.jar` — для NeoForge.
 3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
@@ -70,7 +78,7 @@
 
 ## Сборка
 
-Нужен JDK 25 или новее.
+Нужен JDK 21 или новее.
 
 ```bash
 ./gradlew build
@@ -78,12 +86,12 @@
 
 Команда собирает сразу два файла в `build/libs/`:
 
-- `MapMinecraft-Fabric-26.1-1.2.0.jar`
-- `MapMinecraft-NeoForge-26.1-1.2.0.jar`
+- `MapMinecraft-Fabric-1.21-1.2.0.jar`
+- `MapMinecraft-NeoForge-1.21-1.2.0.jar`
 
-Игровые тесты со скриншотами запускаются командой `./gradlew runClientGameTest`, скриншоты сохраняются в `build/run/clientGameTest/screenshots/`.
+Игровые тесты со скриншотами доступны в ветках `26.1` и `26.3` (в Fabric API для 1.21 нет client-gametest модуля).
 
 ## Авторы и лицензии
 
 - **Автор мода:** [erkinpaw](https://github.com/erkinpaw/atlasmap) · **Лицензия:** [MIT](https://github.com/erkinpaw/atlasmap/blob/main/LICENSE).  
-- **Автор порта на Fabric/Neoforge 1.21 - 26.1:** [Mr712](https://github.com/byMr712/AtlasMap-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).
+- **Автор порта на Fabric/Neoforge 1.21:** [Mr712](https://github.com/byMr712/AtlasMap-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).

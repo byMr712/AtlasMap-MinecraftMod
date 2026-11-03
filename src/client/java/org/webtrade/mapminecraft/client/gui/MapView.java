@@ -1,9 +1,9 @@
 package org.webtrade.mapminecraft.client.gui;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import org.joml.Matrix3x2fStack;
+import net.minecraft.client.gui.GuiGraphics;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.Stroke;
 import org.webtrade.mapminecraft.client.map.MapLayer;
@@ -58,33 +58,33 @@ public class MapView {
         cz = wz - (my - y - h / 2.0) / zoom;
     }
 
-    public void drawBackground(GuiGraphicsExtractor g) {
+    public void drawBackground(GuiGraphics g) {
         Paper.tiled(g, Paper.PARCHMENT, x, y, w, h, (int) Math.floor(cx * zoom), (int) Math.floor(cz * zoom));
     }
 
-    public void drawTiles(GuiGraphicsExtractor g, MapLayer layer) {
+    public void drawTiles(GuiGraphics g, MapLayer layer) {
         int rx0 = Math.floorDiv((int) Math.floor(wx(x)), MapTile.SIZE);
         int rx1 = Math.floorDiv((int) Math.floor(wx(x + w)), MapTile.SIZE);
         int rz0 = Math.floorDiv((int) Math.floor(wz(y)), MapTile.SIZE);
         int rz1 = Math.floorDiv((int) Math.floor(wz(y + h)), MapTile.SIZE);
-        Matrix3x2fStack pose = g.pose();
+        PoseStack pose = g.pose();
         for (int rz = rz0; rz <= rz1; rz++) {
             for (int rx = rx0; rx <= rx1; rx++) {
                 MapTile t = layer.getForRender(rx, rz);
                 if (t == null) {
                     continue;
                 }
-                pose.pushMatrix();
-                pose.translate(sx(rx * (double) MapTile.SIZE), sy(rz * (double) MapTile.SIZE));
-                pose.scale(zoom, zoom);
-                g.blit(RenderPipelines.GUI_TEXTURED, t.id, 0, 0, 0, 0, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
-                pose.popMatrix();
+                pose.pushPose();
+                pose.translate(sx(rx * (double) MapTile.SIZE), sy(rz * (double) MapTile.SIZE), 0);
+                pose.scale(zoom, zoom, 1f);
+                g.blit(t.id, 0, 0, 0f, 0f, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
+                pose.popPose();
             }
         }
     }
 
     /** Faint chunk grid when zoomed in far enough. */
-    public void drawGrid(GuiGraphicsExtractor g) {
+    public void drawGrid(GuiGraphics g) {
         if (zoom < 3f) {
             return;
         }
@@ -105,13 +105,13 @@ public class MapView {
         }
     }
 
-    public void drawStrokes(GuiGraphicsExtractor g, List<Stroke> strokes, float widthScale) {
+    public void drawStrokes(GuiGraphics g, List<Stroke> strokes, float widthScale) {
         for (Stroke s : strokes) {
             drawStroke(g, s, widthScale);
         }
     }
 
-    public void drawStroke(GuiGraphicsExtractor g, Stroke s, float widthScale) {
+    public void drawStroke(GuiGraphics g, Stroke s, float widthScale) {
         double[] p = s.pts;
         if (p.length < 2) {
             return;
@@ -169,7 +169,7 @@ public class MapView {
         }
     }
 
-    private void seg(GuiGraphicsExtractor g, double x1, double z1, double x2, double z2, float w, int c) {
+    private void seg(GuiGraphics g, double x1, double z1, double x2, double z2, float w, int c) {
         float ax = sx(x1);
         float ay = sy(z1);
         float bx = sx(x2);
@@ -238,7 +238,7 @@ public class MapView {
      *
      * @param clampToEdge if true, markers outside the view are drawn small at the border (minimap)
      */
-    public void drawMarkers(GuiGraphicsExtractor g, Font font, List<Marker> markers, String dim, int size, boolean labels,
+    public void drawMarkers(GuiGraphics g, Font font, List<Marker> markers, String dim, int size, boolean labels,
                             String selectedId, String hoveredId, boolean clampToEdge) {
         for (Marker m : markers) {
             if (m.hidden || !m.dim.equals(dim)) {
@@ -266,7 +266,7 @@ public class MapView {
             if (selected || hovered) {
                 int pad = 2;
                 g.fill(ix - pad, iy - pad, ix + s + pad, iy + s + pad, selected ? Paper.a(Paper.GOLD_LIGHT, 0x60) : 0x40FFFFFF);
-                g.outline(ix - pad, iy - pad, s + pad * 2, s + pad * 2, selected ? Paper.GOLD : Paper.INK_SOFT);
+                g.renderOutline(ix - pad, iy - pad, s + pad * 2, s + pad * 2, selected ? Paper.GOLD : Paper.INK_SOFT);
             }
             Paper.markerIcon(g, m.icon, m.color, ix, iy, s, outside ? 0xB0 : 0xFF);
             if (labels && !outside && (zoom >= 1.5f || selected || hovered) && !m.name.isEmpty()) {
@@ -275,8 +275,8 @@ public class MapView {
                 int tx = Math.round(px - tw / 2f);
                 int ty = iy + s + 2;
                 g.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, Paper.a(Paper.CREAM, 0xD0));
-                g.outline(tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x80));
-                g.text(font, name, tx, ty, Paper.INK, false);
+                g.renderOutline(tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x80));
+                g.drawString(font, name, tx, ty, Paper.INK, false);
             }
         }
     }
@@ -297,15 +297,15 @@ public class MapView {
         return best;
     }
 
-    public void drawPlayer(GuiGraphicsExtractor g, double px, double pz, float yaw, int size) {
+    public void drawPlayer(GuiGraphics g, double px, double pz, float yaw, int size) {
         float sx = sx(px);
         float sy = sy(pz);
-        Matrix3x2fStack pose = g.pose();
-        pose.pushMatrix();
-        pose.translate(sx, sy);
-        pose.rotate((float) Math.toRadians(yaw + 180));
-        g.blit(RenderPipelines.GUI_TEXTURED, Paper.tool("arrow"), -size / 2, -size / 2, 0, 0, size, size, 16, 16, 16, 16);
-        pose.popMatrix();
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(sx, sy, 0);
+        pose.mulPose(Axis.ZP.rotation((float) Math.toRadians(yaw + 180)));
+        g.blit(Paper.tool("arrow"), -size / 2, -size / 2, 0, 0, 16f, 16f, size, size, 16, 16);
+        pose.popPose();
     }
 
     public static void newFrame() {

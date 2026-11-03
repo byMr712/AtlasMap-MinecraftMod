@@ -1,10 +1,9 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /** Small themed icon button on the title screen (map atlas, settings). */
@@ -20,12 +19,12 @@ public class TitleButton extends AbstractWidget {
     }
 
     @Override
-    protected void extractWidgetRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
+    protected void renderWidget(GuiGraphics g, int mx, int my, float pt) {
         Paper.iconButton(g, Paper.tool(icon), getX(), getY(), 20, isHoveredOrFocused(), false);
     }
 
     @Override
-    public void onClick(MouseButtonEvent event, boolean doubleClick) {
+    public void onClick(double mouseX, double mouseY) {
         Paper.pageTurn();
         onPress.run();
     }

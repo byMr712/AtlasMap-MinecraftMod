@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT'
+    id 'fabric-loom' version '1.18-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -21,15 +21,8 @@ loom {
     }
 }
 
-fabricApi {
-    configureTests {
-        createSourceSet = true
-        modId = "mapminecraft-test"
-        enableGameTests = false
-        enableClientGameTests = true
-        eula = true
-    }
-}
+// Fabric API's client gametest module is not published for 1.21, so this branch has no
+// automated client screenshot suite. Build both release JARs with ./gradlew build.
 
 repositories {
     mavenCentral()
@@ -37,10 +30,10 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    // Fabric API is only used by the optional Fabric client gametests, never by the mod itself.
-    gametestImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    if (!project.minecraft_version.startsWith('26')) {
+        mappings loom.officialMojangMappings()
+    }
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
 processResources {
@@ -56,7 +49,7 @@ processResources {
     }
 }
 
-def targetJavaVersion = 25
+def targetJavaVersion = project.minecraft_version.startsWith('26') ? 25 : 21
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     it.options.release.set(targetJavaVersion)
