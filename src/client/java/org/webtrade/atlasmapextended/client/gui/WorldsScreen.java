@@ -71,6 +71,7 @@ public class WorldsScreen extends Screen {
             g.fill(i * 2, 0, i * 2 + 2, height, a);
             g.fill(width - i * 2 - 2, 0, width - i * 2, height, a);
         }
+        Paper.ensure(Paper.COMPASS);
         g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Paper.COMPASS, width - 70, height - 70, 0, 0, 56, 56, 64, 64, 64, 64);
         Paper.icon(g, Paper.tool("map"), width / 2 - font.width(title) / 2 - 24, 10, 16);
         Paper.title(g, font, title.getString(), width / 2, 14);
