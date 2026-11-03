@@ -43,7 +43,8 @@ public class MapScreen extends Screen {
     private static final int[] WIDTHS = {1, 2, 3, 5};
     private static final float MIN_ZOOM = 0.25f;
     private static final float MAX_ZOOM = 16f;
-    private static final String[] SORTS = {"name", "distance", "date", "icon"};
+    private static final String[] MARKER_SORTS = {"newest", "oldest", "name", "distance", "icon"};
+    private static final String[] REGION_SORTS = {"newest", "oldest", "name", "distance"};
 
     private static float lastZoom = 2f;
 
@@ -120,6 +121,8 @@ public class MapScreen extends Screen {
 
     // marker panels
     private boolean listOpen;
+    private boolean markersOpen = true;
+    private boolean regionsOpen = true;
     private String search = "";
     private double listScroll;
     private Marker selected;
@@ -805,14 +808,63 @@ public class MapScreen extends Screen {
         }
         double[] ref = referencePoint();
         Comparator<Marker> byName = Comparator.comparing(m -> m.name.toLowerCase(Locale.ROOT));
-        switch (cfg.markerSort) {
-            case 1 -> list.sort(Comparator.comparingInt((Marker m) -> m.dim.equals(dim) ? 0 : 1)
+        int sort = Math.floorMod(cfg.markerSort, MARKER_SORTS.length);
+        switch (sort) {
+            case 1 -> list.sort(Comparator.comparingLong((Marker m) -> m.created));
+            case 2 -> list.sort(byName);
+            case 3 -> list.sort(Comparator.comparingInt((Marker m) -> m.dim.equals(dim) ? 0 : 1)
                     .thenComparingDouble(m -> Math.hypot(m.x - ref[0], m.z - ref[1])));
-            case 2 -> list.sort(Comparator.comparingLong((Marker m) -> m.created).reversed());
-            case 3 -> list.sort(Comparator.comparingInt((Marker m) -> T.MARKER_ICONS.indexOf(m.icon)).thenComparing(byName));
-            default -> list.sort(byName);
+            case 4 -> list.sort(Comparator.comparingInt((Marker m) -> T.MARKER_ICONS.indexOf(m.icon)).thenComparing(byName));
+            default -> list.sort(Comparator.comparingLong((Marker m) -> m.created).reversed());
         }
         return list;
+    }
+
+    private List<Region> sortedRegions() {
+        String q = search.toLowerCase(Locale.ROOT).trim();
+        List<Region> list = new ArrayList<>();
+        for (Region r : session.allRegions()) {
+            if (q.isEmpty() || r.name.toLowerCase(Locale.ROOT).contains(q)
+                    || r.description.toLowerCase(Locale.ROOT).contains(q)) {
+                list.add(r);
+            }
+        }
+        double[] ref = referencePoint();
+        Comparator<Region> byName = Comparator.comparing(r -> r.name.toLowerCase(Locale.ROOT));
+        int sort = Math.floorMod(cfg.regionSort, REGION_SORTS.length);
+        switch (sort) {
+            case 1 -> list.sort(Comparator.comparingLong((Region r) -> r.created));
+            case 2 -> list.sort(byName);
+            case 3 -> list.sort(Comparator.comparingInt((Region r) -> r.dim.equals(dim) ? 0 : 1)
+                    .thenComparingDouble(r -> regionDistance(r, ref[0], ref[1])));
+            default -> list.sort(Comparator.comparingLong((Region r) -> r.created).reversed());
+        }
+        return list;
+    }
+
+    /** Shortest distance from a point to the region border. */
+    private static double regionDistance(Region r, double px, double pz) {
+        int n = r.pointCount();
+        if (n == 0) {
+            return 0;
+        }
+        if (n == 1) {
+            return Math.hypot(r.pts[0] - px, r.pts[1] - pz);
+        }
+        double best = Double.MAX_VALUE;
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            best = Math.min(best, segmentDistance(px, pz,
+                    r.pts[j * 2], r.pts[j * 2 + 1], r.pts[i * 2], r.pts[i * 2 + 1]));
+        }
+        return best;
+    }
+
+    private static double segmentDistance(double px, double pz, double x1, double z1, double x2, double z2) {
+        double dx = x2 - x1;
+        double dz = z2 - z1;
+        double len = dx * dx + dz * dz;
+        double t = len == 0 ? 0 : Math.max(0, Math.min(1, ((px - x1) * dx + (pz - z1) * dz) / len));
+        return Math.hypot(px - (x1 + t * dx), pz - (z1 + t * dz));
     }
 
     private double[] referencePoint() {
@@ -821,6 +873,35 @@ public class MapScreen extends Screen {
             return new double[]{mc.player.getX(), mc.player.getZ()};
         }
         return new double[]{view.cx, view.cz};
+    }
+
+    private static int listSectionHeight(boolean open, int count) {
+        return 18 + (open ? Math.max(18, count * 22) : 0);
+    }
+
+    private void drawListHeader(GuiGraphics g, int mx, int my, int x, int y, int w,
+                                String titleKey, int count, boolean open, String[] sorts, int sortIndex,
+                                Runnable toggle, Runnable next, Runnable prev, Runnable eye, boolean anyVisible) {
+        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, w, 18);
+        g.fill(x, y, x + w, y + 18, hover ? 0x24FFFFFF : 0x12FFFFFF);
+        Paper.outline(g, x, y, w, 18, Paper.a(Paper.INK, 0x40));
+        g.drawString(font, open ? "▾" : "▸", x + 4, y + 5, Paper.INK, false);
+        g.drawString(font, T.s(titleKey) + " (" + count + ")", x + 14, y + 5, Paper.INK, false);
+        hit(x, y, w - 54, 18, toggle);
+        int sx = x + w - 48;
+        boolean hs = overlay == Overlay.NONE && Paper.inside(mx, my, sx, y + 1, 16, 16);
+        Paper.iconButton(g, Paper.tool("sort"), sx, y + 1, 16, hs, false);
+        if (hs) {
+            tooltip = T.tr("sort." + sorts[Math.floorMod(sortIndex, sorts.length)]);
+        }
+        hit(sx, y + 1, 16, 16, next, prev);
+        int ex = x + w - 26;
+        boolean he = overlay == Overlay.NONE && Paper.inside(mx, my, ex, y + 1, 16, 16);
+        Paper.iconButton(g, Paper.tool(anyVisible ? "eye" : "eye_off"), ex, y + 1, 16, he, false);
+        if (he) {
+            tooltip = T.tr(anyVisible ? "list.hide_all" : "list.show_all");
+        }
+        hit(ex, y + 1, 16, 16, eye);
     }
 
     private void drawList(GuiGraphics g, int mx, int my) {
@@ -835,109 +916,177 @@ public class MapScreen extends Screen {
         ui(lx, ly, lw, lh);
         hit(lx, ly, lw, lh, () -> {
         });
-        List<Marker> list = sortedMarkers();
-        Paper.title(g, font, T.s("list.title", session.markers.size()), lx + lw / 2, ly + 8);
+        int total = session.markers.size() + session.allRegions().size();
+        Paper.title(g, font, T.s("list.title", total), lx + lw / 2, ly + 8);
 
-        // search
+        // one global search over markers and regions
         int sy = ly + 20;
         Paper.inset(g, lx + 7, sy, lw - 14, 14);
         Paper.icon(g, Paper.tool("zoom_in"), lx + 9, sy + 2, 10);
         searchBox.setX(lx + 21);
         searchBox.setY(sy + 3);
         searchBox.setWidth(lw - 30);
-        hint(g, searchBox, T.s("list.search_hint"));
+        hint(g, searchBox, T.s("list.search_objects"));
 
-        // sort + visibility
-        int by = sy + 18;
-        int bw = lw - 14 - 20;
-        boolean hs = overlay == Overlay.NONE && Paper.inside(mx, my, lx + 7, by, bw, 16);
-        Paper.iconTextButton(g, font, Paper.tool("sort"), T.tr("sort." + SORTS[cfg.markerSort]), lx + 7, by, bw, 16, hs, true);
-        if (hs) {
-            tooltip = T.tr("list.sort_tip");
-        }
-        hit(lx + 7, by, bw, 16, () -> {
-            cfg.markerSort = (cfg.markerSort + 1) % SORTS.length;
-            cfg.save();
-        }, () -> {
-            cfg.markerSort = (cfg.markerSort + SORTS.length - 1) % SORTS.length;
-            cfg.save();
-        });
-        boolean anyVisible = session.markers.stream().anyMatch(m -> !m.hidden);
-        boolean he = overlay == Overlay.NONE && Paper.inside(mx, my, lx + lw - 25, by, 18, 16);
-        Paper.iconButton(g, Paper.tool(anyVisible ? "eye" : "eye_off"), lx + lw - 25, by, 18, he, false);
-        if (he) {
-            tooltip = T.tr(anyVisible ? "list.hide_all" : "list.show_all");
-        }
-        hit(lx + lw - 25, by, 18, 16, () -> {
-            boolean hide = session.markers.stream().anyMatch(m -> !m.hidden);
-            session.markers.forEach(m -> m.hidden = hide);
-            session.saveMarkers();
-        });
-
-        // rows
-        int top = by + 22;
+        List<Marker> markers = sortedMarkers();
+        List<Region> regions = sortedRegions();
+        int top = sy + 20;
         int bottom = ly + lh - 8;
-        int rowH = 22;
         int areaH = bottom - top;
-        double maxScroll = Math.max(0, list.size() * rowH - areaH);
+        int contentH = listSectionHeight(markersOpen, markers.size()) + 4
+                + listSectionHeight(regionsOpen, regions.size());
+        double maxScroll = Math.max(0, contentH - areaH);
         listScroll = Math.max(0, Math.min(maxScroll, listScroll));
-        scroll(lx, top, lw, areaH, d -> listScroll -= d * rowH);
-        Paper.separator(g, lx + 8, top - 3, lw - 16);
-        if (list.isEmpty()) {
-            List<FormattedCharSequence> lines = font.split(T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"), lw - 20);
-            int ty = top + 8;
-            for (FormattedCharSequence l : lines) {
-                g.drawString(font, l, lx + 10, ty, Paper.INK_SOFT, false);
-                ty += 10;
-            }
-            return;
-        }
+        scroll(lx, top, lw, areaH, d -> listScroll -= d * 22);
         g.enableScissor(lx + 3, top, lx + lw - 3, bottom);
         double[] ref = referencePoint();
+        int rowH = 22;
         int y = top - (int) listScroll;
-        for (Marker m : list) {
-            if (y + rowH >= top && y <= bottom) {
-                int rx = lx + 6;
-                int rw = lw - 12;
-                boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2) && my >= top && my < bottom;
-                boolean sel = selected != null && selected.id.equals(m.id);
-                if (sel) {
-                    g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                    Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
-                } else if (hover) {
-                    g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
-                }
-                Paper.markerIcon(g, m.icon, m.color, rx + 2, y + 2, 16, m.hidden ? 0x70 : 0xFF);
-                String dist = m.dim.equals(dim) ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short") : T.dimName(m.dim);
-                int dw = font.width(dist);
-                int nameW = rw - 22 - dw - 20;
-                String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
-                g.drawString(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
-                g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
-                int ex = rx + rw - 14;
-                boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
-                Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
-                if (eh) {
-                    tooltip = T.tr(m.hidden ? "marker.show" : "marker.hide");
-                }
-                int clipY = Math.max(y, top);
-                int clipH = Math.min(y + rowH - 2, bottom) - clipY;
-                if (clipH > 0) {
-                    hit(rx, clipY, rw, clipH, () -> openView(m, true), () -> openView(m, true));
-                    if (y + 4 >= top && y + 16 <= bottom) {
-                        hit(ex, y + 4, 12, 12, () -> {
-                            m.hidden = !m.hidden;
-                            session.saveMarkers();
-                        });
+
+        boolean anyMarker = session.markers.stream().anyMatch(m -> !m.hidden);
+        drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.markers", markers.size(),
+                markersOpen, MARKER_SORTS, cfg.markerSort,
+                () -> markersOpen = !markersOpen,
+                () -> {
+                    cfg.markerSort = (cfg.markerSort + 1) % MARKER_SORTS.length;
+                    cfg.save();
+                },
+                () -> {
+                    cfg.markerSort = (cfg.markerSort + MARKER_SORTS.length - 1) % MARKER_SORTS.length;
+                    cfg.save();
+                },
+                () -> {
+                    boolean hide = session.markers.stream().anyMatch(m -> !m.hidden);
+                    session.markers.forEach(m -> m.hidden = hide);
+                    session.saveMarkers();
+                }, anyMarker);
+        y += 18;
+        if (markersOpen) {
+            if (markers.isEmpty()) {
+                g.drawString(font, T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"),
+                        lx + 12, y + 4, Paper.DISABLED, false);
+                y += 18;
+            } else {
+                for (Marker m : markers) {
+                    if (y + rowH >= top && y <= bottom) {
+                        int rx = lx + 8;
+                        int rw = lw - 16;
+                        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
+                                && my >= top && my < bottom;
+                        boolean sel = !regionMode && selected != null && selected.id.equals(m.id);
+                        if (sel) {
+                            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
+                            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
+                        } else if (hover) {
+                            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+                        }
+                        Paper.markerIcon(g, m.icon, m.color, rx + 2, y + 2, 16, m.hidden ? 0x70 : 0xFF);
+                        String dist = m.dim.equals(dim)
+                                ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short")
+                                : T.dimName(m.dim);
+                        int dw = font.width(dist);
+                        int nameW = rw - 22 - dw - 20;
+                        String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
+                        g.drawString(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
+                        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+                        int ex = rx + rw - 14;
+                        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
+                        Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
+                        if (eh) {
+                            tooltip = T.tr(m.hidden ? "marker.show" : "marker.hide");
+                        }
+                        int clipY = Math.max(y, top);
+                        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
+                        if (clipH > 0) {
+                            hit(rx, clipY, rw, clipH, () -> openView(m, true), () -> openView(m, true));
+                            if (y + 4 >= top && y + 16 <= bottom) {
+                                hit(ex, y + 4, 12, 12, () -> {
+                                    m.hidden = !m.hidden;
+                                    session.saveMarkers();
+                                });
+                            }
+                        }
                     }
+                    y += rowH;
                 }
             }
-            y += rowH;
+        }
+        y += 4;
+
+        boolean anyRegion = !session.allRegions().isEmpty()
+                && session.allRegions().stream().anyMatch(r -> !r.hidden);
+        drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.regions", regions.size(),
+                regionsOpen, REGION_SORTS, cfg.regionSort,
+                () -> regionsOpen = !regionsOpen,
+                () -> {
+                    cfg.regionSort = (cfg.regionSort + 1) % REGION_SORTS.length;
+                    cfg.save();
+                },
+                () -> {
+                    cfg.regionSort = (cfg.regionSort + REGION_SORTS.length - 1) % REGION_SORTS.length;
+                    cfg.save();
+                },
+                () -> {
+                    boolean hide = session.allRegions().stream().anyMatch(r -> !r.hidden);
+                    session.allRegions().forEach(r -> r.hidden = hide);
+                    session.saveRegions();
+                }, anyRegion);
+        y += 18;
+        if (regionsOpen) {
+            if (regions.isEmpty()) {
+                g.drawString(font, T.tr(session.allRegions().isEmpty() ? "list.empty_regions" : "list.nothing_found"),
+                        lx + 12, y + 4, Paper.DISABLED, false);
+                y += 18;
+            } else {
+                for (Region r : regions) {
+                    if (y + rowH >= top && y <= bottom) {
+                        int rx = lx + 8;
+                        int rw = lw - 16;
+                        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
+                                && my >= top && my < bottom;
+                        boolean sel = regionMode && selectedRegion != null && selectedRegion.id.equals(r.id);
+                        if (sel) {
+                            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
+                            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
+                        } else if (hover) {
+                            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+                        }
+                        g.fill(rx + 2, y + 3, rx + 18, y + 19, r.color);
+                        Paper.outline(g, rx + 2, y + 3, 16, 16, Paper.INK);
+                        String dist = r.dim.equals(dim)
+                                ? fmtInt(regionDistance(r, ref[0], ref[1])) + " " + T.s("unit.blocks_short")
+                                : T.dimName(r.dim);
+                        int dw = font.width(dist);
+                        int nameW = rw - 22 - dw - 20;
+                        String name = font.plainSubstrByWidth(r.name.isEmpty() ? T.s("region.title") : r.name, nameW);
+                        g.drawString(font, name, rx + 21, y + 6, r.hidden ? Paper.DISABLED : Paper.INK, false);
+                        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+                        int ex = rx + rw - 14;
+                        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
+                        Paper.icon(g, Paper.tool(r.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
+                        if (eh) {
+                            tooltip = T.tr(r.hidden ? "marker.show" : "marker.hide");
+                        }
+                        int clipY = Math.max(y, top);
+                        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
+                        if (clipH > 0) {
+                            hit(rx, clipY, rw, clipH, () -> openRegionView(r));
+                            if (y + 4 >= top && y + 16 <= bottom) {
+                                hit(ex, y + 4, 12, 12, () -> {
+                                    r.hidden = !r.hidden;
+                                    session.saveRegions();
+                                });
+                            }
+                        }
+                    }
+                    y += rowH;
+                }
+            }
         }
         g.disableScissor();
         if (maxScroll > 0) {
             int trackH = areaH;
-            int thumbH = Math.max(12, (int) (trackH * (areaH / (double) (list.size() * rowH))));
+            int thumbH = Math.max(12, (int) (trackH * (areaH / (double) contentH)));
             int thumbY = top + (int) ((trackH - thumbH) * (listScroll / maxScroll));
             g.fill(lx + lw - 5, top, lx + lw - 4, bottom, Paper.INK_FAINT);
             g.fill(lx + lw - 6, thumbY, lx + lw - 3, thumbY + thumbH, Paper.INK_SOFT);
@@ -945,6 +1094,7 @@ public class MapScreen extends Screen {
     }
 
     // ------------------------------------------------------------------ right panel
+
 
     private int[] panelRect() {
         int pw = panelWidth();
@@ -2275,9 +2425,9 @@ public class MapScreen extends Screen {
     private void updateWidgetVisibility() {
         boolean edit = panel == Panel.EDIT && working != null;
         nameBox.setVisible(edit);
-        xBox.setVisible(edit);
-        yBox.setVisible(edit);
-        zBox.setVisible(edit);
+        xBox.setVisible(edit && !regionMode);
+        yBox.setVisible(edit && !regionMode);
+        zBox.setVisible(edit && !regionMode);
         descBox.visible = edit;
         searchBox.setVisible(listOpen);
         iconSearch.setVisible(overlay == Overlay.ICONS);
@@ -2747,10 +2897,8 @@ public class MapScreen extends Screen {
         }
         y += 26;
 
-        g.drawString(font, T.s("region.points", r.pointCount()), cx, y, Paper.INK_SOFT, false);
-        y += 10;
-        g.drawString(font, "X " + Math.round(regionCenterX(r)) + "   Z " + Math.round(regionCenterZ(r)),
-                cx, y, Paper.INK_SOFT, false);
+        g.drawString(font, T.s("region.center", Math.round(regionCenterX(r)), Math.round(regionCenterZ(r))),
+                cx, y, Paper.INK, false);
         y += 12;
         Paper.separator(g, cx, y, cw);
         y += 5;
@@ -3013,7 +3161,10 @@ public class MapScreen extends Screen {
                 openView(hit, false);
                 Paper.click();
             } else {
-                Region region = view.regionAt(session.regions(dim), dim, mx, my);
+                Region region = view.regionLabelAt(font, session.regions(dim), dim, mx, my);
+                if (region == null) {
+                    region = view.regionAt(session.regions(dim), dim, mx, my);
+                }
                 if (region != null) {
                     openRegionView(region);
                     Paper.click();
