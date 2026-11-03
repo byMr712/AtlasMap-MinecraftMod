@@ -1,7 +1,7 @@
 > **Language:** [Русский](README.md) · English
 
-# AtlasMap — World Map with Markers (Fabric 26.2)
-### AtlasMap
+# AtlasMapExtended — World Map with Markers (Fabric 26.2)
+### AtlasMapExtended
 ![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.2-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
@@ -50,8 +50,8 @@ The mod runs on **Fabric** and **NeoForge**. Fabric API and other libraries are 
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) (0.20.1 or newer) or [NeoForge](https://neoforged.net/) for Minecraft **26.2**.
 2. Place one JAR for your loader into the `mods` folder:
-   - `AtlasMap-Fabric-26.2-v1.0.jar` for Fabric;
-   - `AtlasMap-NeoForge-26.2-v1.0.jar` for NeoForge.
+   - `AtlasMapExtended-Fabric-26.2-v1.0.jar` for Fabric;
+   - `AtlasMapExtended-NeoForge-26.2-v1.0.jar` for NeoForge.
 3. Launch the game.
 
 The mod is client-side only; no need to install it on a server.
@@ -74,7 +74,7 @@ All keys can be remapped in the standard Minecraft controls settings.
 
 ## Data Storage
 
-`.minecraft/atlasmap/worlds/<id>/`: map tiles, markers (`markers.json`), drawings (`drawings.json`), and marker screenshots. Settings are in `.minecraft/config/atlasmap.json`.
+`.minecraft/atlasmapextended/worlds/<id>/`: map tiles, markers (`markers.json`), drawings (`drawings.json`), and marker screenshots. Settings are in `.minecraft/config/atlasmapextended.json`.
 
 ## Building
 
@@ -86,12 +86,12 @@ JDK 25 or newer is required.
 
 The command builds both files in `build/libs/`:
 
-- `AtlasMap-Fabric-26.2-v1.0.jar`
-- `AtlasMap-NeoForge-26.2-v1.0.jar`
+- `AtlasMapExtended-Fabric-26.2-v1.0.jar`
+- `AtlasMapExtended-NeoForge-26.2-v1.0.jar`
 
 Game tests with screenshots are run with `./gradlew runClientGameTest`; screenshots are saved to `build/run/clientGameTest/screenshots/`.
 
 ## Authors and Licenses
 
-- **Mod author:** [erkinpaw](https://github.com/erkinpaw/atlasmap) · **License:** [MIT](https://github.com/erkinpaw/atlasmap/blob/main/LICENSE).  
-- **Author of the port to Fabric/NeoForge 1.21 - 26.2:** [Mr712](https://github.com/byMr712/AtlasMap-MinecraftMod) · **License:** [Apache License 2.0](LICENSE).
+- **Mod author:** [erkinpaw](https://github.com/erkinpaw/atlasmapextended) · **License:** [MIT](https://github.com/erkinpaw/atlasmapextended/blob/main/LICENSE).  
+- **Author of the port to Fabric/NeoForge 1.21 - 26.2:** [Mr712](https://github.com/byMr712/AtlasMapExtended-MinecraftMod) · **License:** [Apache License 2.0](LICENSE).
