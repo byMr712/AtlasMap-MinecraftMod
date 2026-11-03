@@ -1,7 +1,7 @@
 > **Language:** [Русский](README.md) · English
 
-# MapMinecraft — World Map with Markers (Fabric 1.21.4)
-### MapMinecraft
+# AtlasMap — World Map with Markers (Fabric 1.21.4)
+### AtlasMap
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.4-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
@@ -10,7 +10,7 @@
 
 A client-side mod full-screen world map and minimap, markers with icons, descriptions and screenshots, a ruler, map drawing, teleport to markers and **8 UI designs**.
 
-> This mod was created with the help of the AI based on the ideas of the author and viewers.
+> This mod was created and ported with the help of the AI based on the ideas of the author and viewers.
 
 ## Branches
 
@@ -74,7 +74,7 @@ All keys can be remapped in the standard Minecraft controls settings.
 
 ## Data Storage
 
-`.minecraft/mapminecraft/worlds/<id>/`: map tiles, markers (`markers.json`), drawings (`drawings.json`), and marker screenshots. Settings are in `.minecraft/config/mapminecraft.json`.
+`.minecraft/atlasmap/worlds/<id>/`: map tiles, markers (`markers.json`), drawings (`drawings.json`), and marker screenshots. Settings are in `.minecraft/config/atlasmap.json`.
 
 ## Building
 
