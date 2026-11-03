@@ -367,16 +367,18 @@ public class MapScreen extends Screen {
             drawTitle(g);
         }
         drawStatus(g, mx, my);
-        if (listOpen) {
-            drawList(g, mx, my);
+        if (overlay == Overlay.NONE) {
+            if (listOpen) {
+                drawList(g, mx, my);
+            }
+            updateWidgetVisibility();
+            if (panel == Panel.VIEW) {
+                drawViewPanel(g, mx, my);
+            } else if (panel == Panel.EDIT) {
+                drawEditPanel(g, mx, my);
+            }
+            super.render(g, mx, my, pt);
         }
-        updateWidgetVisibility();
-        if (panel == Panel.VIEW) {
-            drawViewPanel(g, mx, my);
-        } else if (panel == Panel.EDIT) {
-            drawEditPanel(g, mx, my);
-        }
-        super.render(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
 
         if (overlay != Overlay.NONE) {
             g.flush();
