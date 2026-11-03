@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "id": "mapminecraft-test",
+  "id": "atlasmap-test",
   "version": "1.0.0",
-  "name": "MapMinecraft client game tests",
+  "name": "AtlasMap client game tests",
   "environment": "client",
   "entrypoints": {
     "fabric-client-gametest": [
-      "org.webtrade.mapminecraft.test.MapClientGameTest",
-      "org.webtrade.mapminecraft.test.ThumbnailShots",
-      "org.webtrade.mapminecraft.test.MapMechanicsTest"
+      "org.webtrade.atlasmap.test.MapClientGameTest",
+      "org.webtrade.atlasmap.test.ThumbnailShots",
+      "org.webtrade.atlasmap.test.MapMechanicsTest"
     ]
   },
   "depends": {
-    "mapminecraft": "*"
+    "atlasmap": "*"
   }
 }
