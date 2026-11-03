@@ -24,6 +24,24 @@ public final class T {
     /** Old coloured icon ids, mapped to the icon and tint that replace them. */
     public static final Map<String, Alias> ALIASES = new HashMap<>();
     private static final Map<String, String[]> ICON_NAMES = new HashMap<>();
+    private static final Map<String, String> LANG_EN = loadLang("en_us");
+    private static final Map<String, String> LANG_RU = loadLang("ru_ru");
+
+    private static Map<String, String> loadLang(String code) {
+        Map<String, String> map = new HashMap<>();
+        try (InputStream in = T.class.getResourceAsStream("/assets/atlasmapextended/lang/" + code + ".json")) {
+            if (in == null) {
+                return map;
+            }
+            JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+            for (var e : root.entrySet()) {
+                map.put(e.getKey(), e.getValue().getAsString());
+            }
+        } catch (Exception e) {
+            Storage.LOG.error("Failed to load translations " + code, e);
+        }
+        return map;
+    }
 
     public record Alias(String icon, int color) {
     }
@@ -60,7 +78,23 @@ public final class T {
     }
 
     public static MutableComponent tr(String key, Object... args) {
-        return Component.translatable("atlasmapextended." + key, args);
+        String full = "atlasmapextended." + key;
+        String pattern = (langIndex() == 0 ? LANG_RU : LANG_EN).get(full);
+        if (pattern == null) {
+            return Component.translatable(full, args);
+        }
+        if (args.length == 0) {
+            return Component.literal(pattern);
+        }
+        Object[] values = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            values[i] = args[i] instanceof Component c ? c.getString() : args[i];
+        }
+        try {
+            return Component.literal(String.format(pattern, values));
+        } catch (RuntimeException e) {
+            return Component.literal(pattern);
+        }
     }
 
     public static String s(String key, Object... args) {
