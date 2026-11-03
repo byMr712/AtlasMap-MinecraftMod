@@ -389,6 +389,7 @@ public class MapScreen extends Screen {
         super.render(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
 
         if (overlay != Overlay.NONE) {
+            g.nextStratum();
             modalStart = hits.size();
             switch (overlay) {
                 case ICONS -> drawIconPicker(g, mx, my);
@@ -421,7 +422,7 @@ public class MapScreen extends Screen {
             view.drawStroke(g, current, 1f);
         }
         if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
-            g.submitOutline(mx - 6, my - 6, 12, 12, Paper.RED);
+            Paper.outline(g, mx - 6, my - 6, 12, 12, Paper.RED);
         }
         drawRuler(g, mx, my);
 
@@ -490,7 +491,7 @@ public class MapScreen extends Screen {
         int x = Math.round(cx - w / 2f);
         int y = Math.round(cy - 5);
         g.fill(x - 3, y - 2, x + w + 3, y + 10, Paper.a(Paper.CREAM, 0xE0));
-        g.submitOutline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
+        Paper.outline(g, x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
         g.drawString(font, s, x, y, Paper.INK, false);
     }
 
@@ -608,7 +609,7 @@ public class MapScreen extends Screen {
             int idx = i;
             if (widthIdx == i) {
                 g.fill(cx, y + 5, cx + 13, y + 23, Paper.a(Paper.GOLD, 0x40));
-                g.submitOutline(cx, y + 5, 13, 18, Paper.GOLD);
+                Paper.outline(g, cx, y + 5, 13, 18, Paper.GOLD);
             }
             Paper.dot(g, cx + 6.5f, y + 14, WIDTHS[i] + 1, dotColor);
             hit(cx, y + 5, 13, 18, () -> widthIdx = idx);
@@ -636,8 +637,8 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
             if (colorIdx == i) {
-                g.submitOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.submitOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                Paper.outline(g, sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                Paper.outline(g, sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> colorIdx = idx);
         }
@@ -675,7 +676,7 @@ public class MapScreen extends Screen {
         g.drawString(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
-        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 64, 64, 48, 48, 64, 64);
+        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 48, 48, 64, 64, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list
@@ -801,7 +802,7 @@ public class MapScreen extends Screen {
                 boolean sel = selected != null && selected.id.equals(m.id);
                 if (sel) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                    g.submitOutline(rx, y, rw, rowH - 2, Paper.GOLD);
+                    Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
                 } else if (hover) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
                 }
@@ -1010,7 +1011,7 @@ public class MapScreen extends Screen {
         if (hi) {
             g.fill(cx, y, cx + cw, y + 22, 0x30FFFFFF);
         }
-        g.submitOutline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
+        Paper.outline(g, cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
         Paper.markerIcon(g, working.icon, working.color, cx + 3, y + 3, 16, 255);
         if (hi) {
             tooltip = T.tr("edit.icon_tip");
@@ -1148,7 +1149,7 @@ public class MapScreen extends Screen {
                 String s = e.failed ? "✖" : "…";
                 g.drawString(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
             }
-            g.submitOutline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
+            Paper.outline(g, tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
             int idx = i;
             if (clipH > 0) {
                 hit(tx, clipY, tw, clipH, () -> openViewer(marker, idx));
@@ -1158,7 +1159,7 @@ public class MapScreen extends Screen {
                 int dy = ty + 2;
                 boolean dh = hover && Paper.inside(mx, my, dx, dy, 10, 10);
                 g.fill(dx, dy, dx + 10, dy + 10, dh ? Paper.a(Paper.CREAM, 0xE0) : Paper.a(Paper.CREAM, 0xB0));
-                g.submitOutline(dx, dy, 10, 10, Paper.INK);
+                Paper.outline(g, dx, dy, 10, 10, Paper.INK);
                 Paper.icon(g, Paper.tool("close"), dx + 1, dy + 1, 8);
                 if (dh) {
                     tooltip = T.tr("shots.remove");
@@ -1251,10 +1252,10 @@ public class MapScreen extends Screen {
             boolean sel = working != null && icon.equals(working.icon);
             if (sel) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, Paper.a(Paper.GOLD, 0x50));
-                g.submitOutline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
+                Paper.outline(g, cx, cy, cell - 2, cell - 2, Paper.GOLD);
             } else if (hover) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
-                g.submitOutline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
+                Paper.outline(g, cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
             }
             Paper.markerIcon(g, icon, sel ? working.color : 0, cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16, 255);
             if (hover) {
@@ -1337,8 +1338,8 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, c);
             if (c == current || i == hovered) {
-                g.submitOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.submitOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                Paper.outline(g, sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                Paper.outline(g, sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> applyColor(c));
         }
@@ -1434,7 +1435,7 @@ public class MapScreen extends Screen {
                     g.fill(tx, ty, tx + tw, ty + th, Paper.a(Paper.GOLD_LIGHT, 0x40));
                     Paper.icon(g, Paper.tool("check"), tx + tw - 18, ty + 2, 16);
                 }
-                g.submitOutline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
+                Paper.outline(g, tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
                 if (hover) {
                     tooltip = Component.literal(p.getFileName().toString());
                 }
@@ -1518,7 +1519,7 @@ public class MapScreen extends Screen {
             }
             g.disableScissor();
             if (annotating && drawTool == DrawTool.ERASER && Paper.inside(mx, my, ix, iy, iw, ih)) {
-                g.submitOutline(mx - 6, my - 6, 12, 12, Paper.RED);
+                Paper.outline(g, mx - 6, my - 6, 12, 12, Paper.RED);
             }
         } else {
             String s = show.failed ? T.s("shots.failed") : T.s("shots.loading");
