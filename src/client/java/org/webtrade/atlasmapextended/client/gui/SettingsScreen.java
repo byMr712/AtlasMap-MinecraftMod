@@ -45,7 +45,8 @@ public class SettingsScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        if (parent != null) {
+        // Opened from the world map: show the game world behind the settings, not the map.
+        if (parent != null && !(parent instanceof MapScreen)) {
             parent.renderBackground(g, -1, -1, pt);
             parent.render(g, -1, -1, pt);
         } else {
