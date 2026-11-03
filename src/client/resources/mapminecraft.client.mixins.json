@@ -4,6 +4,7 @@
   "package": "org.webtrade.mapminecraft.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AbstractTextAreaWidgetMixin",
     "ClientChunkCacheMixin",
     "EditBoxMixin",
     "ClientPacketListenerMixin",
