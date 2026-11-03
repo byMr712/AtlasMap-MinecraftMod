@@ -1,27 +1,27 @@
 {
   "schemaVersion": 1,
-  "id": "mapminecraft",
-  "version": "${version}",
-  "name": "MapMinecraft",
+  "id": "atlasmap",
+  "version": "1.0",
+  "name": "AtlasMap",
   "description": "A world map and minimap with 8 UI designs, colourable markers, screenshots, ruler, drawing tools and teleport. Maps are stored per server and per world.",
-  "authors": ["erkinpaw"],
+  "authors": ["erkinpaw", "Mr712"],
   "contact": {
-    "homepage": "https://github.com/erkinpaw/atlasmap",
-    "sources": "https://github.com/erkinpaw/atlasmap",
-    "issues": "https://github.com/erkinpaw/atlasmap/issues"
+    "homepage": "https://github.com/byMr712/AtlasMap-MinecraftMod",
+    "sources": "https://github.com/byMr712/AtlasMap-MinecraftMod",
+    "issues": "https://github.com/byMr712/AtlasMap-MinecraftMod/issues"
   },
   "license": "MIT",
-  "icon": "assets/mapminecraft/icon.png",
+  "icon": "assets/atlasmap/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "org.webtrade.mapminecraft.client.MapminecraftClient"
+      "org.webtrade.atlasmap.client.AtlasMapClient"
     ]
   },
   "mixins": [
-    "mapminecraft.mixins.json",
+    "atlasmap.mixins.json",
     {
-      "config": "mapminecraft.client.mixins.json",
+      "config": "atlasmap.client.mixins.json",
       "environment": "client"
     }
   ],
