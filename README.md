@@ -93,5 +93,5 @@
 
 ## Авторы и лицензии
 
-- **Автор мода:** [erkinpaw](https://github.com/erkinpaw/atlasmapextended) · **Лицензия:** [MIT](https://github.com/erkinpaw/atlasmapextended/blob/main/LICENSE).  
+- **Автор мода:** [erkinpaw](https://github.com/erkinpaw) · **Лицензия:** [MIT](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/blob/26.3/LICENSE).  
 - **Автор порта на Fabric/Neoforge 1.21:** [Mr712](https://github.com/byMr712/AtlasMapExtended-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).
