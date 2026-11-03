@@ -4,6 +4,13 @@
   "package": "org.webtrade.mapminecraft.mixin.client",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "ClientChunkCacheMixin",
+    "ClientPacketListenerMixin",
+    "HudMixin",
+    "MinecraftMixin",
+    "OptionsMixin",
+    "ScreenAccessor",
+    "TitleScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,6 +1,5 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -10,11 +9,10 @@ import org.webtrade.mapminecraft.client.map.MapManager;
 import org.webtrade.mapminecraft.client.map.MapSession;
 
 /** The papyrus minimap in a corner of the HUD. North is always up. */
-public class MinimapHud implements HudElement {
+public class MinimapHud {
     private final MapView view = new MapView();
 
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor g, DeltaTracker delta) {
+    public void render(GuiGraphicsExtractor g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         ModConfig cfg = ModConfig.get();
         MapSession session = MapManager.live();

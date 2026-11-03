@@ -1,14 +1,25 @@
+> **Language:** Русский · [English](README.en.md)
+
 # MapMinecraft — карта мира с метками (Fabric 26.3)
+### MapMinecraft
+![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
+![Minecraft](https://img.shields.io/badge/Minecraft-26.3-blue.svg)
+![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
+![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
-Клиентский мод для **Minecraft 26.3 (Fabric)**: полноэкранная карта мира и миникарта, метки с иконками,
-описаниями и скриншотами, линейка, рисование на карте, телепорт к меткам и **8 вариантов оформления**.
+Клиентский мод полноэкранная карта мира и миникарта, метки с иконками, описаниями и скриншотами, линейка, рисование на карте, телепорт к меткам и **8 вариантов оформления**.
 
-**Автор:** [erkinpaw](https://github.com/erkinpaw) · **Лицензия:** [MIT](LICENSE). Если используете код
-или делаете форк, сохраните строку с автором.
+> Мод сделан с помощью ИИ по идеям автора и зрителей.
 
-> Мод сделан с помощью нейросети Claude (Anthropic) по идеям автора и зрителей.
+## Галерея
+| Карта мира | Миникарта |
+| :---: | :---: |
+| ![Карта](article_screenshots/webp/04_karta_spisok_i_metka.webp) | ![Миникарта](article_screenshots/webp/02_minikarta.webp) |
 
-![Все 8 вариантов оформления](article_screenshots/webp/00_vse_8_dizajnov.webp)
+| Настройки | Темы оформления |
+| :---: | :---: |
+| ![Настройки](article_screenshots/webp/15_nastrojki.webp) | ![Все 8 тем](article_screenshots/webp/00_vse_8_dizajnov.webp) |
 
 ## Возможности
 
@@ -21,23 +32,19 @@
 - **Линейка** (`R`): меряет расстояние по нескольким точкам.
 - **Рисование на карте** (`G`): ручка, линия, прямоугольник, круг и ластик. Есть 60 цветов и отмена действия.
 - **Телепорт к метке**: включается в настройках. Работает, если разрешены команды (читы в одиночной игре или права оператора на сервере).
-- **Настройки** (кнопка-шестерёнка на карте и в главном меню). Оформление на выбор: Папирус, Камень,
-  Сланец, Светлый, Тёмный, Дерево, Незер, Энд.
+- **Настройки** (кнопка-шестерёнка на карте и в главном меню). Оформление на выбор: Папирус, Камень, Сланец, Светлый, Тёмный, Дерево, Незер, Энд.
 - **Атлас карт** в главном меню: карты, метки и скриншоты хранятся отдельно для каждого сервера и мира.
 - Интерфейс на русском и английском языках.
 
-| | |
-|---|---|
-| ![Карта](article_screenshots/webp/04_karta_spisok_i_metka.webp) | ![Миникарта](article_screenshots/webp/02_minikarta.webp) |
-| ![Выбор иконки](article_screenshots/webp/08_vybor_ikonki.webp) | ![Цвет иконки](article_screenshots/webp/09_vybor_cveta_ikonki.webp) |
-| ![Настройки](article_screenshots/webp/15_nastrojki.webp) | ![Тёмная тема](article_screenshots/webp/21_tema_modern_dark.webp) |
-| ![Рисование на скриншоте](article_screenshots/webp/12_risovanie_na_skrinshote.webp) | ![Линейка](article_screenshots/webp/13_linejka.webp) |
-
 ## Установка
 
-1. Установите [Fabric Loader](https://fabricmc.net/use/) для Minecraft **26.3** (loader 0.20.1 или новее).
-2. Положите [Fabric API](https://modrinth.com/mod/fabric-api) (0.165.0+26.3 или новее) в папку `mods`.
-3. Положите `MapMinecraft-1.2.0.jar` в ту же папку `mods`.
+Мод работает на **Fabric** и **NeoForge**. Fabric API и другие библиотеки не требуются.
+
+1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.20.1 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **26.3**.
+2. Положите в папку `mods` один JAR под свой загрузчик:
+   - `MapMinecraft-Fabric-26.3-1.2.0.jar` — для Fabric;
+   - `MapMinecraft-NeoForge-26.3-1.2.0.jar` — для NeoForge.
+3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
 
@@ -59,25 +66,24 @@
 
 ## Где хранятся данные
 
-`.minecraft/mapminecraft/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и
-скриншоты меток. Настройки лежат в `.minecraft/config/mapminecraft.json`.
+`.minecraft/mapminecraft/worlds/<id>/`: тайлы карты, метки (`markers.json`), рисунки (`drawings.json`) и скриншоты меток. Настройки лежат в `.minecraft/config/mapminecraft.json`.
 
-## Сборка из исходников
+## Сборка
 
 Нужен JDK 25 или новее.
 
-```
+```bash
 ./gradlew build
 ```
 
-Готовый файл появится в `build/libs/`. Игровые тесты со скриншотами запускаются командой
-`./gradlew runClientGameTest`, скриншоты сохраняются в `build/run/clientGameTest/screenshots/`.
+Команда собирает сразу два файла в `build/libs/`:
 
----
+- `MapMinecraft-Fabric-26.3-1.2.0.jar`
+- `MapMinecraft-NeoForge-26.3-1.2.0.jar`
 
-## English
+Игровые тесты со скриншотами запускаются командой `./gradlew runClientGameTest`, скриншоты сохраняются в `build/run/clientGameTest/screenshots/`.
 
-A client-side **Fabric mod for Minecraft 26.3**. It adds a world map and a minimap, markers with icons,
-descriptions and screenshots, a ruler, map drawing, teleport to markers and 8 UI designs. Right-click a marker
-icon to recolour it. Requires Fabric API. Author: [erkinpaw](https://github.com/erkinpaw), MIT licence
-(keep the copyright notice).
+## Авторы и лицензии
+
+- **Автор мода:** [erkinpaw](https://github.com/erkinpaw/atlasmap) · **Лицензия:** [MIT](https://github.com/erkinpaw/atlasmap/blob/main/LICENSE).  
+- **Автор порта на Fabric/Neoforge 1.21 - 26.3:** [Mr712](https://github.com/byMr712/AtlasMap-MinecraftMod) · **Лицензия:** [Apache License 2.0](LICENSE).

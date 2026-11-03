@@ -32,19 +32,15 @@ fabricApi {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
+    mavenCentral()
 }
 
 dependencies {
-    // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // Fabric API is only used by the optional Fabric client gametests, never by the mod itself.
+    gametestImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
 processResources {
@@ -62,25 +58,39 @@ processResources {
 
 def targetJavaVersion = 25
 tasks.withType(JavaCompile).configureEach {
-    // ensure that the encoding is set to UTF-8, no matter what the system default is
-    // this fixes some edge cases with special characters not displaying correctly
-    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-    // If Javadoc is generated, this must be specified in that task too.
     it.options.encoding = "UTF-8"
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        it.options.release.set(targetJavaVersion)
-    }
+    it.options.release.set(targetJavaVersion)
 }
 
 java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+}
+
+// ---------------------------------------------------------------------------
+// NeoForge dual-target build: one source tree, two loaders.
+// The Fabric entrypoint is excluded from the NeoForge JAR and the NeoForge
+// stubs are excluded as well, so the same compiled classes run on both loaders.
+// ---------------------------------------------------------------------------
+sourceSets {
+    neoforge {
+        java {
+            srcDirs = ['src/neoforge/java']
+        }
+        resources {
+            srcDirs = ['src/neoforge/resources']
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.client.output + configurations.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.client.output + configurations.runtimeClasspath
     }
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
-    withSourcesJar()
+}
+
+processNeoforgeResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand "version": project.version, "minecraft_version": project.minecraft_version
+    }
 }
 
 jar {
@@ -89,20 +99,32 @@ jar {
     }
 }
 
-// configure the maven publication
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
-            from components.java
-        }
-    }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
-    }
+tasks.matching { it.name == 'sourcesJar' || it.name == 'remapSourcesJar' || it.name == 'javadocJar' }.configureEach {
+    enabled = false
 }
+
+task jarNeoForge(type: Jar) {
+    dependsOn compileNeoforgeJava, processNeoforgeResources, clientClasses, classes
+    archiveFileName = "${project.archives_base_name.replace('-Fabric-', '-NeoForge-')}-${project.version}.jar"
+    destinationDirectory = layout.buildDirectory.dir("libs")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.output) {
+        exclude "fabric.mod.json"
+    }
+    from(sourceSets.client.output) {
+        // Fabric-only entrypoint; NeoForge uses MapminecraftNeoForge instead.
+        exclude "org/webtrade/mapminecraft/client/MapminecraftClient.class"
+    }
+    from(sourceSets.neoforge.output) {
+        // Compile-time stubs must never reach the runtime classpath.
+        exclude "net/**"
+    }
+    from("src/client/resources/assets/mapminecraft/icon.png") {
+        into ""
+        rename { "icon.png" }
+    }
+    from("LICENSE")
+}
+
+build.dependsOn(jarNeoForge)

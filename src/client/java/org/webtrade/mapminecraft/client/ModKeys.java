@@ -1,13 +1,15 @@
 package org.webtrade.mapminecraft.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
 /** All key bindings of the mod. They can be changed in Options → Controls → Key Binds → MapMinecraft. */
 public final class ModKeys {
-    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("mapminecraft", "main"));
+    public static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(Identifier.fromNamespaceAndPath("mapminecraft", "main"));
+
+    private static boolean registered;
 
     public static KeyMapping OPEN_MAP;
     public static KeyMapping MARKER_LIST;
@@ -22,7 +24,15 @@ public final class ModKeys {
     private ModKeys() {
     }
 
-    public static void register() {
+    /**
+     * Creates the key mappings and returns them so the {@code Options} mixin can append
+     * them to the vanilla key list. Returns an empty array on subsequent calls.
+     */
+    public static KeyMapping[] createAll() {
+        if (registered) {
+            return new KeyMapping[0];
+        }
+        registered = true;
         OPEN_MAP = key("open_map", InputConstants.KEY_M);
         MARKER_LIST = key("marker_list", InputConstants.KEY_J);
         NEW_MARKER = key("new_marker", InputConstants.KEY_B);
@@ -32,10 +42,11 @@ public final class ModKeys {
         RULER = key("ruler", InputConstants.KEY_R);
         EDITOR = key("editor", InputConstants.KEY_G);
         TOGGLE_DRAWINGS = key("toggle_drawings", InputConstants.KEY_H);
+        return new KeyMapping[]{OPEN_MAP, MARKER_LIST, NEW_MARKER, TOGGLE_MINIMAP,
+                MINIMAP_ZOOM_IN, MINIMAP_ZOOM_OUT, RULER, EDITOR, TOGGLE_DRAWINGS};
     }
 
     private static KeyMapping key(String name, int code) {
-        return KeyMappingHelper.registerKeyMapping(
-                new KeyMapping("key.mapminecraft." + name, InputConstants.Type.KEYBOARD, code, CATEGORY));
+        return new KeyMapping("key.mapminecraft." + name, InputConstants.Type.KEYBOARD, code, CATEGORY);
     }
 }
