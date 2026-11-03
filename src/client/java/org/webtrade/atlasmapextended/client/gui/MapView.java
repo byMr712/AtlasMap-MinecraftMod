@@ -304,6 +304,7 @@ public class MapView {
         pose.pushPose();
         pose.translate(sx, sy, 0);
         pose.mulPose(Axis.ZP.rotation((float) Math.toRadians(yaw + 180)));
+        Paper.ensure(Paper.tool("arrow"));
         g.blit(Paper.tool("arrow"), -size / 2, -size / 2, size, size, 0, 0, 16, 16, 16, 16);
         pose.popPose();
     }

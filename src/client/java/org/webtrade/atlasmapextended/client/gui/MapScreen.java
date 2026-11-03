@@ -670,6 +670,7 @@ public class MapScreen extends Screen {
         g.drawString(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
+        Paper.ensure(Paper.COMPASS);
         g.blit(Paper.COMPASS, right - 52, height - 56, 48, 48, 0, 0, 64, 64, 64, 64);
     }
 
