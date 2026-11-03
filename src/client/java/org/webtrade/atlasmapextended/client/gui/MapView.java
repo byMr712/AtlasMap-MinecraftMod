@@ -5,10 +5,12 @@ import com.mojang.math.Axis;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import org.webtrade.atlasmapextended.client.data.Marker;
+import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Stroke;
 import org.webtrade.atlasmapextended.client.map.MapLayer;
 import org.webtrade.atlasmapextended.client.map.MapTile;
 
+import java.util.Arrays;
 import java.util.List;
 
 /** A viewport onto the world map. Shared by the full screen map and the minimap. */
@@ -295,6 +297,93 @@ public class MapView {
             }
         }
         return best;
+    }
+
+    /** Draws all named areas of one dimension with a translucent fill, an outline and a label. */
+    public void drawRegions(GuiGraphics g, Font font, List<Region> regions, String dim, boolean labels, String selectedId) {
+        for (Region r : regions) {
+            if (r.hidden || !r.dim.equals(dim)) {
+                continue;
+            }
+            drawRegion(g, font, r, labels, r.id.equals(selectedId));
+        }
+    }
+
+    public void drawRegion(GuiGraphics g, Font font, Region r, boolean labels, boolean selected) {
+        int n = r.pointCount();
+        if (n < 3) {
+            return;
+        }
+        float[] xs = new float[n];
+        float[] ys = new float[n];
+        float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            xs[i] = sx(r.pts[i * 2]);
+            ys[i] = sy(r.pts[i * 2 + 1]);
+            minX = Math.min(minX, xs[i]);
+            maxX = Math.max(maxX, xs[i]);
+            minY = Math.min(minY, ys[i]);
+            maxY = Math.max(maxY, ys[i]);
+        }
+        int rgb = r.color & 0xFFFFFF;
+        int fill = rgb | 0x55000000;
+        int outline = rgb | 0xFF000000;
+
+        // scanline fill so the polygon follows the parchment look without a custom render type
+        int y0 = Math.max(y, (int) Math.floor(minY));
+        int y1 = Math.min(y + h - 1, (int) Math.ceil(maxY));
+        float[] cross = new float[n];
+        for (int yy = y0; yy <= y1; yy++) {
+            float cy = yy + 0.5f;
+            int count = 0;
+            for (int i = 0, j = n - 1; i < n; j = i++) {
+                float yi = ys[i];
+                float yj = ys[j];
+                if ((yi > cy) != (yj > cy)) {
+                    cross[count++] = xs[i] + (cy - yi) / (yj - yi) * (xs[j] - xs[i]);
+                }
+            }
+            if (count < 2) {
+                continue;
+            }
+            Arrays.sort(cross, 0, count);
+            for (int k = 0; k + 1 < count; k += 2) {
+                int x1 = Math.max(x, (int) Math.floor(cross[k]));
+                int x2 = Math.min(x + w, (int) Math.ceil(cross[k + 1]));
+                if (x2 > x1) {
+                    g.fill(x1, yy, x2, yy + 1, fill);
+                }
+            }
+        }
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            Paper.line(g, xs[i], ys[i], xs[j], ys[j], selected ? 2.4f : 1.4f, selected ? Paper.GOLD : outline);
+        }
+        if (!labels || r.name.isBlank() || maxX < x || minX > x + w || maxY < y || minY > y + h) {
+            return;
+        }
+        float cx = (minX + maxX) / 2f;
+        float cy = (minY + maxY) / 2f;
+        String name = font.plainSubstrByWidth(r.name, 140);
+        int tw = font.width(name);
+        int tx = Math.round(cx - tw / 2f);
+        int ty = Math.round(cy - 4);
+        g.fill(tx - 3, ty - 2, tx + tw + 3, ty + 9, Paper.a(Paper.CREAM, 0xD8));
+        Paper.outline(g, tx - 3, ty - 2, tw + 6, 11, Paper.a(Paper.INK, 0x90));
+        g.drawString(font, name, tx, ty, Paper.INK, false);
+    }
+
+    /** The topmost area under the cursor, if any. */
+    public Region regionAt(List<Region> regions, String dim, double mx, double my) {
+        double wx = wx(mx);
+        double wz = wz(my);
+        for (int i = regions.size() - 1; i >= 0; i--) {
+            Region r = regions.get(i);
+            if (!r.hidden && r.dim.equals(dim) && r.contains(wx, wz)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     public void drawPlayer(GuiGraphics g, double px, double pz, float yaw, int size) {
