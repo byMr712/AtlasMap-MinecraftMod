@@ -1,6 +1,5 @@
 > **Language:** Русский · [English](README.en.md)
 
-# AtlasMapExtended — карта мира с метками (Fabric 1.21.5)
 ### AtlasMapExtended
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.5-blue.svg)
