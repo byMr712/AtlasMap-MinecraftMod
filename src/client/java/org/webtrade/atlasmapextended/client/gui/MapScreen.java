@@ -31,6 +31,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -128,6 +129,10 @@ public class MapScreen extends Screen {
     private Panel panel = Panel.NONE;
     private Marker working;
     private boolean workingIsNew;
+    private Region selectedRegion;
+    private Region workingRegion;
+    private boolean regionMode;
+    private Region redrawTarget;
     private boolean markerDrag;
     private double markerDragOffX;
     private double markerDragOffZ;
@@ -473,7 +478,7 @@ public class MapScreen extends Screen {
         view.drawBackground(g);
         view.drawTiles(g, layer);
         view.drawGrid(g);
-        view.drawRegions(g, font, session.regions(dim), dim, true, selectedRegionId);
+        view.drawRegions(g, font, session.regions(dim), dim, true, regionMode ? selectedRegionId : null);
         if (regionDrawing) {
             Region preview = previewRegion();
             if (preview != null) {
@@ -506,7 +511,7 @@ public class MapScreen extends Screen {
         if (cfg.markersVisible || panel == Panel.EDIT) {
             view.drawMarkers(g, font, shown, dim, 16, cfg.markerLabels,
                     selected == null ? null : selected.id, hovered == null ? null : hovered.id, false);
-        } else if (selected != null && selected.dim.equals(dim)) {
+        } else if (selected != null && selected.dim.equals(dim) && !regionMode) {
             view.drawMarkers(g, font, List.of(selected), dim, 16, true, selected.id, null, false);
         }
         Minecraft mc = Minecraft.getInstance();
@@ -954,6 +959,10 @@ public class MapScreen extends Screen {
     }
 
     private void drawViewPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (regionMode) {
+            drawRegionViewPanel(g, mx, my);
+            return;
+        }
         if (selected == null) {
             panel = Panel.NONE;
             return;
@@ -1072,6 +1081,10 @@ public class MapScreen extends Screen {
     }
 
     private void drawEditPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (regionMode) {
+            drawRegionEditPanel(g, mx, my);
+            return;
+        }
         if (working == null) {
             panel = Panel.NONE;
             return;
@@ -1854,6 +1867,7 @@ public class MapScreen extends Screen {
         if (t != Tool.REGION) {
             regionDrawing = false;
             regionPoints.clear();
+            redrawTarget = null;
         }
         if (t != Tool.NONE && freeRight() - freeLeft() < 230) {
             listOpen = false;
@@ -1952,6 +1966,10 @@ public class MapScreen extends Screen {
 
     private void openView(Marker m, boolean center) {
         commitEdit(false);
+        selectedRegion = null;
+        workingRegion = null;
+        regionMode = false;
+        selectedRegionId = null;
         selected = m;
         panel = Panel.VIEW;
         descScroll = 0;
@@ -1966,6 +1984,9 @@ public class MapScreen extends Screen {
             return;
         }
         commitEdit(false);
+        selectedRegion = null;
+        workingRegion = null;
+        regionMode = false;
         selected = m;
         working = m.copy();
         workingIsNew = isNew;
@@ -1987,6 +2008,28 @@ public class MapScreen extends Screen {
 
     /** Applies the working copy; the new position is stored only when Save was pressed. */
     private void commitEdit(boolean applyLocation) {
+        if (regionMode) {
+            if (working != null && workingRegion != null && selectedRegion != null) {
+                workingRegion.name = working.name;
+                workingRegion.description = working.description;
+                workingRegion.color = working.color;
+                workingRegion.screenshots = new ArrayList<>(working.screenshots);
+                workingRegion.shotDrawings = new HashMap<>();
+                working.shotDrawings.forEach((k, v) -> workingRegion.shotDrawings.put(k, new ArrayList<>(v)));
+                selectedRegion.apply(workingRegion);
+                for (String f : removedFiles) {
+                    deleteShot(f);
+                }
+                removedFiles.clear();
+                addedFiles.clear();
+                session.saveRegions();
+            }
+            working = null;
+            workingRegion = null;
+            regionMode = false;
+            panel = Panel.NONE;
+            return;
+        }
         if (panel != Panel.EDIT || working == null || selected == null) {
             return;
         }
@@ -2012,6 +2055,15 @@ public class MapScreen extends Screen {
     }
 
     private void saveAndView() {
+        if (regionMode) {
+            Region r = selectedRegion;
+            commitEdit();
+            if (r != null) {
+                openRegionView(r);
+            }
+            Paper.click();
+            return;
+        }
         Marker m = selected;
         commitEdit();
         if (m != null) {
@@ -2022,6 +2074,23 @@ public class MapScreen extends Screen {
     }
 
     private void cancelEdit() {
+        if (regionMode) {
+            for (String f : addedFiles) {
+                deleteShot(f);
+            }
+            addedFiles.clear();
+            removedFiles.clear();
+            Region r = selectedRegion;
+            working = null;
+            workingRegion = null;
+            regionMode = false;
+            if (r != null) {
+                openRegionView(r);
+            } else {
+                panel = Panel.NONE;
+            }
+            return;
+        }
         for (String f : addedFiles) {
             deleteShot(f);
         }
@@ -2040,6 +2109,16 @@ public class MapScreen extends Screen {
     }
 
     private void closePanel() {
+        if (regionMode) {
+            cancelEdit();
+            panel = Panel.NONE;
+            selected = null;
+            selectedRegion = null;
+            selectedRegionId = null;
+            regionMode = false;
+            setFocused(null);
+            return;
+        }
         commitEdit(false);
         panel = Panel.NONE;
         selected = null;
@@ -2273,7 +2352,7 @@ public class MapScreen extends Screen {
             }
             return true;
         }
-        if (panel == Panel.EDIT && working != null && tool == Tool.NONE
+        if (panel == Panel.EDIT && working != null && !regionMode && tool == Tool.NONE
                 && button == InputConstants.MOUSE_BUTTON_LEFT && mouseOverMap(mx, my)) {
             Marker hit = view.markerAt(List.of(working), dim, mx, my, 16);
             if (hit != null) {
@@ -2439,7 +2518,7 @@ public class MapScreen extends Screen {
             regionPoints.clear();
             Region hit = view.regionAt(session.regions(dim), dim, mx, my);
             if (hit != null) {
-                openRegionEditor(hit, false);
+                openRegionView(hit);
             }
             return;
         }
@@ -2461,6 +2540,14 @@ public class MapScreen extends Screen {
         if (pts.length < 6) {
             return;
         }
+        if (redrawTarget != null) {
+            redrawTarget.pts = pts;
+            session.saveRegions();
+            Region target = redrawTarget;
+            redrawTarget = null;
+            openRegionView(target);
+            return;
+        }
         Region r = new Region();
         r.name = T.s("region.default_name", session.regions(dim).size() + 1);
         r.color = COLORS[colorIdx];
@@ -2470,7 +2557,7 @@ public class MapScreen extends Screen {
         session.saveRegions();
         selectedRegionId = r.id;
         Paper.pageTurn();
-        openRegionEditor(r, true);
+        openRegionView(r);
     }
 
     /** Builds the polygon of the selected region shape for preview and for the final region. */
@@ -2521,6 +2608,284 @@ public class MapScreen extends Screen {
             out[i * 2 + 1] = points.get(i)[1];
         }
         return out;
+    }
+
+    private void openRegionView(Region r) {
+        if (panel == Panel.EDIT) {
+            commitEdit(false);
+        }
+        selectedRegion = r;
+        regionMode = true;
+        selectedRegionId = r.id;
+        selected = regionProxy(r);
+        working = null;
+        workingRegion = null;
+        panel = Panel.VIEW;
+        descScroll = 0;
+        shotsScroll = 0;
+    }
+
+    private void openRegionEdit(Region r) {
+        if (panel == Panel.EDIT) {
+            commitEdit(false);
+        }
+        selectedRegion = r;
+        regionMode = true;
+        selectedRegionId = r.id;
+        workingRegion = r.copy();
+        selected = regionProxy(r);
+        working = regionProxy(r);
+        workingIsNew = false;
+        panel = Panel.EDIT;
+        descScroll = 0;
+        shotsScroll = 0;
+        if (nameBox != null) {
+            fillWidgets();
+            setFocused(nameBox);
+            nameBox.moveCursorToEnd(false);
+        }
+    }
+
+    private Marker regionProxy(Region r) {
+        Marker m = new Marker();
+        m.id = r.id;
+        m.name = r.name;
+        m.description = r.description;
+        m.color = r.color;
+        m.dim = r.dim;
+        m.hidden = r.hidden;
+        m.icon = "pin";
+        m.x = (int) Math.round(regionCenterX(r));
+        m.z = (int) Math.round(regionCenterZ(r));
+        m.y = surfaceY(m.x, m.z);
+        m.screenshots = new ArrayList<>(r.screenshots);
+        m.shotDrawings = new HashMap<>();
+        r.shotDrawings.forEach((k, v) -> m.shotDrawings.put(k, new ArrayList<>(v)));
+        return m;
+    }
+
+    private static double regionCenterX(Region r) {
+        int n = r.pointCount();
+        double sum = 0;
+        for (int i = 0; i < n; i++) {
+            sum += r.pts[i * 2];
+        }
+        return n == 0 ? 0 : sum / n;
+    }
+
+    private static double regionCenterZ(Region r) {
+        int n = r.pointCount();
+        double sum = 0;
+        for (int i = 0; i < n; i++) {
+            sum += r.pts[i * 2 + 1];
+        }
+        return n == 0 ? 0 : sum / n;
+    }
+
+    private void confirmDeleteRegion() {
+        Region r = selectedRegion;
+        if (r == null) {
+            return;
+        }
+        String name = r.name.isBlank() ? T.s("region.default_name", 1) : r.name;
+        confirm(T.tr("confirm.delete_region", name), () -> {
+            session.regions(dim).removeIf(x -> x.id.equals(r.id));
+            session.saveRegions();
+            selectedRegion = null;
+            working = null;
+            workingRegion = null;
+            regionMode = false;
+            selectedRegionId = null;
+            selected = null;
+            panel = Panel.NONE;
+        });
+    }
+
+    private void startRedraw() {
+        if (panel == Panel.EDIT) {
+            commitEdit(false);
+        }
+        if (selectedRegion == null) {
+            return;
+        }
+        redrawTarget = selectedRegion;
+        working = null;
+        workingRegion = null;
+        regionMode = false;
+        panel = Panel.NONE;
+        setTool(Tool.REGION);
+        Paper.pageTurn();
+    }
+
+    private void drawRegionViewPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (selectedRegion == null) {
+            panel = Panel.NONE;
+            regionMode = false;
+            return;
+        }
+        Region r = selectedRegion;
+        int[] pr = panelRect();
+        int px = pr[0];
+        int py = pr[1];
+        int pw = pr[2];
+        int ph = pr[3];
+        Paper.panel(g, px, py, pw, ph);
+        ui(px, py, pw, ph);
+        hit(px, py, pw, ph, () -> {
+        });
+        closeButton(g, mx, my, px + pw - 18, py + 5, this::closePanel);
+
+        int cx = px + 9;
+        int cw = pw - 18;
+        int y = py + 10;
+        Paper.inset(g, cx, y, 20, 20);
+        g.fill(cx + 2, y + 2, cx + 18, y + 18, r.color);
+        g.outline(cx, y, 20, 20, Paper.INK);
+        List<FormattedCharSequence> nameLines = font.split(
+                Component.literal(r.name.isEmpty() ? T.s("region.title") : r.name), cw - 28);
+        int ny = y + (nameLines.size() > 1 ? 1 : 6);
+        for (int i = 0; i < Math.min(2, nameLines.size()); i++) {
+            g.text(font, nameLines.get(i), cx + 26, ny + i * 10, Paper.INK, false);
+        }
+        y += 26;
+
+        g.text(font, T.s("region.points", r.pointCount()), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        g.text(font, "X " + Math.round(regionCenterX(r)) + "   Z " + Math.round(regionCenterZ(r)),
+                cx, y, Paper.INK_SOFT, false);
+        y += 12;
+        Paper.separator(g, cx, y, cw);
+        y += 5;
+
+        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        List<FormattedCharSequence> desc = r.description.isBlank()
+                ? List.of(T.tr("marker.no_desc").getVisualOrderText())
+                : font.split(Component.literal(r.description), cw - 6);
+        int descH = Math.min(desc.size() * 10 + 6, Math.max(30, (int) (ph * 0.25)));
+        Paper.inset(g, cx, y, cw, descH);
+        double maxDesc = Math.max(0, desc.size() * 10 + 6 - descH);
+        descScroll = Math.max(0, Math.min(maxDesc, descScroll));
+        scroll(cx, y, cw, descH, d -> descScroll -= d * 10);
+        g.enableScissor(cx + 1, y + 1, cx + cw - 1, y + descH - 1);
+        int ty = y + 4 - (int) descScroll;
+        for (FormattedCharSequence l : desc) {
+            g.text(font, l, cx + 3, ty, r.description.isBlank() ? Paper.DISABLED : Paper.INK, false);
+            ty += 10;
+        }
+        g.disableScissor();
+        y += descH + 6;
+        Paper.separator(g, cx, y, cw);
+        y += 5;
+
+        boolean tp = cfg.teleport && session.isLive();
+        int rows = tp ? 3 : 2;
+        int buttonsY = py + ph - 8 - 16 * rows - 4 * (rows - 1);
+        g.text(font, T.tr("field.shots", r.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        drawShotGrid(g, mx, my, selected, cx, y, cw, buttonsY - 6 - y, false);
+
+        int bw = (cw - 4) / 2;
+        int y2 = buttonsY + 20;
+        boolean h2 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("trash"), T.tr("button.delete"), cx, y2, bw, 16, h2, true);
+        hit(cx, y2, bw, 16, this::confirmDeleteRegion);
+        boolean h1 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("gear"), T.tr("button.configure"), cx + bw + 4, y2, bw, 16, h1, true);
+        hit(cx + bw + 4, y2, bw, 16, () -> openRegionEdit(r));
+        y2 = buttonsY;
+        boolean h3 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool(r.hidden ? "eye" : "eye_off"),
+                T.tr(r.hidden ? "marker.show" : "marker.hide"), cx, y2, bw, 16, h3, true);
+        hit(cx, y2, bw, 16, () -> {
+            r.hidden = !r.hidden;
+            selected.hidden = r.hidden;
+            session.saveRegions();
+        });
+        boolean h4 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("target"), T.tr("button.goto"), cx + bw + 4, y2, bw, 16, h4, true);
+        hit(cx + bw + 4, y2, bw, 16, () -> centerOn(selected));
+        if (tp) {
+            int y3 = buttonsY + 40;
+            boolean h5 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y3, cw, 16);
+            Paper.iconTextButton(g, font, Paper.tool("arrow"), T.tr("button.teleport"), cx, y3, cw, 16, h5, true);
+            hit(cx, y3, cw, 16, () -> teleportTo(selected));
+        }
+    }
+
+    private void drawRegionEditPanel(GuiGraphicsExtractor g, int mx, int my) {
+        if (working == null) {
+            panel = Panel.NONE;
+            regionMode = false;
+            return;
+        }
+        int[] pr = panelRect();
+        int px = pr[0];
+        int py = pr[1];
+        int pw = pr[2];
+        int ph = pr[3];
+        Paper.panel(g, px, py, pw, ph);
+        ui(px, py, pw, ph);
+        hit(px, py, pw, ph, () -> setFocused(null));
+        Paper.title(g, font, T.s("region.edit"), px + pw / 2, py + 8);
+        closeButton(g, mx, my, px + pw - 18, py + 5, this::cancelEdit);
+
+        int cx = px + 9;
+        int cw = pw - 18;
+        int y = py + 22;
+        g.text(font, T.tr("region.name"), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        Paper.inset(g, cx, y, cw, 16);
+        nameBox.setX(cx + 4);
+        nameBox.setY(y + 4);
+        nameBox.setWidth(cw - 8);
+        y += 22;
+
+        g.text(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
+        int sw = 14;
+        int sy = y + 9;
+        for (int i = 0; i < 10; i++) {
+            int col = COLORS[Math.min(COLORS.length - 1, i * 6)];
+            int sx = cx + i * (sw + 4);
+            g.fill(sx, sy, sx + sw, sy + sw, col);
+            boolean sel = (working.color & 0xFFFFFF) == (col & 0xFFFFFF);
+            g.outline(sx, sy, sw, sw, sel ? Paper.GOLD : Paper.INK);
+            hit(sx, sy, sw, sw, () -> working.color = col);
+        }
+        y = sy + sw + 8;
+
+        g.text(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        int descH = Math.max(36, Math.min(80, (int) (ph * 0.2)));
+        Paper.inset(g, cx, y, cw, descH);
+        descBox.setX(cx + 1);
+        descBox.setY(y + 1);
+        descBox.setWidth(cw - 2);
+        descBox.setHeight(descH - 2);
+        y += descH + 6;
+
+        int buttonsY = py + ph - 8 - 16 * 2 - 4;
+        g.text(font, T.tr("field.shots", working.screenshots.size()), cx, y, Paper.INK_SOFT, false);
+        y += 11;
+        drawShotGrid(g, mx, my, working, cx, y, cw, buttonsY - 6 - y, true);
+
+        int bw = (cw - 4) / 2;
+        int y2 = buttonsY + 20;
+        boolean h1 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("check"), T.tr("button.save"), cx, y2, bw, 16, h1, true);
+        hit(cx, y2, bw, 16, this::saveAndView);
+        boolean h2 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, y2, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("close"), T.tr("button.cancel"), cx + bw + 4, y2, bw, 16, h2, true);
+        hit(cx + bw + 4, y2, bw, 16, this::cancelEdit);
+        boolean h3 = overlay == Overlay.NONE && Paper.inside(mx, my, cx, buttonsY, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("trash"), T.tr("button.delete"), cx, buttonsY, bw, 16, h3, true);
+        hit(cx, buttonsY, bw, 16, this::confirmDeleteRegion);
+        boolean h4 = overlay == Overlay.NONE && Paper.inside(mx, my, cx + bw + 4, buttonsY, bw, 16);
+        Paper.iconTextButton(g, font, Paper.tool("region"), T.tr("region.redraw"), cx + bw + 4, buttonsY, bw, 16, h4, true);
+        if (h4) {
+            tooltip = T.tr("region.redraw_tip");
+        }
+        hit(cx + bw + 4, buttonsY, bw, 16, this::startRedraw);
     }
 
     private void openRegionEditor(Region r, boolean isNew) {
@@ -2649,8 +3014,14 @@ public class MapScreen extends Screen {
             if (hit != null) {
                 openView(hit, false);
                 Paper.click();
-            } else if (panel != Panel.NONE) {
-                closePanel();
+            } else {
+                Region region = view.regionAt(session.regions(dim), dim, mx, my);
+                if (region != null) {
+                    openRegionView(region);
+                    Paper.click();
+                } else if (panel != Panel.NONE) {
+                    closePanel();
+                }
             }
         } else if (button == InputConstants.MOUSE_BUTTON_RIGHT) {
             if (hit != null) {
