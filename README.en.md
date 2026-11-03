@@ -12,27 +12,29 @@ A client-side mod full-screen world map and minimap, markers with icons, descrip
 
 > This mod was created and ported with the help of the AI based on the ideas of the author and viewers.
 
-## Branches
+## Downloads
 
-| Branch | Minecraft | Java | Loaders | Tests |
-| :---: | :---: | :---: | :---: | :---: |
-| `26.3` | 26.3 | 25+ | Fabric, NeoForge | client gametest |
-| `26.2` | 26.2 | 25+ | Fabric, NeoForge | client gametest |
-| `26.1.2` | 26.1.2 | 25+ | Fabric, NeoForge | client gametest |
-| `26.1.1` | 26.1.1 | 25+ | Fabric, NeoForge | client gametest |
-| `26.1` | 26.1 | 25+ | Fabric, NeoForge | client gametest |
-| `1.21.11` | 1.21.11 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.10` | 1.21.10 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.9` | 1.21.9 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.8` | 1.21.8 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.7` | 1.21.7 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.6` | 1.21.6 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.5` | 1.21.5 | 21+ | Fabric, NeoForge | client gametest |
-| `1.21.4` | 1.21.4 | 21+ | Fabric, NeoForge | — |
-| `1.21.3` | 1.21.3 | 21+ | Fabric, NeoForge | — |
-| `1.21.2` | 1.21.2 | 21+ | Fabric, NeoForge | — |
-| `1.21.1` | 1.21.1 | 21+ | Fabric, NeoForge | — |
-| `1.21` | 1.21 | 21+ | Fabric, NeoForge | — |
+Choose a loader and Minecraft version:
+
+| Fabric | NeoForge |
+| :--- | :--- |
+| [26.3](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-26.3-v1.0.jar) | [26.3](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-26.3-v1.0.jar) |
+| [26.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-26.2-v1.0.jar) | [26.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-26.2-v1.0.jar) |
+| [26.1.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-26.1.2-v1.0.jar) | [26.1.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-26.1.2-v1.0.jar) |
+| [26.1.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-26.1.1-v1.0.jar) | [26.1.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-26.1.1-v1.0.jar) |
+| [26.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-26.1-v1.0.jar) | [26.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-26.1-v1.0.jar) |
+| [1.21.11](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.11-v1.0.jar) | [1.21.11](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.11-v1.0.jar) |
+| [1.21.10](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.10-v1.0.jar) | [1.21.10](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.10-v1.0.jar) |
+| [1.21.9](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.9-v1.0.jar) | [1.21.9](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.9-v1.0.jar) |
+| [1.21.8](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.8-v1.0.jar) | [1.21.8](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.8-v1.0.jar) |
+| [1.21.7](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.7-v1.0.jar) | [1.21.7](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.7-v1.0.jar) |
+| [1.21.6](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.6-v1.0.jar) | [1.21.6](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.6-v1.0.jar) |
+| [1.21.5](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.5-v1.0.jar) | [1.21.5](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.5-v1.0.jar) |
+| [1.21.4](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.4-v1.0.jar) | [1.21.4](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.4-v1.0.jar) |
+| [1.21.3](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.3-v1.0.jar) | [1.21.3](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.3-v1.0.jar) |
+| [1.21.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.2-v1.0.jar) | [1.21.2](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.2-v1.0.jar) |
+| [1.21.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21.1-v1.0.jar) | [1.21.1](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21.1-v1.0.jar) |
+| [1.21](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-Fabric-1.21-v1.0.jar) | [1.21](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/releases/download/v1.0/AtlasMapExtended-NeoForge-1.21-v1.0.jar) |
 
 ## Gallery
 | World Map | Minimap |
