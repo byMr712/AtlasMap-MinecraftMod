@@ -50,8 +50,8 @@
 
 1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.19.5 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **1.21**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
-   - `MapMinecraft-Fabric-1.21-1.2.0.jar` — для Fabric;
-   - `MapMinecraft-NeoForge-1.21-1.2.0.jar` — для NeoForge.
+   - `AtlasMap-Fabric-1.21-v1.0.jar` — для Fabric;
+   - `AtlasMap-NeoForge-1.21-v1.0.jar` — для NeoForge.
 3. Запустите игру.
 
 Мод нужен только на клиенте, ставить его на сервер не надо.
@@ -86,8 +86,8 @@
 
 Команда собирает сразу два файла в `build/libs/`:
 
-- `MapMinecraft-Fabric-1.21-1.2.0.jar`
-- `MapMinecraft-NeoForge-1.21-1.2.0.jar`
+- `AtlasMap-Fabric-1.21-v1.0.jar`
+- `AtlasMap-NeoForge-1.21-v1.0.jar`
 
 Игровые тесты со скриншотами доступны в ветках `26.1` и `26.3` (в Fabric API для 1.21 нет client-gametest модуля).
 
