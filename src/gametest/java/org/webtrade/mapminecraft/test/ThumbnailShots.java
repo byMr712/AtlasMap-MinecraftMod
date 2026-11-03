@@ -185,7 +185,7 @@ public class ThumbnailShots implements FabricClientGameTest {
 
     private void placeMarkers(Minecraft mc) {
         MapSession s = MapManager.live();
-        String dim = mc.level.dimension().location().toString();
+        String dim = mc.level.dimension().identifier().toString();
         MapLayer layer = s.layer(dim);
         String[][] land = {
                 {"house", "Мой дом"}, {"castle", "Крепость"}, {"mine", "Алмазная шахта"}, {"portal", "Портал в Незер"},

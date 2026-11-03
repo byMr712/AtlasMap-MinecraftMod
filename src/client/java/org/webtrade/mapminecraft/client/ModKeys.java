@@ -2,12 +2,12 @@ package org.webtrade.mapminecraft.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** All key bindings of the mod. They can be changed in Options → Controls → Key Binds → MapMinecraft. */
 public final class ModKeys {
     public static final KeyMapping.Category CATEGORY =
-            KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("mapminecraft", "main"));
+            KeyMapping.Category.register(Identifier.fromNamespaceAndPath("mapminecraft", "main"));
 
     private static boolean registered;
 

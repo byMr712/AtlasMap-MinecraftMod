@@ -1,11 +1,13 @@
 package org.webtrade.mapminecraft.client.gui;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.webtrade.mapminecraft.client.data.Storage;
 
 import java.io.InputStream;
@@ -30,7 +32,7 @@ public final class ImageCache {
     private static final Map<String, Entry> ENTRIES = new HashMap<>();
 
     public static final class Entry {
-        public ResourceLocation id;
+        public Identifier id;
         public int width;
         public int height;
         /** Size of the source image (before thumbnail scaling). */
@@ -48,7 +50,7 @@ public final class ImageCache {
     private static final class SmoothTexture extends DynamicTexture {
         SmoothTexture(String label, NativeImage image) {
             super(() -> label, image);
-            this.setFilter(true, false);
+            this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
         }
     }
 
@@ -90,7 +92,7 @@ public final class ImageCache {
                 img.close();
                 return;
             }
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("mapminecraft", "image/" + COUNTER.incrementAndGet());
+            Identifier id = Identifier.fromNamespaceAndPath("mapminecraft", "image/" + COUNTER.incrementAndGet());
             entry.width = img.getWidth();
             entry.height = img.getHeight();
             mc.getTextureManager().register(id, new SmoothTexture("mapminecraft image", img));

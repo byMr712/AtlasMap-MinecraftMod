@@ -3,7 +3,7 @@ package org.webtrade.mapminecraft.client.map;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** A 256x256 block region of the map, one pixel per block, backed by a GPU texture. */
 public class MapTile {
@@ -12,7 +12,7 @@ public class MapTile {
 
     public final int rx;
     public final int rz;
-    public final ResourceLocation id;
+    public final Identifier id;
     private final DynamicTexture texture;
     boolean textureDirty;
     boolean diskDirty;
@@ -21,7 +21,7 @@ public class MapTile {
     MapTile(String key, int rx, int rz, NativeImage image) {
         this.rx = rx;
         this.rz = rz;
-        this.id = ResourceLocation.fromNamespaceAndPath("mapminecraft", "tile/" + key + "/" + rx + "_" + rz);
+        this.id = Identifier.fromNamespaceAndPath("mapminecraft", "tile/" + key + "/" + rx + "_" + rz);
         this.texture = new DynamicTexture(() -> "mapminecraft tile " + key + " " + rx + "," + rz, image);
         Minecraft.getInstance().getTextureManager().register(id, texture);
     }

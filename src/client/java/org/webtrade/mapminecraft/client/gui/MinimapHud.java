@@ -21,7 +21,7 @@ public class MinimapHud {
                 || mc.screen instanceof MapScreen) {
             return;
         }
-        String dim = mc.level.dimension().location().toString();
+        String dim = mc.level.dimension().identifier().toString();
         float pt = delta.getGameTimeDeltaPartialTick(true);
         double px = p.xo + (p.getX() - p.xo) * pt;
         double pz = p.zo + (p.getZ() - p.zo) * pt;
@@ -56,7 +56,7 @@ public class MinimapHud {
             view.drawMarkers(g, mc.font, session.markers, dim, 10, false, null, null, true);
         }
         g.disableScissor();
-        g.submitOutline(x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
+        g.renderOutline(x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
         view.drawPlayer(g, px, pz, p.getYRot(), 12);
 
         // north marker

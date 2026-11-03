@@ -78,7 +78,7 @@ public final class MapManager {
             return;
         }
         ClientLevel level = mc.level;
-        String dim = level.dimension().location().toString();
+        String dim = level.dimension().identifier().toString();
         int pcx = mc.player.getBlockX() >> 4;
         int pcz = mc.player.getBlockZ() >> 4;
         if (!dim.equals(liveDim)) {

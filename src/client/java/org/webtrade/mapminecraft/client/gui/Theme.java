@@ -1,11 +1,11 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
 /** A UI design: panel textures and the ink/accent colours drawn on them. */
-public record Theme(String id, ResourceLocation panel, ResourceLocation panelDark, boolean darkBg, boolean ornate,
+public record Theme(String id, Identifier panel, Identifier panelDark, boolean darkBg, boolean ornate,
                     int ink, int inkSoft, int accent, int accentLight, int cream, int disabled, int hint, int vignette) {
 
     public static final Theme PAPYRUS = new Theme("papyrus", tex("textures/gui/parchment.png"), tex("textures/gui/parchment_dark.png"),
@@ -28,8 +28,8 @@ public record Theme(String id, ResourceLocation panel, ResourceLocation panelDar
     }
 
     // not Paper.id(): Paper's static init reads PAPYRUS, so this class must not touch Paper
-    private static ResourceLocation tex(String path) {
-        return ResourceLocation.fromNamespaceAndPath("mapminecraft", path);
+    private static Identifier tex(String path) {
+        return Identifier.fromNamespaceAndPath("mapminecraft", path);
     }
 
     public static Theme byId(String id) {

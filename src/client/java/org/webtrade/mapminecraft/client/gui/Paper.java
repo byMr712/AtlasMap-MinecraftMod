@@ -7,18 +7,18 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 /** Drawing helpers for the papyrus look: parchment panels, inked borders, buttons and lines. */
 public final class Paper {
-    public static final ResourceLocation COMPASS = id("textures/gui/compass.png");
+    public static final Identifier COMPASS = id("textures/gui/compass.png");
     public static final int RED = 0xFF9C3B2A;
     public static final int SHADOW = 0x55000000;
 
     // current theme; reassigned by apply()
-    public static ResourceLocation PARCHMENT;
-    public static ResourceLocation PARCHMENT_DARK;
+    public static Identifier PARCHMENT;
+    public static Identifier PARCHMENT_DARK;
     public static int INK;
     public static int INK_SOFT;
     public static int INK_FAINT;
@@ -63,24 +63,24 @@ public final class Paper {
         return alpha << 24 | color & 0xFFFFFF;
     }
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath("mapminecraft", path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath("mapminecraft", path);
     }
 
-    public static ResourceLocation marker(String icon) {
+    public static Identifier marker(String icon) {
         return id("textures/gui/markers/" + icon + ".png");
     }
 
-    public static ResourceLocation tool(String icon) {
+    public static Identifier tool(String icon) {
         return id((theme.darkBg() ? "textures/gui/tools_light/" : "textures/gui/tools/") + icon + ".png");
     }
 
     /** Tiles a 256x256 texture over a rectangle. */
-    public static void tiled(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h) {
+    public static void tiled(GuiGraphics g, Identifier tex, int x, int y, int w, int h) {
         tiled(g, tex, x, y, w, h, 0, 0);
     }
 
-    public static void tiled(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h, int offX, int offY) {
+    public static void tiled(GuiGraphics g, Identifier tex, int x, int y, int w, int h, int offX, int offY) {
         int u0 = Math.floorMod(offX, 256);
         int v0 = Math.floorMod(offY, 256);
         int yy = 0;
@@ -109,11 +109,11 @@ public final class Paper {
 
     public static void border(GuiGraphics g, int x, int y, int w, int h) {
         if (!theme.ornate()) {
-            g.submitOutline(x, y, w, h, a(INK, 0x50));
+            g.renderOutline(x, y, w, h, a(INK, 0x50));
             return;
         }
-        g.submitOutline(x, y, w, h, INK);
-        g.submitOutline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
+        g.renderOutline(x, y, w, h, INK);
+        g.renderOutline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
         corner(g, x - 1, y - 1);
         corner(g, x + w - 4, y - 1);
         corner(g, x - 1, y + h - 4);
@@ -151,16 +151,16 @@ public final class Paper {
         }
     }
 
-    public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size) {
+    public static void icon(GuiGraphics g, Identifier tex, int x, int y, int size) {
         g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16);
     }
 
-    public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size, int color) {
+    public static void icon(GuiGraphics g, Identifier tex, int x, int y, int size, int color) {
         g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16, color);
     }
 
     /** Square icon button. */
-    public static void iconButton(GuiGraphics g, ResourceLocation icon, int x, int y, int size, boolean hovered, boolean selected) {
+    public static void iconButton(GuiGraphics g, Identifier icon, int x, int y, int size, boolean hovered, boolean selected) {
         g.fill(x + 1, y + 1, x + size + 1, y + size + 1, SHADOW);
         tiled(g, selected ? PARCHMENT_DARK : PARCHMENT, x, y, size, size, x * 5, y * 3);
         if (selected) {
@@ -169,9 +169,9 @@ public final class Paper {
         if (hovered) {
             g.fill(x, y, x + size, y + size, 0x28FFFFFF);
         }
-        g.submitOutline(x, y, size, size, selected ? GOLD : INK);
+        g.renderOutline(x, y, size, size, selected ? GOLD : INK);
         if (hovered || selected) {
-            g.submitOutline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
+            g.renderOutline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
         }
         int is = size >= 20 ? 16 : size - 4;
         icon(g, icon, x + (size - is) / 2, y + (size - is) / 2, is);
@@ -184,21 +184,21 @@ public final class Paper {
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.submitOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int color = enabled ? INK : DISABLED;
         String s = font.plainSubstrByWidth(label.getString(), w - 6);
         g.drawString(font, s, x + (w - font.width(s)) / 2, y + (h - 8) / 2 + 1, color, false);
     }
 
     /** Button with an icon and a label. */
-    public static void iconTextButton(GuiGraphics g, Font font, ResourceLocation icon, Component label, int x, int y, int w, int h,
+    public static void iconTextButton(GuiGraphics g, Font font, Identifier icon, Component label, int x, int y, int w, int h,
                                       boolean hovered, boolean enabled) {
         g.fill(x + 1, y + 1, x + w + 1, y + h + 1, SHADOW);
         tiled(g, PARCHMENT_DARK, x, y, w, h, x * 5, y * 3);
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.submitOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int is = Math.min(16, h - 4);
         String s = font.plainSubstrByWidth(label.getString(), w - is - 10);
         int total = is + 3 + font.width(s);

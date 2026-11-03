@@ -121,16 +121,16 @@ public class SettingsScreen extends Screen {
             g.fill(tx + 1, ty + 1, tx + tw + 1, ty + TILE_H + 1, Paper.SHADOW);
             Paper.tiled(g, t.panel(), tx, ty, tw, TILE_H, tx * 3, ty * 7);
             Paper.tiled(g, t.panelDark(), tx + 4, ty + TILE_H - 14, 26, 10, tx, ty);
-            g.submitOutline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
+            g.renderOutline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
             g.fill(tx + 34, ty + TILE_H - 10, tx + tw - 6, ty + TILE_H - 8, t.accent());
             String name = font.plainSubstrByWidth(T.s("theme." + t.id()), tw - 10);
             g.drawString(font, name, tx + 5, ty + 5, t.ink(), false);
             if (cur) {
-                g.submitOutline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
-                g.submitOutline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
+                g.renderOutline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
+                g.renderOutline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
                 Paper.icon(g, Paper.tool("check"), tx + tw - 15, ty + 3, 12);
             } else {
-                g.submitOutline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
+                g.renderOutline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
             }
             hit(tx, ty, tw, TILE_H, () -> {
                 cfg.theme = t.id();

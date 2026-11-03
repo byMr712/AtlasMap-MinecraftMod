@@ -63,7 +63,7 @@ public class MapClientGameTest implements FabricClientGameTest {
                     m.x = px + (int) (Math.cos(i * 0.8) * (20 + i * 9));
                     m.z = pz + (int) (Math.sin(i * 0.8) * (20 + i * 9));
                     m.y = 70;
-                    m.dim = mc.level.dimension().location().toString();
+                    m.dim = mc.level.dimension().identifier().toString();
                     m.description = "Описание метки номер " + (i + 1) + ". Здесь можно писать заметки о месте, ресурсах и планах.";
                     m.created = System.currentTimeMillis() - i * 1000L;
                     s.markers.add(m);
