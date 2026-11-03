@@ -1,31 +1,31 @@
 modLoader="javafml"
 loaderVersion="[1,)"
 license="MIT"
-issueTrackerURL="https://github.com/erkinpaw/atlasmap/issues"
+issueTrackerURL="https://github.com/byMr712/AtlasMap-MinecraftMod/issues"
 
 [[mods]]
-modId="mapminecraft"
-version="${version}"
-displayName="MapMinecraft"
-displayURL="https://github.com/erkinpaw/atlasmap"
-authors="erkinpaw"
+modId="atlasmap"
+version="1.0"
+displayName="AtlasMap"
+displayURL="https://github.com/byMr712/AtlasMap-MinecraftMod"
+authors="erkinpaw, Mr712"
 description="A world map and minimap with 8 UI designs, colourable markers, screenshots, ruler, drawing tools and teleport. Maps are stored per server and per world."
 logoFile="icon.png"
 
 [[mixins]]
-config="mapminecraft.mixins.json"
+config="atlasmap.mixins.json"
 
 [[mixins]]
-config="mapminecraft.client.mixins.json"
+config="atlasmap.client.mixins.json"
 
-[[dependencies.mapminecraft]]
+[[dependencies.atlasmap]]
 modId="neoforge"
 type="required"
 versionRange="[1,)"
 ordering="NONE"
 side="CLIENT"
 
-[[dependencies.mapminecraft]]
+[[dependencies.atlasmap]]
 modId="minecraft"
 type="required"
 versionRange="[${minecraft_version}]"
