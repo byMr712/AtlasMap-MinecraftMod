@@ -15,6 +15,7 @@ import org.lwjgl.glfw.GLFW;
 import org.webtrade.atlasmapextended.client.ModKeys;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
+import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Storage;
 import org.webtrade.atlasmapextended.client.data.Stroke;
 import org.webtrade.atlasmapextended.client.map.MapLayer;
@@ -71,11 +72,11 @@ public class MapScreen extends Screen {
 
     private enum Tool { NONE, RULER, DRAW }
 
-    private enum DrawTool { PEN, LINE, RECT, CIRCLE, ERASER }
+    private enum DrawTool { PEN, LINE, RECT, CIRCLE, REGION, ERASER }
 
     private enum Panel { NONE, VIEW, EDIT }
 
-    private enum Overlay { NONE, ICONS, COLOR, PICKER, VIEWER, CONFIRM, DIMS }
+    private enum Overlay { NONE, ICONS, COLOR, PICKER, VIEWER, CONFIRM, DIMS, REGION }
 
     private record Hit(int x, int y, int w, int h, Runnable left, Runnable right) {
     }
@@ -100,6 +101,16 @@ public class MapScreen extends Screen {
     private final Deque<Runnable> undo = new ArrayDeque<>();
     private final List<double[]> ruler = new ArrayList<>();
 
+    // regions
+    private final List<double[]> regionPoints = new ArrayList<>();
+    private boolean regionDrawing;
+    private double regionPressX;
+    private double regionPressY;
+    private Region editingRegion;
+    private boolean regionIsNew;
+    private EditBox regionNameBox;
+    private String selectedRegionId;
+
     // marker panels
     private boolean listOpen;
     private String search = "";
@@ -108,6 +119,9 @@ public class MapScreen extends Screen {
     private Panel panel = Panel.NONE;
     private Marker working;
     private boolean workingIsNew;
+    private boolean markerDrag;
+    private double markerDragOffX;
+    private double markerDragOffZ;
     private final List<String> addedFiles = new ArrayList<>();
     private final List<String> removedFiles = new ArrayList<>();
     private double descScroll;
@@ -282,6 +296,12 @@ public class MapScreen extends Screen {
         iconSearch.setTextShadow(false);
         iconSearch.setResponder(v -> iconScroll = 0);
         addWidget(iconSearch);
+        regionNameBox = new EditBox(font, 0, 0, 100, 12, T.tr("region.name"));
+        regionNameBox.setBordered(false);
+        regionNameBox.setTextColor(Paper.INK);
+        regionNameBox.setTextShadow(false);
+        regionNameBox.setMaxLength(48);
+        addWidget(regionNameBox);
         if (working != null) {
             fillWidgets();
         }
@@ -305,11 +325,35 @@ public class MapScreen extends Screen {
         descBox.setValue(working.description);
     }
 
+    /** True while the coordinates in the fields differ from the saved marker position. */
+    private boolean coordsChanged() {
+        if (working == null || selected == null) {
+            return false;
+        }
+        return parse(xBox.getValue(), working.x) != selected.x
+                || parse(yBox.getValue(), working.y) != selected.y
+                || parse(zBox.getValue(), working.z) != selected.z;
+    }
+
+    /** Restores the saved coordinates and updates the fields. */
+    private void revertCoords() {
+        if (working == null || selected == null) {
+            return;
+        }
+        working.x = selected.x;
+        working.y = selected.y;
+        working.z = selected.z;
+        xBox.setValue(Integer.toString(working.x));
+        yBox.setValue(Integer.toString(working.y));
+        zBox.setValue(Integer.toString(working.z));
+        Paper.click();
+    }
+
     /** Set while the settings screen is shown on top, so the session stays open. */
     private boolean suspended;
 
     private void openSettings() {
-        commitEdit();
+        commitEdit(false);
         suspended = true;
         minecraft.setScreen(new SettingsScreen(this));
     }
@@ -320,7 +364,7 @@ public class MapScreen extends Screen {
             suspended = false;
             return;
         }
-        commitEdit();
+        commitEdit(false);
         session.meta.lastDim = session.isLive() ? session.meta.lastDim : dim;
         if (!session.isLive()) {
             session.meta.lastX = view.cx;
@@ -330,6 +374,7 @@ public class MapScreen extends Screen {
         lastZoom = view.zoom;
         session.saveMarkers();
         session.saveStrokes();
+        session.saveRegions();
         if (ownsSession) {
             session.close();
         }
@@ -399,6 +444,7 @@ public class MapScreen extends Screen {
                 case VIEWER -> drawViewer(g, mx, my);
                 case CONFIRM -> drawConfirm(g, mx, my);
                 case DIMS -> drawDims(g, mx, my);
+                case REGION -> drawRegionEditor(g, mx, my);
                 default -> {
                 }
             }
@@ -415,6 +461,15 @@ public class MapScreen extends Screen {
         view.drawBackground(g);
         view.drawTiles(g, layer);
         view.drawGrid(g);
+        view.drawRegions(g, font, session.regions(dim), dim, true, selectedRegionId);
+        if (regionDrawing && regionPoints.size() >= 2) {
+            Region preview = new Region();
+            preview.name = "";
+            preview.color = COLORS[colorIdx];
+            preview.dim = dim;
+            preview.pts = flatten(regionPoints);
+            view.drawRegion(g, font, preview, false, true);
+        }
         vignette(g);
         if (cfg.drawingsVisible || tool == Tool.DRAW) {
             view.drawStrokes(g, session.strokes(dim), 1f);
@@ -428,8 +483,18 @@ public class MapScreen extends Screen {
         drawRuler(g, mx, my);
 
         Marker hovered = hoveredMarker(mx, my);
-        if (cfg.markersVisible) {
-            view.drawMarkers(g, font, session.markers, dim, 16, cfg.markerLabels,
+        List<Marker> shown = session.markers;
+        if (panel == Panel.EDIT && working != null) {
+            shown = new ArrayList<>(session.markers);
+            for (int i = 0; i < shown.size(); i++) {
+                if (shown.get(i) == selected) {
+                    shown.set(i, working);
+                    break;
+                }
+            }
+        }
+        if (cfg.markersVisible || panel == Panel.EDIT) {
+            view.drawMarkers(g, font, shown, dim, 16, cfg.markerLabels,
                     selected == null ? null : selected.id, hovered == null ? null : hovered.id, false);
         } else if (selected != null && selected.dim.equals(dim)) {
             view.drawMarkers(g, font, List.of(selected), dim, 16, true, selected.id, null, false);
@@ -591,7 +656,7 @@ public class MapScreen extends Screen {
     private void drawToolBar(GuiGraphics g, int mx, int my, int x, int y, boolean active, Runnable onUndo,
                              Runnable onClear, Component clearTip) {
         DrawTool[] tools = DrawTool.values();
-        String[] icons = {"pen", "line", "rect", "circle", "eraser"};
+        String[] icons = {"pen", "line", "rect", "circle", "region", "eraser"};
         Paper.panel(g, x, y, DRAW_BAR_W, DRAW_BAR_H);
         ui(x, y, DRAW_BAR_W, DRAW_BAR_H);
         hit(x, y, DRAW_BAR_W, DRAW_BAR_H, () -> {
@@ -1054,9 +1119,12 @@ public class MapScreen extends Screen {
                 tooltip = T.tr("edit.here");
             }
             hit(bx, y - 2, 12, 12, () -> {
-                xBox.setValue(Integer.toString(mc.player.getBlockX()));
-                yBox.setValue(Integer.toString(mc.player.getBlockY()));
-                zBox.setValue(Integer.toString(mc.player.getBlockZ()));
+                working.x = mc.player.getBlockX();
+                working.y = mc.player.getBlockY();
+                working.z = mc.player.getBlockZ();
+                xBox.setValue(Integer.toString(working.x));
+                yBox.setValue(Integer.toString(working.y));
+                zBox.setValue(Integer.toString(working.z));
                 working.dim = mc.level.dimension().location().toString();
             });
         }
@@ -1073,6 +1141,15 @@ public class MapScreen extends Screen {
             boxes[i].setWidth(bw - 13);
         }
         y += 21;
+        if (coordsChanged()) {
+            boolean hr = overlay == Overlay.NONE && Paper.inside(mx, my, cx, y, cw, 12);
+            Paper.button(g, font, T.tr("button.revert"), cx, y, cw, 12, hr, true);
+            if (hr) {
+                tooltip = T.tr("edit.revert_tip");
+            }
+            hit(cx, y, cw, 12, this::revertCoords);
+            y += 15;
+        }
 
         g.drawString(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
         y += 10;
@@ -1846,7 +1923,7 @@ public class MapScreen extends Screen {
     }
 
     private void openView(Marker m, boolean center) {
-        commitEdit();
+        commitEdit(false);
         selected = m;
         panel = Panel.VIEW;
         descScroll = 0;
@@ -1860,7 +1937,7 @@ public class MapScreen extends Screen {
         if (panel == Panel.EDIT && working != null && selected == m) {
             return;
         }
-        commitEdit();
+        commitEdit(false);
         selected = m;
         working = m.copy();
         workingIsNew = isNew;
@@ -1877,12 +1954,23 @@ public class MapScreen extends Screen {
 
     /** Applies the working copy to the marker (if the edit panel is open). */
     private void commitEdit() {
+        commitEdit(true);
+    }
+
+    /** Applies the working copy; the new position is stored only when Save was pressed. */
+    private void commitEdit(boolean applyLocation) {
         if (panel != Panel.EDIT || working == null || selected == null) {
             return;
         }
-        working.x = parse(xBox.getValue(), working.x);
-        working.y = parse(yBox.getValue(), working.y);
-        working.z = parse(zBox.getValue(), working.z);
+        if (applyLocation) {
+            working.x = parse(xBox.getValue(), working.x);
+            working.y = parse(yBox.getValue(), working.y);
+            working.z = parse(zBox.getValue(), working.z);
+        } else {
+            working.x = selected.x;
+            working.y = selected.y;
+            working.z = selected.z;
+        }
         selected.apply(working);
         for (String f : removedFiles) {
             deleteShot(f);
@@ -1924,7 +2012,7 @@ public class MapScreen extends Screen {
     }
 
     private void closePanel() {
-        commitEdit();
+        commitEdit(false);
         panel = Panel.NONE;
         selected = null;
         setFocused(null);
@@ -2087,6 +2175,7 @@ public class MapScreen extends Screen {
         descBox.visible = edit;
         searchBox.setVisible(listOpen);
         iconSearch.setVisible(overlay == Overlay.ICONS);
+        regionNameBox.setVisible(overlay == Overlay.REGION);
         GuiEventListener f = getFocused();
         if (f instanceof EditBox e && !e.isVisible() || f instanceof MultiLineEditBox b && !b.visible) {
             setFocused(null);
@@ -2120,6 +2209,15 @@ public class MapScreen extends Screen {
             iconSearch.mouseClicked(mouseX, mouseY, button);
             return true;
         }
+        if (overlay == Overlay.REGION) {
+            if (regionNameBox.isMouseOver(mx, my)) {
+                setFocused(regionNameBox);
+                regionNameBox.mouseClicked(e, doubleClick);
+            } else {
+                runHits(mx, my, button);
+            }
+            return true;
+        }
         if (overlay != Overlay.NONE) {
             runHits(mx, my, button);
             return true;
@@ -2130,6 +2228,25 @@ public class MapScreen extends Screen {
         setFocused(null);
         if (runHits(mx, my, button)) {
             return true;
+        }
+        if (tool == Tool.DRAW && drawTool == DrawTool.REGION
+                && button == InputConstants.MOUSE_BUTTON_LEFT && mouseOverMap(mx, my)) {
+            regionDrawing = true;
+            regionPoints.clear();
+            regionPressX = mx;
+            regionPressY = my;
+            addRegionPoint(mx, my);
+            return true;
+        }
+        if (panel == Panel.EDIT && working != null && tool == Tool.NONE
+                && button == InputConstants.MOUSE_BUTTON_LEFT && mouseOverMap(mx, my)) {
+            Marker hit = view.markerAt(List.of(working), dim, mx, my, 16);
+            if (hit != null) {
+                markerDrag = true;
+                markerDragOffX = working.x - view.wx(mx);
+                markerDragOffZ = working.z - view.wz(my);
+                return true;
+            }
         }
         pressed = true;
         pressButton = button;
@@ -2161,6 +2278,17 @@ public class MapScreen extends Screen {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (annotPressed) {
             annotationDrag(mouseX, mouseY);
+            return true;
+        }
+        if (regionDrawing) {
+            addRegionPoint(e.x(), e.y());
+            return true;
+        }
+        if (markerDrag && working != null) {
+            working.x = (int) Math.floor(view.wx(e.x()) + markerDragOffX);
+            working.z = (int) Math.floor(view.wz(e.y()) + markerDragOffZ);
+            xBox.setValue(Integer.toString(working.x));
+            zBox.setValue(Integer.toString(working.z));
             return true;
         }
         if (!pressed) {
@@ -2204,6 +2332,15 @@ public class MapScreen extends Screen {
             annotationRelease();
             return true;
         }
+        if (regionDrawing) {
+            regionDrawing = false;
+            finishRegion(e.x(), e.y());
+            return true;
+        }
+        if (markerDrag) {
+            markerDrag = false;
+            return true;
+        }
         if (!pressed) {
             return super.mouseReleased(mouseX, mouseY, button);
         }
@@ -2243,8 +2380,169 @@ public class MapScreen extends Screen {
         return true;
     }
 
-    private void onMapClick(double mx, double my, int button) {
-        Marker hit = cfg.markersVisible ? view.markerAt(session.markers, dim, mx, my, 16) : null;
+    // ------------------------------------------------------------------ regions
+
+    private void addRegionPoint(double mx, double my) {
+        double wx = view.wx(mx);
+        double wz = view.wz(my);
+        if (!regionPoints.isEmpty()) {
+            double[] last = regionPoints.get(regionPoints.size() - 1);
+            if (Math.hypot(view.sx(last[0]) - mx, view.sy(last[1]) - my) < 3) {
+                return;
+            }
+        }
+        regionPoints.add(new double[]{wx, wz});
+    }
+
+    private void finishRegion(double mx, double my) {
+        List<double[]> points = new ArrayList<>(regionPoints);
+        regionPoints.clear();
+        double travelled = Math.hypot(mx - regionPressX, my - regionPressY);
+        if (travelled < 3) {
+            Region hit = view.regionAt(session.regions(dim), dim, mx, my);
+            if (hit != null) {
+                openRegionEditor(hit, false);
+            }
+            return;
+        }
+        if (points.size() < 3) {
+            return;
+        }
+        double[] first = points.get(0);
+        double[] last = points.get(points.size() - 1);
+        if (Math.hypot(last[0] - first[0], last[1] - first[1]) < 2.5) {
+            points.remove(points.size() - 1);
+        }
+        if (points.size() < 3) {
+            return;
+        }
+        Region r = new Region();
+        r.name = T.s("region.default_name", session.regions(dim).size() + 1);
+        r.color = COLORS[colorIdx];
+        r.dim = dim;
+        r.pts = flatten(points);
+        session.regions(dim).add(r);
+        session.saveRegions();
+        selectedRegionId = r.id;
+        Paper.pageTurn();
+        openRegionEditor(r, true);
+    }
+
+    private static double[] flatten(List<double[]> points) {
+        double[] out = new double[points.size() * 2];
+        for (int i = 0; i < points.size(); i++) {
+            out[i * 2] = points.get(i)[0];
+            out[i * 2 + 1] = points.get(i)[1];
+        }
+        return out;
+    }
+
+    private void openRegionEditor(Region r, boolean isNew) {
+        editingRegion = isNew ? r : r.copy();
+        regionIsNew = isNew;
+        selectedRegionId = r.id;
+        overlay = Overlay.REGION;
+        regionNameBox.setValue(editingRegion.name);
+        regionNameBox.moveCursorToEnd(false);
+        setFocused(regionNameBox);
+    }
+
+    private void saveRegion() {
+        if (editingRegion == null) {
+            overlay = Overlay.NONE;
+            return;
+        }
+        String name = regionNameBox.getValue().trim();
+        editingRegion.name = name.isEmpty()
+                ? T.s("region.default_name", session.regions(dim).size() + 1) : name;
+        if (!regionIsNew) {
+            for (Region r : session.regions(dim)) {
+                if (r.id.equals(editingRegion.id)) {
+                    r.apply(editingRegion);
+                    break;
+                }
+            }
+        }
+        selectedRegionId = editingRegion.id;
+        session.saveRegions();
+        overlay = Overlay.NONE;
+        editingRegion = null;
+        regionIsNew = false;
+        setFocused(null);
+        Paper.click();
+    }
+
+    private void cancelRegion() {
+        if (regionIsNew && editingRegion != null) {
+            session.regions(dim).removeIf(r -> r.id.equals(editingRegion.id));
+            session.saveRegions();
+        }
+        overlay = Overlay.NONE;
+        editingRegion = null;
+        regionIsNew = false;
+        setFocused(null);
+    }
+
+    private void deleteRegion() {
+        if (editingRegion != null) {
+            session.regions(dim).removeIf(r -> r.id.equals(editingRegion.id));
+            session.saveRegions();
+        }
+        overlay = Overlay.NONE;
+        editingRegion = null;
+        regionIsNew = false;
+        setFocused(null);
+        Paper.pageTurn();
+    }
+
+    private void drawRegionEditor(GuiGraphicsExtractor g, int mx, int my) {
+        blocker(this::cancelRegion);
+        g.fill(0, 0, width, height, Paper.DIM);
+        int ow = Math.min(250, width - 20);
+        int oh = 126;
+        int ox = (width - ow) / 2;
+        int oy = (height - oh) / 2;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("region.title"), ox + ow / 2, oy + 8);
+        int cx = ox + 10;
+        int cw = ow - 20;
+        int y = oy + 24;
+        g.text(font, T.tr("region.name"), cx, y, Paper.INK_SOFT, false);
+        y += 10;
+        Paper.inset(g, cx, y, cw, 16);
+        regionNameBox.setX(cx + 4);
+        regionNameBox.setY(y + 4);
+        regionNameBox.setWidth(cw - 8);
+        y += 22;
+
+        g.text(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
+        int sw = 14;
+        int sy = y + 9;
+        for (int i = 0; i < 10; i++) {
+            int col = COLORS[Math.min(COLORS.length - 1, i * 6)];
+            int sx = cx + i * (sw + 4);
+            g.fill(sx, sy, sx + sw, sy + sw, col);
+            boolean sel = (editingRegion.color & 0xFFFFFF) == (col & 0xFFFFFF);
+            g.outline(sx, sy, sw, sw, sel ? Paper.GOLD : Paper.INK);
+            hit(sx, sy, sw, sw, () -> editingRegion.color = col);
+        }
+        y = sy + sw + 8;
+
+        int bw = (cw - 8) / 3;
+        boolean hs = Paper.inside(mx, my, cx, y, bw, 14);
+        Paper.button(g, font, T.tr("button.save"), cx, y, bw, 14, hs, true);
+        hit(cx, y, bw, 14, this::saveRegion);
+        boolean hc = Paper.inside(mx, my, cx + bw + 4, y, bw, 14);
+        Paper.button(g, font, T.tr("button.cancel"), cx + bw + 4, y, bw, 14, hc, true);
+        hit(cx + bw + 4, y, bw, 14, this::cancelRegion);
+        boolean hd = Paper.inside(mx, my, cx + 2 * (bw + 4), y, bw, 14);
+        Paper.button(g, font, T.tr("button.delete"), cx + 2 * (bw + 4), y, bw, 14, hd, true);
+        hit(cx + 2 * (bw + 4), y, bw, 14, this::deleteRegion);
+    }
+
+    private void onMapClick(double mx, double my, int button) {        Marker hit = cfg.markersVisible ? view.markerAt(session.markers, dim, mx, my, 16) : null;
         if (tool == Tool.RULER) {
             if (button == InputConstants.MOUSE_BUTTON_LEFT) {
                 double[] p = hit != null ? new double[]{hit.x + 0.5, hit.z + 0.5} : new double[]{view.wx(mx), view.wz(my)};
@@ -2313,6 +2611,16 @@ public class MapScreen extends Screen {
                 }
             } else if (keyCode == InputConstants.KEY_ESCAPE) {
                 overlay = Overlay.NONE;
+            }
+            return true;
+        }
+        if (overlay == Overlay.REGION) {
+            if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
+                saveRegion();
+            } else if (e.isEscape()) {
+                cancelRegion();
+            } else {
+                regionNameBox.keyPressed(e);
             }
             return true;
         }
