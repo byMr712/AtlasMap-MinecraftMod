@@ -5,9 +5,11 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "ClientChunkCacheMixin",
+    "EditBoxMixin",
     "ClientPacketListenerMixin",
     "GuiMixin",
     "MinecraftMixin",
+    "MultiLineEditBoxMixin",
     "OptionsMixin",
     "ScreenAccessor",
     "TitleScreenMixin"
