@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-ASSETS = os.path.join(ROOT, "src", "client", "resources", "assets", "mapminecraft")
+ASSETS = os.path.join(ROOT, "src", "client", "resources", "assets", "atlasmap")
 GUI = os.path.join(ASSETS, "textures", "gui")
 rng = np.random.default_rng(26)
 
