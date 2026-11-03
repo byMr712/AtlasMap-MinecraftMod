@@ -56,7 +56,7 @@ public class MinimapHud {
             view.drawMarkers(g, mc.font, session.markers, dim, 10, false, null, null, true);
         }
         g.disableScissor();
-        g.submitOutline(x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
+        Paper.outline(g, x - 1, y - 1, size + 2, size + 2, Paper.INK_SOFT);
         view.drawPlayer(g, px, pz, p.getYRot(), 12);
 
         // north marker

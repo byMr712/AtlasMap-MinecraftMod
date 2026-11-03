@@ -109,7 +109,7 @@ public final class ImageCache {
         int dh = Math.max(1, Math.round(e.height * s));
         int dx = x + (w - dw) / 2;
         int dy = y + (h - dh) / 2;
-        g.blit(RenderPipelines.GUI_TEXTURED, e.id, dx, dy, 0f, 0f, e.width, e.height, dw, dh, e.width, e.height);
+        g.blit(RenderPipelines.GUI_TEXTURED, e.id, dx, dy, 0f, 0f, dw, dh, e.width, e.height, e.width, e.height);
     }
 
     /** Draws the image covering the box (cropping the overflow). */
@@ -122,7 +122,7 @@ public final class ImageCache {
         int vh = Math.max(1, Math.round(h / s));
         int u = (e.width - uw) / 2;
         int v = (e.height - vh) / 2;
-        g.blit(RenderPipelines.GUI_TEXTURED, e.id, x, y, u, v, uw, vh, w, h, e.width, e.height);
+        g.blit(RenderPipelines.GUI_TEXTURED, e.id, x, y, u, v, w, h, uw, vh, e.width, e.height);
     }
 
     public static void clear() {
