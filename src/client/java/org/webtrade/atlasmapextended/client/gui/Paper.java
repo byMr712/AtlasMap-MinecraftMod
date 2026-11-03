@@ -66,6 +66,41 @@ public final class Paper {
     public static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath("atlasmapextended", path);
     }
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger("AtlasMapExtended/Textures");
+    private static final java.util.Set<Identifier> MISSING = new java.util.HashSet<>();
+    private static final java.util.Map<Identifier, net.minecraft.client.renderer.texture.DynamicTexture> LOADED = new java.util.HashMap<>();
+
+    /**
+     * Loads a texture straight from the mod jar. Fabric Loader does not mount mod resources on its
+     * own (that is Fabric API's resource-loader), so the mod stays dependency-free by registering
+     * its PNGs with the texture manager itself.
+     */
+    public static void ensure(Identifier texture) {
+        net.minecraft.client.renderer.texture.TextureManager manager = Minecraft.getInstance().getTextureManager();
+        net.minecraft.client.renderer.texture.DynamicTexture loaded = LOADED.get(texture);
+        if (loaded != null && manager.getTexture(texture) == loaded) {
+            return;
+        }
+        if (MISSING.contains(texture)) {
+            return;
+        }
+        String path = "/assets/" + texture.getNamespace() + "/" + texture.getPath();
+        try (java.io.InputStream in = Paper.class.getResourceAsStream(path)) {
+            if (in == null) {
+                MISSING.add(texture);
+                LOG.warn("Missing texture {}", texture);
+                return;
+            }
+            net.minecraft.client.renderer.texture.DynamicTexture created =
+                    new net.minecraft.client.renderer.texture.DynamicTexture(() -> "atlasmapextended texture", com.mojang.blaze3d.platform.NativeImage.read(in));
+            manager.register(texture, created);
+            LOADED.put(texture, created);
+        } catch (java.io.IOException e) {
+            MISSING.add(texture);
+            LOG.warn("Failed to load texture {}", texture, e);
+        }
+    }
+
 
     public static Identifier marker(String icon) {
         return id("textures/gui/markers/" + icon + ".png");
@@ -81,6 +116,7 @@ public final class Paper {
     }
 
     public static void tiled(GuiGraphicsExtractor g, Identifier tex, int x, int y, int w, int h, int offX, int offY) {
+        ensure(tex);
         int u0 = Math.floorMod(offX, 256);
         int v0 = Math.floorMod(offY, 256);
         int yy = 0;
@@ -152,10 +188,12 @@ public final class Paper {
     }
 
     public static void icon(GuiGraphicsExtractor g, Identifier tex, int x, int y, int size) {
+        ensure(tex);
         g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0, 0, size, size, 16, 16, 16, 16);
     }
 
     public static void icon(GuiGraphicsExtractor g, Identifier tex, int x, int y, int size, int color) {
+        ensure(tex);
         g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0, 0, size, size, 16, 16, 16, 16, color);
     }
 
