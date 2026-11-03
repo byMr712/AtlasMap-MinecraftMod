@@ -109,11 +109,11 @@ public final class Paper {
 
     public static void border(GuiGraphics g, int x, int y, int w, int h) {
         if (!theme.ornate()) {
-            g.renderOutline(x, y, w, h, a(INK, 0x50));
+            g.submitOutline(x, y, w, h, a(INK, 0x50));
             return;
         }
-        g.renderOutline(x, y, w, h, INK);
-        g.renderOutline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
+        g.submitOutline(x, y, w, h, INK);
+        g.submitOutline(x + 2, y + 2, w - 4, h - 4, INK_FAINT);
         corner(g, x - 1, y - 1);
         corner(g, x + w - 4, y - 1);
         corner(g, x - 1, y + h - 4);
@@ -169,9 +169,9 @@ public final class Paper {
         if (hovered) {
             g.fill(x, y, x + size, y + size, 0x28FFFFFF);
         }
-        g.renderOutline(x, y, size, size, selected ? GOLD : INK);
+        g.submitOutline(x, y, size, size, selected ? GOLD : INK);
         if (hovered || selected) {
-            g.renderOutline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
+            g.submitOutline(x + 1, y + 1, size - 2, size - 2, selected ? GOLD_LIGHT : INK_FAINT);
         }
         int is = size >= 20 ? 16 : size - 4;
         icon(g, icon, x + (size - is) / 2, y + (size - is) / 2, is);
@@ -184,7 +184,7 @@ public final class Paper {
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.submitOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int color = enabled ? INK : DISABLED;
         String s = font.plainSubstrByWidth(label.getString(), w - 6);
         g.drawString(font, s, x + (w - font.width(s)) / 2, y + (h - 8) / 2 + 1, color, false);
@@ -198,7 +198,7 @@ public final class Paper {
         if (hovered && enabled) {
             g.fill(x, y, x + w, y + h, 0x30FFFFFF);
         }
-        g.renderOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
+        g.submitOutline(x, y, w, h, hovered && enabled ? GOLD : INK);
         int is = Math.min(16, h - 4);
         String s = font.plainSubstrByWidth(label.getString(), w - is - 10);
         int total = is + 3 + font.width(s);

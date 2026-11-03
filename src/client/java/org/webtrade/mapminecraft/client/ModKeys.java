@@ -6,7 +6,8 @@ import net.minecraft.resources.ResourceLocation;
 
 /** All key bindings of the mod. They can be changed in Options → Controls → Key Binds → MapMinecraft. */
 public final class ModKeys {
-    public static final String CATEGORY = "key.categories.mapminecraft.main";
+    public static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("mapminecraft", "main"));
 
     private static boolean registered;
 

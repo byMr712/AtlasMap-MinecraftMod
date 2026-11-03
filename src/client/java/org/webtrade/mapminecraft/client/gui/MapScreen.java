@@ -6,6 +6,9 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -418,7 +421,7 @@ public class MapScreen extends Screen {
             view.drawStroke(g, current, 1f);
         }
         if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
-            g.renderOutline(mx - 6, my - 6, 12, 12, Paper.RED);
+            g.submitOutline(mx - 6, my - 6, 12, 12, Paper.RED);
         }
         drawRuler(g, mx, my);
 
@@ -487,7 +490,7 @@ public class MapScreen extends Screen {
         int x = Math.round(cx - w / 2f);
         int y = Math.round(cy - 5);
         g.fill(x - 3, y - 2, x + w + 3, y + 10, Paper.a(Paper.CREAM, 0xE0));
-        g.renderOutline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
+        g.submitOutline(x - 3, y - 2, w + 6, 12, 0xFF9C3B2A);
         g.drawString(font, s, x, y, Paper.INK, false);
     }
 
@@ -605,7 +608,7 @@ public class MapScreen extends Screen {
             int idx = i;
             if (widthIdx == i) {
                 g.fill(cx, y + 5, cx + 13, y + 23, Paper.a(Paper.GOLD, 0x40));
-                g.renderOutline(cx, y + 5, 13, 18, Paper.GOLD);
+                g.submitOutline(cx, y + 5, 13, 18, Paper.GOLD);
             }
             Paper.dot(g, cx + 6.5f, y + 14, WIDTHS[i] + 1, dotColor);
             hit(cx, y + 5, 13, 18, () -> widthIdx = idx);
@@ -633,8 +636,8 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
             if (colorIdx == i) {
-                g.renderOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.renderOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                g.submitOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.submitOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> colorIdx = idx);
         }
@@ -798,7 +801,7 @@ public class MapScreen extends Screen {
                 boolean sel = selected != null && selected.id.equals(m.id);
                 if (sel) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                    g.renderOutline(rx, y, rw, rowH - 2, Paper.GOLD);
+                    g.submitOutline(rx, y, rw, rowH - 2, Paper.GOLD);
                 } else if (hover) {
                     g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
                 }
@@ -1007,7 +1010,7 @@ public class MapScreen extends Screen {
         if (hi) {
             g.fill(cx, y, cx + cw, y + 22, 0x30FFFFFF);
         }
-        g.renderOutline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
+        g.submitOutline(cx, y, cw, 22, hi ? Paper.GOLD : Paper.INK);
         Paper.markerIcon(g, working.icon, working.color, cx + 3, y + 3, 16, 255);
         if (hi) {
             tooltip = T.tr("edit.icon_tip");
@@ -1145,7 +1148,7 @@ public class MapScreen extends Screen {
                 String s = e.failed ? "✖" : "…";
                 g.drawString(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
             }
-            g.renderOutline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
+            g.submitOutline(tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
             int idx = i;
             if (clipH > 0) {
                 hit(tx, clipY, tw, clipH, () -> openViewer(marker, idx));
@@ -1155,7 +1158,7 @@ public class MapScreen extends Screen {
                 int dy = ty + 2;
                 boolean dh = hover && Paper.inside(mx, my, dx, dy, 10, 10);
                 g.fill(dx, dy, dx + 10, dy + 10, dh ? Paper.a(Paper.CREAM, 0xE0) : Paper.a(Paper.CREAM, 0xB0));
-                g.renderOutline(dx, dy, 10, 10, Paper.INK);
+                g.submitOutline(dx, dy, 10, 10, Paper.INK);
                 Paper.icon(g, Paper.tool("close"), dx + 1, dy + 1, 8);
                 if (dh) {
                     tooltip = T.tr("shots.remove");
@@ -1248,10 +1251,10 @@ public class MapScreen extends Screen {
             boolean sel = working != null && icon.equals(working.icon);
             if (sel) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, Paper.a(Paper.GOLD, 0x50));
-                g.renderOutline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
+                g.submitOutline(cx, cy, cell - 2, cell - 2, Paper.GOLD);
             } else if (hover) {
                 g.fill(cx, cy, cx + cell - 2, cy + cell - 2, 0x30FFFFFF);
-                g.renderOutline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
+                g.submitOutline(cx, cy, cell - 2, cell - 2, Paper.INK_SOFT);
             }
             Paper.markerIcon(g, icon, sel ? working.color : 0, cx + (cell - 2 - 16) / 2, cy + (cell - 2 - 16) / 2, 16, 255);
             if (hover) {
@@ -1334,8 +1337,8 @@ public class MapScreen extends Screen {
             g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
             g.fill(sx, sy, sx + 9, sy + 9, c);
             if (c == current || i == hovered) {
-                g.renderOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
-                g.renderOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
+                g.submitOutline(sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                g.submitOutline(sx - 1, sy - 1, 11, 11, Paper.GOLD);
             }
             hit(sx - 1, sy - 1, 11, 11, () -> applyColor(c));
         }
@@ -1431,7 +1434,7 @@ public class MapScreen extends Screen {
                     g.fill(tx, ty, tx + tw, ty + th, Paper.a(Paper.GOLD_LIGHT, 0x40));
                     Paper.icon(g, Paper.tool("check"), tx + tw - 18, ty + 2, 16);
                 }
-                g.renderOutline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
+                g.submitOutline(tx, ty, tw, th, chosen ? Paper.GOLD : hover ? Paper.GOLD_LIGHT : Paper.INK);
                 if (hover) {
                     tooltip = Component.literal(p.getFileName().toString());
                 }
@@ -1515,7 +1518,7 @@ public class MapScreen extends Screen {
             }
             g.disableScissor();
             if (annotating && drawTool == DrawTool.ERASER && Paper.inside(mx, my, ix, iy, iw, ih)) {
-                g.renderOutline(mx - 6, my - 6, 12, 12, Paper.RED);
+                g.submitOutline(mx - 6, my - 6, 12, 12, Paper.RED);
             }
         } else {
             String s = show.failed ? T.s("shots.failed") : T.s("shots.loading");
@@ -2091,22 +2094,23 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        double mx = mouseX;
-        double my = mouseY;
+    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+        double mx = e.x();
+        double my = e.y();
+        int button = e.button();
         if (overlay == Overlay.VIEWER && annotationPress(mx, my, button)) {
             return true;
         }
         if (overlay == Overlay.ICONS && iconSearch.isMouseOver(mx, my)) {
             setFocused(iconSearch);
-            iconSearch.mouseClicked(mouseX, mouseY, button);
+            iconSearch.mouseClicked(e, doubleClick);
             return true;
         }
         if (overlay != Overlay.NONE) {
             runHits(mx, my, button);
             return true;
         }
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+        if (super.mouseClicked(e, doubleClick)) {
             return true;
         }
         setFocused(null);
@@ -2140,16 +2144,16 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
         if (annotPressed) {
-            annotationDrag(mouseX, mouseY);
+            annotationDrag(e.x(), e.y());
             return true;
         }
         if (!pressed) {
-            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+            return super.mouseDragged(e, dx, dy);
         }
-        double mx = mouseX;
-        double my = mouseY;
+        double mx = e.x();
+        double my = e.y();
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 eraseAt(mx, my);
@@ -2181,17 +2185,17 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent e) {
         if (annotPressed) {
             annotationRelease();
             return true;
         }
         if (!pressed) {
-            return super.mouseReleased(mouseX, mouseY, button);
+            return super.mouseReleased(e);
         }
         pressed = false;
-        double mx = mouseX;
-        double my = mouseY;
+        double mx = e.x();
+        double my = e.y();
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 if (erased != null && !erased.isEmpty()) {
@@ -2285,15 +2289,15 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        int key = keyCode;
+    public boolean keyPressed(KeyEvent e) {
+        int key = e.key();
         if (overlay == Overlay.CONFIRM) {
             if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
                 overlay = Overlay.NONE;
                 if (confirmAction != null) {
                     confirmAction.run();
                 }
-            } else if (keyCode == InputConstants.KEY_ESCAPE) {
+            } else if (e.isEscape()) {
                 overlay = Overlay.NONE;
             }
             return true;
@@ -2303,23 +2307,23 @@ public class MapScreen extends Screen {
                 switchShot(-1);
             } else if (key == InputConstants.KEY_RIGHT) {
                 switchShot(1);
-            } else if (key == InputConstants.KEY_Z && hasControlDown()) {
+            } else if (key == InputConstants.KEY_Z && e.hasControlDown()) {
                 undo();
-            } else if (keyCode == InputConstants.KEY_ESCAPE && annotating) {
+            } else if (e.isEscape() && annotating) {
                 annotating = false;
                 annotCurrent = null;
-            } else if (keyCode == InputConstants.KEY_ESCAPE || ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
+            } else if (e.isEscape() || ModKeys.OPEN_MAP.matches(e)) {
                 overlay = Overlay.NONE;
             }
             return true;
         }
-        if (overlay == Overlay.ICONS && keyCode != InputConstants.KEY_ESCAPE) {
+        if (overlay == Overlay.ICONS && !e.isEscape()) {
             setFocused(iconSearch);
-            iconSearch.keyPressed(keyCode, scanCode, modifiers);
+            iconSearch.keyPressed(e);
             return true;
         }
         if (overlay != Overlay.NONE) {
-            if (keyCode == InputConstants.KEY_ESCAPE) {
+            if (e.isEscape()) {
                 if (overlay == Overlay.ICONS && !iconSearch.getValue().isEmpty()) {
                     iconSearch.setValue("");
                 } else {
@@ -2330,13 +2334,13 @@ public class MapScreen extends Screen {
             return true;
         }
         if (typing()) {
-            if (keyCode == InputConstants.KEY_ESCAPE) {
+            if (e.isEscape()) {
                 setFocused(null);
                 return true;
             }
-            return super.keyPressed(keyCode, scanCode, modifiers);
+            return super.keyPressed(e);
         }
-        if (keyCode == InputConstants.KEY_ESCAPE) {
+        if (e.isEscape()) {
             if (tool != Tool.NONE) {
                 setTool(Tool.NONE);
                 return true;
@@ -2344,31 +2348,31 @@ public class MapScreen extends Screen {
             onClose();
             return true;
         }
-        if (ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
+        if (ModKeys.OPEN_MAP.matches(e)) {
             onClose();
             return true;
         }
-        if (ModKeys.MARKER_LIST.matches(keyCode, scanCode)) {
+        if (ModKeys.MARKER_LIST.matches(e)) {
             listOpen = !listOpen;
             return true;
         }
-        if (ModKeys.RULER.matches(keyCode, scanCode)) {
+        if (ModKeys.RULER.matches(e)) {
             setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER);
             return true;
         }
-        if (ModKeys.EDITOR.matches(keyCode, scanCode)) {
+        if (ModKeys.EDITOR.matches(e)) {
             setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW);
             return true;
         }
-        if (ModKeys.TOGGLE_DRAWINGS.matches(keyCode, scanCode)) {
+        if (ModKeys.TOGGLE_DRAWINGS.matches(e)) {
             toggleDrawings();
             return true;
         }
-        if (ModKeys.NEW_MARKER.matches(keyCode, scanCode)) {
+        if (ModKeys.NEW_MARKER.matches(e)) {
             newMarkerAtPlayer();
             return true;
         }
-        if (key == InputConstants.KEY_Z && hasControlDown()) {
+        if (key == InputConstants.KEY_Z && e.hasControlDown()) {
             undo();
             return true;
         }
@@ -2392,19 +2396,19 @@ public class MapScreen extends Screen {
             zoomBy(1 / 1.5f, width / 2.0, height / 2.0);
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(e);
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent e) {
         if (overlay == Overlay.ICONS) {
             setFocused(iconSearch);
-            return iconSearch.charTyped(chr, modifiers);
+            return iconSearch.charTyped(e);
         }
         if (overlay != Overlay.NONE) {
             return true;
         }
-        return super.charTyped(chr, modifiers);
+        return super.charTyped(e);
     }
 
     // ------------------------------------------------------------------ utils

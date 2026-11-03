@@ -3,6 +3,8 @@ package org.webtrade.mapminecraft.client.gui;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.FormattedCharSequence;
 import org.webtrade.mapminecraft.client.data.Storage;
@@ -171,7 +173,7 @@ public class WorldsScreen extends Screen {
                 int cw = w - 16;
                 boolean hover = toDelete == null && Paper.inside(mx, my, cx, cy, cw, cardH) && my >= top && my < bottom;
                 g.fill(cx, cy, cx + cw, cy + cardH, hover ? 0x40FFFFFF : 0x18FFFFFF);
-                g.renderOutline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
+                g.submitOutline(cx, cy, cw, cardH, hover ? Paper.GOLD : Paper.INK_FAINT);
                 Paper.inset(g, cx + 4, cy + 4, 30, 30);
                 Paper.icon(g, Paper.tool(isServers ? "globe" : "map"), cx + 7, cy + 7, 24);
                 String name = font.plainSubstrByWidth(m.name == null || m.name.isEmpty() ? m.id : m.name, cw - 64);
@@ -207,18 +209,18 @@ public class WorldsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
         int from = modalStart >= 0 ? modalStart : 0;
         for (int i = hits.size() - 1; i >= from; i--) {
             Hit h = hits.get(i);
-            if (Paper.inside(mouseX, mouseY, h.x, h.y, h.w, h.h)) {
-                if (button == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (Paper.inside(e.x(), e.y(), h.x, h.y, h.w, h.h)) {
+                if (e.button() == InputConstants.MOUSE_BUTTON_LEFT) {
                     h.action.run();
                 }
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(e, doubleClick);
     }
 
     @Override
@@ -232,12 +234,12 @@ public class WorldsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (toDelete != null && keyCode == InputConstants.KEY_ESCAPE) {
+    public boolean keyPressed(KeyEvent e) {
+        if (toDelete != null && e.isEscape()) {
             toDelete = null;
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(e);
     }
 
     @Override

@@ -3,6 +3,8 @@ package org.webtrade.mapminecraft.client.gui;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.webtrade.mapminecraft.client.data.ModConfig;
@@ -119,16 +121,16 @@ public class SettingsScreen extends Screen {
             g.fill(tx + 1, ty + 1, tx + tw + 1, ty + TILE_H + 1, Paper.SHADOW);
             Paper.tiled(g, t.panel(), tx, ty, tw, TILE_H, tx * 3, ty * 7);
             Paper.tiled(g, t.panelDark(), tx + 4, ty + TILE_H - 14, 26, 10, tx, ty);
-            g.renderOutline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
+            g.submitOutline(tx + 4, ty + TILE_H - 14, 26, 10, t.ink());
             g.fill(tx + 34, ty + TILE_H - 10, tx + tw - 6, ty + TILE_H - 8, t.accent());
             String name = font.plainSubstrByWidth(T.s("theme." + t.id()), tw - 10);
             g.drawString(font, name, tx + 5, ty + 5, t.ink(), false);
             if (cur) {
-                g.renderOutline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
-                g.renderOutline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
+                g.submitOutline(tx - 1, ty - 1, tw + 2, TILE_H + 2, Paper.GOLD);
+                g.submitOutline(tx, ty, tw, TILE_H, Paper.GOLD_LIGHT);
                 Paper.icon(g, Paper.tool("check"), tx + tw - 15, ty + 3, 12);
             } else {
-                g.renderOutline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
+                g.submitOutline(tx, ty, tw, TILE_H, hover ? Paper.GOLD : Paper.a(Paper.INK, 0x80));
             }
             hit(tx, ty, tw, TILE_H, () -> {
                 cfg.theme = t.id();
@@ -186,16 +188,16 @@ public class SettingsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
         for (int i = hits.size() - 1; i >= 0; i--) {
             Hit h = hits.get(i);
-            if (Paper.inside(mouseX, mouseY, h.x, h.y, h.w, h.h)) {
+            if (Paper.inside(e.x(), e.y(), h.x, h.y, h.w, h.h)) {
                 h.action.run();
                 Paper.click();
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(e, doubleClick);
     }
 
     @Override
@@ -205,12 +207,12 @@ public class SettingsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == InputConstants.KEY_ESCAPE) {
+    public boolean keyPressed(KeyEvent e) {
+        if (e.isEscape()) {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(e);
     }
 
     static Component onOff(boolean b) {
