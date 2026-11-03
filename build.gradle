@@ -14,7 +14,7 @@ loom {
     splitEnvironmentSourceSets()
 
     mods {
-        "mapminecraft" {
+        "atlasmap" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
         }
@@ -25,7 +25,7 @@ loom {
 fabricApi {
     configureTests {
         createSourceSet = true
-        modId = "mapminecraft-test"
+        modId = "atlasmap-test"
         enableGameTests = false
         enableClientGameTests = true
         eula = true
@@ -125,14 +125,14 @@ task jarNeoForge(type: Jar) {
         exclude "fabric.mod.json"
     }
     from(sourceSets.client.output) {
-        // Fabric-only entrypoint; NeoForge uses MapminecraftNeoForge instead.
-        exclude "org/webtrade/mapminecraft/client/MapminecraftClient.class"
+        // Fabric-only entrypoint; NeoForge uses AtlasMapNeoForge instead.
+        exclude "org/webtrade/atlasmap/client/AtlasMapClient.class"
     }
     from(sourceSets.neoforge.output) {
         // Compile-time stubs must never reach the runtime classpath.
         exclude "net/**"
     }
-    from("src/client/resources/assets/mapminecraft/icon.png") {
+    from("src/client/resources/assets/atlasmap/icon.png") {
         into ""
         rename { "icon.png" }
     }
