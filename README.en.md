@@ -93,5 +93,5 @@ Game tests with screenshots are run with `./gradlew runClientGameTest`; screensh
 
 ## Authors and Licenses
 
-- **Mod author:** [erkinpaw](https://github.com/erkinpaw/atlasmapextended) · **License:** [MIT](https://github.com/erkinpaw/atlasmapextended/blob/main/LICENSE).  
+- **Mod author:** [erkinpaw](https://github.com/erkinpaw) · **License:** [MIT](https://github.com/byMr712/AtlasMapExtended-MinecraftMod/blob/26.3/LICENSE).  
 - **Author of the port to Fabric/NeoForge 1.21 - 26.1:** [Mr712](https://github.com/byMr712/AtlasMapExtended-MinecraftMod) · **License:** [Apache License 2.0](LICENSE).
