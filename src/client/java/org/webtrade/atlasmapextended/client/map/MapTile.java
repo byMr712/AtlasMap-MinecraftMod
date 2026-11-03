@@ -28,8 +28,9 @@ public class MapTile {
 
     public void setPixel(int x, int z, int argb) {
         NativeImage img = texture.getPixels();
-        if (img != null && img.getPixelRGBA(x, z) != argb) {
-            img.setPixelRGBA(x, z, argb);
+        int abgr = swap(argb);
+        if (img != null && img.getPixelRGBA(x, z) != abgr) {
+            img.setPixelRGBA(x, z, abgr);
             textureDirty = true;
             diskDirty = true;
         }
@@ -37,7 +38,12 @@ public class MapTile {
 
     public int getPixel(int x, int z) {
         NativeImage img = texture.getPixels();
-        return img == null ? 0 : img.getPixelRGBA(x, z);
+        return img == null ? 0 : swap(img.getPixelRGBA(x, z));
+    }
+
+    /** NativeImage's RGBA accessors use ABGR on 1.21-1.21.1; our palette is ARGB. */
+    private static int swap(int color) {
+        return (color & 0xFF00) | (color & 0xFF) << 16 | (color >> 16) & 0xFF | color & 0xFF000000;
     }
 
     public void touch() {
