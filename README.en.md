@@ -12,6 +12,14 @@ A client-side mod full-screen world map and minimap, markers with icons, descrip
 
 > This mod was created with the help of the AI based on the ideas of the author and viewers.
 
+## Branches
+
+| Branch | Minecraft | Java | Loaders |
+| :---: | :---: | :---: | :---: |
+| `26.3` | 26.3 | 25+ | Fabric, NeoForge |
+| `26.1` | 26.1 | 25+ | Fabric, NeoForge |
+| `1.21` | 1.21 | 21+ | Fabric, NeoForge |
+
 ## Gallery
 | World Map | Minimap |
 | :---: | :---: |
