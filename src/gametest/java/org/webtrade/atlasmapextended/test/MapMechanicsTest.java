@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.client.Minecraft;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
+import org.webtrade.atlasmapextended.client.data.Region;
 import org.webtrade.atlasmapextended.client.data.Storage;
 import org.webtrade.atlasmapextended.client.data.Stroke;
 import org.webtrade.atlasmapextended.client.data.WorldMeta;
@@ -36,6 +37,7 @@ public class MapMechanicsTest implements FabricClientGameTest {
             storage();
             markerCopy();
             strokePoints();
+            regions();
             themes();
             translations();
             viewTransforms();
@@ -216,6 +218,22 @@ public class MapMechanicsTest implements FabricClientGameTest {
         check((int) key == 7, "pack z");
     }
 
+    private void regions() {
+        Region r = new Region();
+        r.name = "Area";
+        r.dim = "minecraft:overworld";
+        r.pts = new double[]{0, 0, 20, 0, 20, 20, 0, 20};
+        check(r.pointCount() == 4, "region point count");
+        check(r.contains(10, 10), "region contains centre");
+        check(!r.contains(-1, 10), "region outside left");
+        check(!r.contains(10, -1), "region outside top");
+        Region copy = r.copy();
+        check(copy.id.equals(r.id) && copy.contains(5, 5), "region copy");
+        r.pts = new double[]{0, 0, 20, 0, 10, 20};
+        check(r.contains(10, 10), "triangle contains");
+        check(!r.contains(1, 18), "triangle outside");
+    }
+
     private void persistence() {
         MapSession s = MapManager.live();
         String dim = MapManager.liveDim();
@@ -235,6 +253,15 @@ public class MapMechanicsTest implements FabricClientGameTest {
         int strokesBefore = s.strokes(dim).size();
         s.strokes(dim).add(stroke);
         s.saveStrokes();
+
+        Region region = new Region();
+        region.name = "Mechanics area";
+        region.dim = dim;
+        region.color = 0xFF336699;
+        region.pts = new double[]{0, 0, 8, 0, 8, 8, 0, 8};
+        int regionsBefore = s.regions(dim).size();
+        s.regions(dim).add(region);
+        s.saveRegions();
         flushIo();
 
         MapSession reloaded = MapSession.open(s.meta);
@@ -244,12 +271,19 @@ public class MapMechanicsTest implements FabricClientGameTest {
         check(loaded.x == 10 && loaded.y == 70 && loaded.z == -20, "marker coordinates reloaded");
         check("persist".equals(loaded.description), "marker description reloaded");
         check(reloaded.strokes(dim).size() == strokesBefore + 1, "drawing reloaded");
+        check(reloaded.regions(dim).size() == regionsBefore + 1, "region reloaded");
+        Region loadedRegion = reloaded.regions(dim).stream()
+                .filter(x -> x.id.equals(region.id)).findFirst().orElse(null);
+        check(loadedRegion != null && "Mechanics area".equals(loadedRegion.name), "region name reloaded");
+        check(loadedRegion != null && loadedRegion.contains(4, 4), "region shape reloaded");
         check(reloaded.knownDims().contains(dim), "known dimensions");
 
         s.markers.removeIf(x -> x.id.equals(m.id));
         s.strokes(dim).removeIf(x -> x == stroke);
+        s.regions(dim).removeIf(x -> x.id.equals(region.id));
         s.saveMarkers();
         s.saveStrokes();
+        s.saveRegions();
         flushIo();
     }
 
