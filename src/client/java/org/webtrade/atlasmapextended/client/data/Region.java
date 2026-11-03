@@ -15,6 +15,7 @@ public class Region {
     public String dim = "minecraft:overworld";
     public double[] pts = new double[0];
     public boolean hidden;
+    public long created = System.currentTimeMillis();
     public List<String> screenshots = new ArrayList<>();
     public Map<String, List<Stroke>> shotDrawings = new HashMap<>();
 
@@ -31,6 +32,7 @@ public class Region {
         r.dim = dim;
         r.pts = pts.clone();
         r.hidden = hidden;
+        r.created = created;
         r.screenshots = new ArrayList<>(screenshots);
         r.shotDrawings = new HashMap<>();
         shotDrawings.forEach((k, v) -> r.shotDrawings.put(k, new ArrayList<>(v)));
