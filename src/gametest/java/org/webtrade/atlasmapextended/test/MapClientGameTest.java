@@ -217,7 +217,7 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("13_drawing_done");
 
             // settings: gear in the toolbar, then pick a design by clicking its tile
-            clickGui(ctx, input, mc -> new int[]{16, 6 + 9 * 23 + 10});
+            clickGui(ctx, input, mc -> new int[]{16, 6 + 10 * 23 + 10});
             ctx.waitForScreen(SettingsScreen.class);
             ctx.waitTicks(5);
             ctx.takeScreenshot("13a_settings");
