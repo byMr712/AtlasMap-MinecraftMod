@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.webtrade.atlasmapextended.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractTextAreaWidgetMixin",
+    "ClientChunkCacheMixin",
+    "EditBoxMixin",
+    "ClientPacketListenerMixin",
+    "GuiMixin",
+    "MinecraftMixin",
+    "MultiLineEditBoxMixin",
+    "OptionsMixin",
+    "ScreenAccessor",
+    "TitleScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
