@@ -3,7 +3,7 @@ package org.webtrade.mapminecraft.client.gui;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.FormattedCharSequence;
 import org.webtrade.mapminecraft.client.data.Storage;
 import org.webtrade.mapminecraft.client.data.WorldMeta;
@@ -70,7 +70,7 @@ public class WorldsScreen extends Screen {
             g.fill(i * 2, 0, i * 2 + 2, height, a);
             g.fill(width - i * 2 - 2, 0, width - i * 2, height, a);
         }
-        g.blit(RenderType::guiTextured, Paper.COMPASS, width - 70, height - 70, 0f, 0f, 64, 64, 56, 56, 64, 64);
+        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, width - 70, height - 70, 0f, 0f, 64, 64, 56, 56, 64, 64);
         Paper.icon(g, Paper.tool("map"), width / 2 - font.width(title) / 2 - 24, 10, 16);
         Paper.title(g, font, title.getString(), width / 2, 14);
         List<FormattedCharSequence> sub = font.split(T.tr("atlas.subtitle"), width - 40);

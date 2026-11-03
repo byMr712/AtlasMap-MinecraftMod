@@ -102,7 +102,7 @@ public class SettingsScreen extends Screen {
         hit(bx, by, bw, 16, this::onClose);
 
         if (tooltip != null) {
-            g.renderTooltip(font, tooltip, mx, my);
+            g.setTooltipForNextFrame(font, tooltip, mx, my);
         }
     }
 

@@ -1,11 +1,10 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -92,7 +91,7 @@ public final class Paper {
             int u = u0;
             while (xx < w) {
                 int cw = Math.min(256 - u, w - xx);
-                g.blit(RenderType::guiTextured, tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
+                g.blit(RenderPipelines.GUI_TEXTURED, tex, x + xx, y + yy, u, v, cw, ch, 256, 256);
                 xx += cw;
                 u = 0;
             }
@@ -153,11 +152,11 @@ public final class Paper {
     }
 
     public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size) {
-        g.blit(RenderType::guiTextured, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16);
+        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16);
     }
 
     public static void icon(GuiGraphics g, ResourceLocation tex, int x, int y, int size, int color) {
-        g.blit(RenderType::guiTextured, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16, color);
+        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16, color);
     }
 
     /** Square icon button. */
@@ -223,23 +222,23 @@ public final class Paper {
         if (len < 0.01f) {
             return;
         }
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(x1, y1, 0);
-        pose.mulPose(Axis.ZP.rotation((float) Math.atan2(dy, dx)));
-        pose.translate(0, -width / 2f, 0);
-        pose.scale(len, width, 1f);
+        Matrix3x2fStack pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(x1, y1);
+        pose.rotate((float) Math.atan2(dy, dx));
+        pose.translate(0, -width / 2f);
+        pose.scale(len, width);
         g.fill(0, 0, 1, 1, color);
-        pose.popPose();
+        pose.popMatrix();
     }
 
     public static void dot(GuiGraphics g, float x, float y, float size, int color) {
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(x - size / 2f, y - size / 2f, 0);
-        pose.scale(size, size, 1f);
+        Matrix3x2fStack pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(x - size / 2f, y - size / 2f);
+        pose.scale(size, size);
         g.fill(0, 0, 1, 1, color);
-        pose.popPose();
+        pose.popMatrix();
     }
 
     public static void dashedLine(GuiGraphics g, float x1, float y1, float x2, float y2, float width, int color, float dash) {

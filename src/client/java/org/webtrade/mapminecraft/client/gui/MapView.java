@@ -1,10 +1,9 @@
 package org.webtrade.mapminecraft.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import org.webtrade.mapminecraft.client.data.Marker;
 import org.webtrade.mapminecraft.client.data.Stroke;
 import org.webtrade.mapminecraft.client.map.MapLayer;
@@ -68,18 +67,18 @@ public class MapView {
         int rx1 = Math.floorDiv((int) Math.floor(wx(x + w)), MapTile.SIZE);
         int rz0 = Math.floorDiv((int) Math.floor(wz(y)), MapTile.SIZE);
         int rz1 = Math.floorDiv((int) Math.floor(wz(y + h)), MapTile.SIZE);
-        PoseStack pose = g.pose();
+        Matrix3x2fStack pose = g.pose();
         for (int rz = rz0; rz <= rz1; rz++) {
             for (int rx = rx0; rx <= rx1; rx++) {
                 MapTile t = layer.getForRender(rx, rz);
                 if (t == null) {
                     continue;
                 }
-                pose.pushPose();
-                pose.translate(sx(rx * (double) MapTile.SIZE), sy(rz * (double) MapTile.SIZE), 0);
-                pose.scale(zoom, zoom, 1f);
-                g.blit(RenderType::guiTextured, t.id, 0, 0, 0f, 0f, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
-                pose.popPose();
+                pose.pushMatrix();
+                pose.translate(sx(rx * (double) MapTile.SIZE), sy(rz * (double) MapTile.SIZE));
+                pose.scale(zoom, zoom);
+                g.blit(RenderPipelines.GUI_TEXTURED, t.id, 0, 0, 0f, 0f, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE, MapTile.SIZE);
+                pose.popMatrix();
             }
         }
     }
@@ -301,12 +300,12 @@ public class MapView {
     public void drawPlayer(GuiGraphics g, double px, double pz, float yaw, int size) {
         float sx = sx(px);
         float sy = sy(pz);
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(sx, sy, 0);
-        pose.mulPose(Axis.ZP.rotation((float) Math.toRadians(yaw + 180)));
-        g.blit(RenderType::guiTextured, Paper.tool("arrow"), -size / 2, -size / 2, 0f, 0f, 16, 16, size, size, 16, 16);
-        pose.popPose();
+        Matrix3x2fStack pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(sx, sy);
+        pose.rotate((float) Math.toRadians(yaw + 180));
+        g.blit(RenderPipelines.GUI_TEXTURED, Paper.tool("arrow"), -size / 2, -size / 2, 0f, 0f, 16, 16, size, size, 16, 16);
+        pose.popMatrix();
     }
 
     public static void newFrame() {
