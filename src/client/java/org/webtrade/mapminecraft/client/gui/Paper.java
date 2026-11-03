@@ -152,11 +152,11 @@ public final class Paper {
     }
 
     public static void icon(GuiGraphics g, Identifier tex, int x, int y, int size) {
-        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16);
+        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, size, size, 16, 16, 16, 16);
     }
 
     public static void icon(GuiGraphics g, Identifier tex, int x, int y, int size, int color) {
-        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, 16, 16, size, size, 16, 16, color);
+        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, size, size, 16, 16, 16, 16, color);
     }
 
     /** Square icon button. */

@@ -675,7 +675,7 @@ public class MapScreen extends Screen {
         g.drawString(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
-        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 64, 64, 48, 48, 64, 64);
+        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 48, 48, 64, 64, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list
