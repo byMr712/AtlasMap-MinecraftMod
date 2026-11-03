@@ -304,6 +304,7 @@ public class MapView {
         pose.pushMatrix();
         pose.translate(sx, sy);
         pose.rotate((float) Math.toRadians(yaw + 180));
+        Paper.ensure(Paper.tool("arrow"));
         g.blit(RenderPipelines.GUI_TEXTURED, Paper.tool("arrow"), -size / 2, -size / 2, 0, 0, size, size, 16, 16, 16, 16);
         pose.popMatrix();
     }

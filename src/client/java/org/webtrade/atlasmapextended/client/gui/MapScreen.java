@@ -680,6 +680,7 @@ public class MapScreen extends Screen {
         g.text(font, scale, bx + px + 5, y + 5, Paper.INK_SOFT, false);
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
+        Paper.ensure(Paper.COMPASS);
         g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0, 0, 48, 48, 64, 64, 64, 64);
     }
 
