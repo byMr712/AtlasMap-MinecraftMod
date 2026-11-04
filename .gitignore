@@ -5,3 +5,6 @@ out/
 .idea/
 *.iml
 tools/__pycache__/
+tools/publish_curseforge.py
+tools/curseforge.json
+tools/.env
