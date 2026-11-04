@@ -125,9 +125,11 @@ public class MapScreen extends Screen {
 
     // marker panels
     private boolean listOpen;
-    private boolean markersOpen = true;
-    private boolean regionsOpen = true;
+    private boolean markersOpen;
+    private boolean regionsOpen;
     private String search = "";
+    private String markerSearch = "";
+    private String regionSearch = "";
     private double listScroll;
     private Marker selected;
     private Panel panel = Panel.NONE;
@@ -173,6 +175,8 @@ public class MapScreen extends Screen {
     private EditBox yBox;
     private EditBox zBox;
     private EditBox searchBox;
+    private EditBox markerSearchBox;
+    private EditBox regionSearchBox;
     private MultiLineEditBox descBox;
 
     // input / hit testing
@@ -222,7 +226,28 @@ public class MapScreen extends Screen {
     }
 
     public void openMarkerList() {
-        listOpen = true;
+        setListOpen(true);
+    }
+
+    private void setListOpen(boolean open) {
+        listOpen = open;
+        if (open) {
+            markersOpen = false;
+            regionsOpen = false;
+            markerSearch = "";
+            regionSearch = "";
+            search = "";
+            listScroll = 0;
+            if (markerSearchBox != null) {
+                searchBox.setValue("");
+                markerSearchBox.setValue("");
+                regionSearchBox.setValue("");
+            }
+        }
+    }
+
+    private void toggleList() {
+        setListOpen(!listOpen);
     }
 
     /** Selects a marker, centers the map on it and shows its info panel. */
@@ -302,12 +327,32 @@ public class MapScreen extends Screen {
             search = s;
             listScroll = 0;
         });
+        markerSearchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search_markers"));
+        markerSearchBox.setBordered(false);
+        markerSearchBox.setTextColor(Paper.INK);
+        markerSearchBox.setTextShadow(false);
+        markerSearchBox.setValue(markerSearch);
+        markerSearchBox.setResponder(s -> {
+            markerSearch = s;
+            listScroll = 0;
+        });
+        regionSearchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search_regions"));
+        regionSearchBox.setBordered(false);
+        regionSearchBox.setTextColor(Paper.INK);
+        regionSearchBox.setTextShadow(false);
+        regionSearchBox.setValue(regionSearch);
+        regionSearchBox.setResponder(s -> {
+            regionSearch = s;
+            listScroll = 0;
+        });
         addRenderableWidget(nameBox);
         addRenderableWidget(xBox);
         addRenderableWidget(yBox);
         addRenderableWidget(zBox);
         addRenderableWidget(descBox);
         addRenderableWidget(searchBox);
+        addRenderableWidget(markerSearchBox);
+        addRenderableWidget(regionSearchBox);
         iconSearch = new EditBox(font, 0, 0, 100, 12, T.tr("icons.search_hint"));
         iconSearch.setBordered(false);
         iconSearch.setTextColor(Paper.INK);
@@ -483,7 +528,7 @@ public class MapScreen extends Screen {
         view.drawBackground(g);
         view.drawTiles(g, layer);
         view.drawGrid(g);
-        view.drawRegions(g, font, session.regions(dim), dim, true, regionMode ? selectedRegionId : null);
+        view.drawRegions(g, font, regionsForDisplay(), dim, true, regionMode ? selectedRegionId : null);
         if (regionDrawing) {
             Region preview = previewRegion();
             if (preview != null) {
@@ -527,6 +572,34 @@ public class MapScreen extends Screen {
             tooltip = Component.literal(hovered.name.isEmpty() ? T.s("marker.unnamed") : hovered.name)
                     .append(Component.literal("  " + hovered.x + ", " + hovered.y + ", " + hovered.z).withColor(0xFFAAAAAA));
         }
+    }
+
+    /**
+     * Regions as drawn while editing. The edited region previews the picked colour without touching
+     * the saved data until the user presses Save.
+     */
+    private List<Region> regionsForDisplay() {
+        List<Region> saved = session.regions(dim);
+        if (!regionMode || panel != Panel.EDIT || working == null || selectedRegion == null) {
+            return saved;
+        }
+        List<Region> out = new ArrayList<>(saved.size());
+        for (Region r : saved) {
+            if (!r.id.equals(selectedRegion.id)) {
+                out.add(r);
+                continue;
+            }
+            Region preview = new Region();
+            preview.id = r.id;
+            preview.name = r.name;
+            preview.description = r.description;
+            preview.color = working.color;
+            preview.dim = r.dim;
+            preview.pts = r.pts;
+            preview.hidden = r.hidden;
+            out.add(preview);
+        }
+        return out;
     }
 
     private void vignette(GuiGraphics g) {
@@ -628,7 +701,7 @@ public class MapScreen extends Screen {
         int x = 6;
         int y = 6;
         List<Object[]> items = new ArrayList<>();
-        items.add(new Object[]{"list", T.tr("tool.list", keyName(ModKeys.MARKER_LIST)), listOpen, (Runnable) () -> listOpen = !listOpen});
+        items.add(new Object[]{"list", T.tr("tool.list", keyName(ModKeys.MARKER_LIST)), listOpen, (Runnable) this::toggleList});
         items.add(new Object[]{"ruler", T.tr("tool.ruler", keyName(ModKeys.RULER)), tool == Tool.RULER, (Runnable) () -> setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER)});
         items.add(new Object[]{"quill", T.tr("tool.editor", keyName(ModKeys.EDITOR)), tool == Tool.DRAW, (Runnable) () -> setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW)});
         items.add(new Object[]{"region", T.tr("tool.regions"), tool == Tool.REGION, (Runnable) () -> setTool(tool == Tool.REGION ? Tool.NONE : Tool.REGION)});
@@ -813,8 +886,8 @@ public class MapScreen extends Screen {
         return Math.max(150, Math.min(190, width / 3));
     }
 
-    private List<Marker> sortedMarkers() {
-        String q = search.toLowerCase(Locale.ROOT).trim();
+    private List<Marker> sortedMarkers(String query) {
+        String q = query.toLowerCase(Locale.ROOT).trim();
         List<Marker> list = new ArrayList<>();
         for (Marker m : session.markers) {
             if (q.isEmpty() || m.name.toLowerCase(Locale.ROOT).contains(q) || m.description.toLowerCase(Locale.ROOT).contains(q)) {
@@ -835,8 +908,8 @@ public class MapScreen extends Screen {
         return list;
     }
 
-    private List<Region> sortedRegions() {
-        String q = search.toLowerCase(Locale.ROOT).trim();
+    private List<Region> sortedRegions(String query) {
+        String q = query.toLowerCase(Locale.ROOT).trim();
         List<Region> list = new ArrayList<>();
         for (Region r : session.allRegions()) {
             if (q.isEmpty() || r.name.toLowerCase(Locale.ROOT).contains(q)
@@ -891,7 +964,16 @@ public class MapScreen extends Screen {
     }
 
     private static int listSectionHeight(boolean open, int count) {
-        return 18 + (open ? Math.max(18, count * 22) : 0);
+        return 18 + (open ? 20 + Math.max(18, count * 22) : 0);
+    }
+
+    private void drawListSearch(GuiGraphics g, EditBox box, int x, int y, int w, String hintKey) {
+        Paper.inset(g, x, y, w, 14);
+        Paper.icon(g, Paper.tool("zoom_in"), x + 2, y + 2, 10);
+        box.setX(x + 14);
+        box.setY(y + 3);
+        box.setWidth(w - 18);
+        hint(g, box, T.s(hintKey));
     }
 
     private void drawListHeader(GuiGraphics g, int mx, int my, int x, int y, int w,
@@ -919,6 +1001,91 @@ public class MapScreen extends Screen {
         hit(ex, y + 1, 16, 16, eye);
     }
 
+    private void drawMarkerRow(GuiGraphics g, int mx, int my, int lx, int lw,
+                               int top, int bottom, int y, int rowH, Marker m, double[] ref) {
+        int rx = lx + 8;
+        int rw = lw - 16;
+        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
+                && my >= top && my < bottom;
+        boolean sel = !regionMode && selected != null && selected.id.equals(m.id);
+        if (sel) {
+            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
+            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
+        } else if (hover) {
+            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+        }
+        Paper.markerIcon(g, m.icon, m.color, rx + 2, y + 2, 16, m.hidden ? 0x70 : 0xFF);
+        String dist = m.dim.equals(dim)
+                ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short")
+                : T.dimName(m.dim);
+        int dw = font.width(dist);
+        int nameW = rw - 22 - dw - 20;
+        String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
+        g.drawString(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
+        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+        int ex = rx + rw - 14;
+        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
+        Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
+        if (eh) {
+            tooltip = T.tr(m.hidden ? "marker.show" : "marker.hide");
+        }
+        int clipY = Math.max(y, top);
+        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
+        if (clipH > 0) {
+            hit(rx, clipY, rw, clipH, () -> openView(m, true), () -> openView(m, true));
+            if (y + 4 >= top && y + 16 <= bottom) {
+                hit(ex, y + 4, 12, 12, () -> {
+                    m.hidden = !m.hidden;
+                    session.saveMarkers();
+                });
+            }
+        }
+    }
+
+    private void drawRegionRow(GuiGraphics g, int mx, int my, int lx, int lw,
+                               int top, int bottom, int y, int rowH, Region r, double[] ref) {
+        int rx = lx + 8;
+        int rw = lw - 16;
+        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
+                && my >= top && my < bottom;
+        boolean sel = regionMode && selectedRegion != null && selectedRegion.id.equals(r.id);
+        if (sel) {
+            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
+            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
+        } else if (hover) {
+            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+        }
+        int color = regionMode && panel == Panel.EDIT && working != null
+                && selectedRegion != null && selectedRegion.id.equals(r.id) ? working.color : r.color;
+        g.fill(rx + 2, y + 3, rx + 18, y + 19, color);
+        Paper.outline(g, rx + 2, y + 3, 16, 16, Paper.INK);
+        String dist = r.dim.equals(dim)
+                ? fmtInt(regionDistance(r, ref[0], ref[1])) + " " + T.s("unit.blocks_short")
+                : T.dimName(r.dim);
+        int dw = font.width(dist);
+        int nameW = rw - 22 - dw - 20;
+        String name = font.plainSubstrByWidth(r.name.isEmpty() ? T.s("region.title") : r.name, nameW);
+        g.drawString(font, name, rx + 21, y + 6, r.hidden ? Paper.DISABLED : Paper.INK, false);
+        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
+        int ex = rx + rw - 14;
+        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
+        Paper.icon(g, Paper.tool(r.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
+        if (eh) {
+            tooltip = T.tr(r.hidden ? "marker.show" : "marker.hide");
+        }
+        int clipY = Math.max(y, top);
+        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
+        if (clipH > 0) {
+            hit(rx, clipY, rw, clipH, () -> openRegionView(r));
+            if (y + 4 >= top && y + 16 <= bottom) {
+                hit(ex, y + 4, 12, 12, () -> {
+                    r.hidden = !r.hidden;
+                    session.saveRegions();
+                });
+            }
+        }
+    }
+
     private void drawList(GuiGraphics g, int mx, int my) {
         int lx = 6 + TB + 8;
         int ly = 6;
@@ -936,165 +1103,118 @@ public class MapScreen extends Screen {
 
         // one global search over markers and regions
         int sy = ly + 20;
-        Paper.inset(g, lx + 7, sy, lw - 14, 14);
-        Paper.icon(g, Paper.tool("zoom_in"), lx + 9, sy + 2, 10);
-        searchBox.setX(lx + 21);
-        searchBox.setY(sy + 3);
-        searchBox.setWidth(lw - 30);
-        hint(g, searchBox, T.s("list.search_objects"));
+        drawListSearch(g, searchBox, lx + 7, sy, lw - 14, "list.search_objects");
 
-        List<Marker> markers = sortedMarkers();
-        List<Region> regions = sortedRegions();
+        boolean globalSearch = !search.isBlank();
+        List<Marker> markers = sortedMarkers(globalSearch ? search : markerSearch);
+        List<Region> regions = sortedRegions(globalSearch ? search : regionSearch);
         int top = sy + 20;
         int bottom = ly + lh - 8;
         int areaH = bottom - top;
-        int contentH = listSectionHeight(markersOpen, markers.size()) + 4
-                + listSectionHeight(regionsOpen, regions.size());
+        int rowH = 22;
+        int contentH;
+        if (globalSearch) {
+            int found = markers.size() + regions.size();
+            contentH = found == 0 ? 18 : found * rowH;
+        } else {
+            contentH = listSectionHeight(markersOpen, markers.size()) + 4
+                    + listSectionHeight(regionsOpen, regions.size());
+        }
         double maxScroll = Math.max(0, contentH - areaH);
         listScroll = Math.max(0, Math.min(maxScroll, listScroll));
         scroll(lx, top, lw, areaH, d -> listScroll -= d * 22);
         g.enableScissor(lx + 3, top, lx + lw - 3, bottom);
         double[] ref = referencePoint();
-        int rowH = 22;
         int y = top - (int) listScroll;
 
-        boolean anyMarker = session.markers.stream().anyMatch(m -> !m.hidden);
-        drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.markers", markers.size(),
-                markersOpen, MARKER_SORTS, cfg.markerSort,
-                () -> markersOpen = !markersOpen,
-                () -> {
-                    cfg.markerSort = (cfg.markerSort + 1) % MARKER_SORTS.length;
-                    cfg.save();
-                },
-                () -> {
-                    cfg.markerSort = (cfg.markerSort + MARKER_SORTS.length - 1) % MARKER_SORTS.length;
-                    cfg.save();
-                },
-                () -> {
-                    boolean hide = session.markers.stream().anyMatch(m -> !m.hidden);
-                    session.markers.forEach(m -> m.hidden = hide);
-                    session.saveMarkers();
-                }, anyMarker);
-        y += 18;
-        if (markersOpen) {
-            if (markers.isEmpty()) {
-                g.drawString(font, T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"),
-                        lx + 12, y + 4, Paper.DISABLED, false);
-                y += 18;
+        if (globalSearch) {
+            // no section headers while searching: show every match in one flat list
+            if (markers.isEmpty() && regions.isEmpty()) {
+                g.drawString(font, T.tr("list.nothing_found"), lx + 12, y + 4, Paper.DISABLED, false);
             } else {
                 for (Marker m : markers) {
                     if (y + rowH >= top && y <= bottom) {
-                        int rx = lx + 8;
-                        int rw = lw - 16;
-                        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
-                                && my >= top && my < bottom;
-                        boolean sel = !regionMode && selected != null && selected.id.equals(m.id);
-                        if (sel) {
-                            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
-                        } else if (hover) {
-                            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
-                        }
-                        Paper.markerIcon(g, m.icon, m.color, rx + 2, y + 2, 16, m.hidden ? 0x70 : 0xFF);
-                        String dist = m.dim.equals(dim)
-                                ? fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks_short")
-                                : T.dimName(m.dim);
-                        int dw = font.width(dist);
-                        int nameW = rw - 22 - dw - 20;
-                        String name = font.plainSubstrByWidth(m.name.isEmpty() ? T.s("marker.unnamed") : m.name, nameW);
-                        g.drawString(font, name, rx + 21, y + 6, m.hidden ? Paper.DISABLED : Paper.INK, false);
-                        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
-                        int ex = rx + rw - 14;
-                        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
-                        Paper.icon(g, Paper.tool(m.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
-                        if (eh) {
-                            tooltip = T.tr(m.hidden ? "marker.show" : "marker.hide");
-                        }
-                        int clipY = Math.max(y, top);
-                        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
-                        if (clipH > 0) {
-                            hit(rx, clipY, rw, clipH, () -> openView(m, true), () -> openView(m, true));
-                            if (y + 4 >= top && y + 16 <= bottom) {
-                                hit(ex, y + 4, 12, 12, () -> {
-                                    m.hidden = !m.hidden;
-                                    session.saveMarkers();
-                                });
-                            }
-                        }
+                        drawMarkerRow(g, mx, my, lx, lw, top, bottom, y, rowH, m, ref);
+                    }
+                    y += rowH;
+                }
+                for (Region r : regions) {
+                    if (y + rowH >= top && y <= bottom) {
+                        drawRegionRow(g, mx, my, lx, lw, top, bottom, y, rowH, r, ref);
                     }
                     y += rowH;
                 }
             }
-        }
-        y += 4;
-
-        boolean anyRegion = !session.allRegions().isEmpty()
-                && session.allRegions().stream().anyMatch(r -> !r.hidden);
-        drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.regions", regions.size(),
-                regionsOpen, REGION_SORTS, cfg.regionSort,
-                () -> regionsOpen = !regionsOpen,
-                () -> {
-                    cfg.regionSort = (cfg.regionSort + 1) % REGION_SORTS.length;
-                    cfg.save();
-                },
-                () -> {
-                    cfg.regionSort = (cfg.regionSort + REGION_SORTS.length - 1) % REGION_SORTS.length;
-                    cfg.save();
-                },
-                () -> {
-                    boolean hide = session.allRegions().stream().anyMatch(r -> !r.hidden);
-                    session.allRegions().forEach(r -> r.hidden = hide);
-                    session.saveRegions();
-                }, anyRegion);
-        y += 18;
-        if (regionsOpen) {
-            if (regions.isEmpty()) {
-                g.drawString(font, T.tr(session.allRegions().isEmpty() ? "list.empty_regions" : "list.nothing_found"),
-                        lx + 12, y + 4, Paper.DISABLED, false);
-                y += 18;
-            } else {
-                for (Region r : regions) {
-                    if (y + rowH >= top && y <= bottom) {
-                        int rx = lx + 8;
-                        int rw = lw - 16;
-                        boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, rx, y, rw, rowH - 2)
-                                && my >= top && my < bottom;
-                        boolean sel = regionMode && selectedRegion != null && selectedRegion.id.equals(r.id);
-                        if (sel) {
-                            g.fill(rx, y, rx + rw, y + rowH - 2, Paper.a(Paper.GOLD, 0x50));
-                            Paper.outline(g, rx, y, rw, rowH - 2, Paper.GOLD);
-                        } else if (hover) {
-                            g.fill(rx, y, rx + rw, y + rowH - 2, 0x28FFFFFF);
+        } else {
+            boolean anyMarker = session.markers.stream().anyMatch(m -> !m.hidden);
+            drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.markers", markers.size(),
+                    markersOpen, MARKER_SORTS, cfg.markerSort,
+                    this::toggleMarkersSection,
+                    () -> {
+                        cfg.markerSort = (cfg.markerSort + 1) % MARKER_SORTS.length;
+                        cfg.save();
+                    },
+                    () -> {
+                        cfg.markerSort = (cfg.markerSort + MARKER_SORTS.length - 1) % MARKER_SORTS.length;
+                        cfg.save();
+                    },
+                    () -> {
+                        boolean hide = session.markers.stream().anyMatch(m -> !m.hidden);
+                        session.markers.forEach(m -> m.hidden = hide);
+                        session.saveMarkers();
+                    }, anyMarker);
+            y += 18;
+            if (markersOpen) {
+                drawListSearch(g, markerSearchBox, lx + 12, y, lw - 24, "list.search_markers");
+                y += 20;
+                if (markers.isEmpty()) {
+                    g.drawString(font, T.tr(session.markers.isEmpty() ? "list.empty" : "list.nothing_found"),
+                            lx + 12, y + 4, Paper.DISABLED, false);
+                    y += 18;
+                } else {
+                    for (Marker m : markers) {
+                        if (y + rowH >= top && y <= bottom) {
+                            drawMarkerRow(g, mx, my, lx, lw, top, bottom, y, rowH, m, ref);
                         }
-                        g.fill(rx + 2, y + 3, rx + 18, y + 19, r.color);
-                        Paper.outline(g, rx + 2, y + 3, 16, 16, Paper.INK);
-                        String dist = r.dim.equals(dim)
-                                ? fmtInt(regionDistance(r, ref[0], ref[1])) + " " + T.s("unit.blocks_short")
-                                : T.dimName(r.dim);
-                        int dw = font.width(dist);
-                        int nameW = rw - 22 - dw - 20;
-                        String name = font.plainSubstrByWidth(r.name.isEmpty() ? T.s("region.title") : r.name, nameW);
-                        g.drawString(font, name, rx + 21, y + 6, r.hidden ? Paper.DISABLED : Paper.INK, false);
-                        g.drawString(font, dist, rx + rw - 16 - dw, y + 6, Paper.INK_SOFT, false);
-                        int ex = rx + rw - 14;
-                        boolean eh = hover && Paper.inside(mx, my, ex, y + 4, 12, 12);
-                        Paper.icon(g, Paper.tool(r.hidden ? "eye_off" : "eye"), ex, y + 4, 12, eh ? 0xFFFFFFFF : 0xB0FFFFFF);
-                        if (eh) {
-                            tooltip = T.tr(r.hidden ? "marker.show" : "marker.hide");
-                        }
-                        int clipY = Math.max(y, top);
-                        int clipH = Math.min(y + rowH - 2, bottom) - clipY;
-                        if (clipH > 0) {
-                            hit(rx, clipY, rw, clipH, () -> openRegionView(r));
-                            if (y + 4 >= top && y + 16 <= bottom) {
-                                hit(ex, y + 4, 12, 12, () -> {
-                                    r.hidden = !r.hidden;
-                                    session.saveRegions();
-                                });
-                            }
-                        }
+                        y += rowH;
                     }
-                    y += rowH;
+                }
+            }
+            y += 4;
+
+            boolean anyRegion = !session.allRegions().isEmpty()
+                    && session.allRegions().stream().anyMatch(r -> !r.hidden);
+            drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.regions", regions.size(),
+                    regionsOpen, REGION_SORTS, cfg.regionSort,
+                    this::toggleRegionsSection,
+                    () -> {
+                        cfg.regionSort = (cfg.regionSort + 1) % REGION_SORTS.length;
+                        cfg.save();
+                    },
+                    () -> {
+                        cfg.regionSort = (cfg.regionSort + REGION_SORTS.length - 1) % REGION_SORTS.length;
+                        cfg.save();
+                    },
+                    () -> {
+                        boolean hide = session.allRegions().stream().anyMatch(r -> !r.hidden);
+                        session.allRegions().forEach(r -> r.hidden = hide);
+                        session.saveRegions();
+                    }, anyRegion);
+            y += 18;
+            if (regionsOpen) {
+                drawListSearch(g, regionSearchBox, lx + 12, y, lw - 24, "list.search_regions");
+                y += 20;
+                if (regions.isEmpty()) {
+                    g.drawString(font, T.tr(session.allRegions().isEmpty() ? "list.empty_regions" : "list.nothing_found"),
+                            lx + 12, y + 4, Paper.DISABLED, false);
+                    y += 18;
+                } else {
+                    for (Region r : regions) {
+                        if (y + rowH >= top && y <= bottom) {
+                            drawRegionRow(g, mx, my, lx, lw, top, bottom, y, rowH, r, ref);
+                        }
+                        y += rowH;
+                    }
                 }
             }
         }
@@ -1106,6 +1226,22 @@ public class MapScreen extends Screen {
             g.fill(lx + lw - 5, top, lx + lw - 4, bottom, Paper.INK_FAINT);
             g.fill(lx + lw - 6, thumbY, lx + lw - 3, thumbY + thumbH, Paper.INK_SOFT);
         }
+    }
+
+    private void toggleMarkersSection() {
+        markersOpen = !markersOpen;
+        if (!markersOpen) {
+            setFocused(null);
+        }
+        listScroll = 0;
+    }
+
+    private void toggleRegionsSection() {
+        regionsOpen = !regionsOpen;
+        if (!regionsOpen) {
+            setFocused(null);
+        }
+        listScroll = 0;
     }
 
     // ------------------------------------------------------------------ right panel
@@ -2444,7 +2580,10 @@ public class MapScreen extends Screen {
         yBox.setVisible(edit && !regionMode);
         zBox.setVisible(edit && !regionMode);
         descBox.visible = edit;
+        boolean globalSearch = !search.isBlank();
         searchBox.setVisible(listOpen);
+        markerSearchBox.setVisible(listOpen && !globalSearch && markersOpen);
+        regionSearchBox.setVisible(listOpen && !globalSearch && regionsOpen);
         iconSearch.setVisible(overlay == Overlay.ICONS);
         regionNameBox.setVisible(overlay == Overlay.REGION);
         GuiEventListener f = getFocused();
@@ -3301,7 +3440,7 @@ public class MapScreen extends Screen {
             return true;
         }
         if (ModKeys.MARKER_LIST.matches(e)) {
-            listOpen = !listOpen;
+            toggleList();
             return true;
         }
         if (ModKeys.RULER.matches(e)) {
