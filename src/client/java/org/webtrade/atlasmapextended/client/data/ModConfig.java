@@ -18,6 +18,7 @@ public class ModConfig {
     public boolean minimapMarkers = true;
     public boolean drawingsVisible = true;
     public boolean markersVisible = true;
+    public boolean worldMarkers = false;
     public int markerSort = 0;
     public int regionSort = 0;
     public String theme = "papyrus";
