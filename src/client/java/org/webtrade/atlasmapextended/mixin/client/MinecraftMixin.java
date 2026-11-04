@@ -32,7 +32,7 @@ public class MinecraftMixin {
                     target = "Lnet/minecraft/client/Screenshot;grab(Lnet/minecraft/client/Minecraft;Z)V"))
     private void atlasmapextended$grabScreenshot(Minecraft mc, boolean panorama) {
         ModConfig cfg = ModConfig.get();
-        if (cfg.worldMarkers && cfg.markersVisible) {
+        if (cfg.worldMarkers && cfg.markersVisible && WorldMarkerHud.hasVisibleMarkers()) {
             WorldMarkerHud.requestScreenshot(panorama);
         } else {
             Screenshot.grab(mc, panorama);
