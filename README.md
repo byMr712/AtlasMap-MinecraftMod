@@ -63,7 +63,7 @@
 
 Мод работает на **Fabric** и **NeoForge**. Fabric API и другие библиотеки не требуются.
 
-1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.19.5 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **1.21.11**.
+1. Установите [Fabric Loader](https://fabricmc.net/use/) (0.17.3 или новее) или [NeoForge](https://neoforged.net/) для Minecraft **1.21.11**.
 2. Положите в папку `mods` один JAR под свой загрузчик:
    - `AtlasMapExtended-Fabric-1.21.11-v1.1.jar` — для Fabric;
    - `AtlasMapExtended-NeoForge-1.21.11-v1.1.jar` — для NeoForge.
