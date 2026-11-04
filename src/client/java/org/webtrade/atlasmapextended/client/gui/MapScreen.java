@@ -3265,7 +3265,7 @@ public class MapScreen extends Screen {
         regionNameBox.setX(cx + 4);
         regionNameBox.setY(y + 4);
         regionNameBox.setWidth(cw - 8);
-        regionNameBox.extractRenderState(g, mx, my, 0);
+        regionNameBox.render(g, mx, my, 0);
         y += 22;
 
         g.drawString(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
