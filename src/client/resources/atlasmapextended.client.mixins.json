@@ -9,6 +9,7 @@
     "EditBoxMixin",
     "ClientPacketListenerMixin",
     "GuiMixin",
+    "LanguageManagerMixin",
     "MinecraftMixin",
     "MultiLineEditBoxMixin",
     "OptionsMixin",
