@@ -149,8 +149,9 @@ public class SettingsScreen extends Screen {
         section(g, T.s("settings.minimap_section"), x, y, w);
         y += 12;
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.minimap", onOff(cfg.minimapEnabled)), () -> cfg.minimapEnabled = !cfg.minimapEnabled);
-        y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.size", cfg.minimapSize()), () -> cfg.minimapSizeIndex = (cfg.minimapSizeIndex + 1) % ModConfig.MINIMAP_SIZES.length);
-        y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.zoom", fmtZoom(cfg.minimapZoom())), () -> cfg.minimapZoomIndex = (cfg.minimapZoomIndex + 1) % ModConfig.MINIMAP_ZOOMS.length);
+        y = optionPair(g, mx, my, x, y, w, top, bottom,
+                T.tr("settings.size", cfg.minimapSize()), () -> cfg.minimapSizeIndex = (cfg.minimapSizeIndex + 1) % ModConfig.MINIMAP_SIZES.length,
+                T.tr("settings.zoom", fmtZoom(cfg.minimapZoom())), () -> cfg.minimapZoomIndex = (cfg.minimapZoomIndex + 1) % ModConfig.MINIMAP_ZOOMS.length);
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.corner", T.tr(corners[cfg.minimapCorner])), () -> cfg.minimapCorner = (cfg.minimapCorner + 1) % 4);
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.coords", onOff(cfg.minimapCoords)), () -> cfg.minimapCoords = !cfg.minimapCoords);
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.mm_markers", onOff(cfg.minimapMarkers)), () -> cfg.minimapMarkers = !cfg.minimapMarkers);
@@ -164,16 +165,27 @@ public class SettingsScreen extends Screen {
         }
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.labels", onOff(cfg.markerLabels)), () -> cfg.markerLabels = !cfg.markerLabels);
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.world_markers", onOff(cfg.worldMarkers)), () -> cfg.worldMarkers = !cfg.worldMarkers);
-        if (Paper.inside(mx, my, x, y - ROW, w, 16)) {
-            tooltip = T.tr("settings.world_markers_tip");
-        }
         for (FormattedCharSequence l : font.split(T.tr("settings.teleport_note"), w)) {
             g.drawString(font, l, x, y + 1, Paper.HINT, false);
             y += 10;
         }
     }
 
+    private int optionPair(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom,
+                           Component left, Runnable leftAction, Component right, Runnable rightAction) {
+        int half = (w - 4) / 2;
+        drawOption(g, mx, my, x, y, half, top, bottom, left, leftAction);
+        drawOption(g, mx, my, x + half + 4, y, w - half - 4, top, bottom, right, rightAction);
+        return y + ROW;
+    }
+
     private int option(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom, Component label, Runnable action) {
+        drawOption(g, mx, my, x, y, w, top, bottom, label, action);
+        return y + ROW;
+    }
+
+    private void drawOption(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom,
+                            Component label, Runnable action) {
         boolean h = Paper.inside(mx, my, x, y, w, 16) && my >= top && my < bottom;
         Paper.button(g, font, label, x, y, w, 16, h, true);
         if (y + 16 > top && y < bottom) {
@@ -182,7 +194,6 @@ public class SettingsScreen extends Screen {
                 cfg.save();
             });
         }
-        return y + ROW;
     }
 
     private void section(GuiGraphics g, String text, int x, int y, int w) {
