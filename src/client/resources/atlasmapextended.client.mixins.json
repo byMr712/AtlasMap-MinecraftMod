@@ -6,8 +6,13 @@
   "client": [
     "ClientChunkCacheMixin",
     "ClientPacketListenerMixin",
+<<<<<<< HEAD
     "GuiMixin",
     "LanguageManagerMixin",
+=======
+    "GameRendererMixin",
+    "HudMixin",
+>>>>>>> b766ab7 (Add world marker hover names, texture unloading and screenshot hiding)
     "MinecraftMixin",
     "OptionsMixin",
     "ScreenAccessor",
