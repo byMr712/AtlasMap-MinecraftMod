@@ -34,8 +34,14 @@ public final class WorldMarkerHud {
 
     private static boolean screenshotPending;
     private static boolean screenshotPanorama;
+    private static boolean visibleLastFrame;
 
     private WorldMarkerHud() {
+    }
+
+    /** Whether any marker icon was drawn in the latest frame. */
+    public static boolean hasVisibleMarkers() {
+        return visibleLastFrame;
     }
 
     /** Defers a screenshot by one frame so marker icons are not captured in it. */
@@ -57,6 +63,7 @@ public final class WorldMarkerHud {
         ModConfig cfg = ModConfig.get();
         if (!cfg.worldMarkers || !cfg.markersVisible) {
             releaseAll();
+            visibleLastFrame = false;
             return;
         }
         if (screenshotPending) {
@@ -66,10 +73,12 @@ public final class WorldMarkerHud {
         LocalPlayer p = mc.player;
         MapSession session = MapManager.live();
         if (p == null || mc.level == null || session == null || mc.gui.screen() != null || session.markers.isEmpty()) {
+            visibleLastFrame = false;
             return;
         }
         Camera camera = mc.gameRenderer.mainCamera();
         if (camera == null || !camera.isInitialized()) {
+            visibleLastFrame = false;
             return;
         }
         String dim = mc.level.dimension().identifier().toString();
@@ -82,6 +91,9 @@ public final class WorldMarkerHud {
         int crossX = sw / 2;
         int crossY = sh / 2;
         long now = mc.level.getGameTime();
+        int renderDistance = Math.max(16, mc.options.getEffectiveRenderDistance() * 16);
+        double renderDistanceSq = (double) renderDistance * renderDistance;
+        int drawn = 0;
         for (IconEntry entry : ICONS.values()) {
             entry.uses = 0;
         }
@@ -97,6 +109,9 @@ public final class WorldMarkerHud {
             double dx = m.x + 0.5 - eye.x;
             double dy = m.y + 1.0 - eye.y;
             double dz = m.z + 0.5 - eye.z;
+            if (dx * dx + dz * dz > renderDistanceSq || !mc.level.hasChunk(m.x >> 4, m.z >> 4)) {
+                continue;
+            }
             if (dx * forward.x() + dy * forward.y() + dz * forward.z() <= 0) {
                 continue;
             }
@@ -116,6 +131,7 @@ public final class WorldMarkerHud {
             icon.lastUsed = now;
             int tint = m.color == 0 ? alpha << 24 | 0xFFFFFF : Paper.a(m.color, alpha);
             Paper.icon(g, icon.texture, sx - ICON_SIZE / 2, sy - ICON_SIZE / 2, ICON_SIZE, tint);
+            drawn++;
 
             int hx = sx - crossX;
             int hy = sy - crossY;
@@ -130,6 +146,7 @@ public final class WorldMarkerHud {
         if (hovered != null) {
             drawName(g, mc.font, hovered, hoverX, hoverY, sw, sh);
         }
+        visibleLastFrame = drawn > 0;
         releaseUnused(now);
     }
 
