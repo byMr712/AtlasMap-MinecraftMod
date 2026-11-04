@@ -2703,7 +2703,7 @@ public class MapScreen extends Screen {
         }
         double mx = e.x();
         double my = e.y();
-        if (tool == Tool.DRAW && pressButton == 0) {
+        if (tool == Tool.DRAW && pressButton == InputConstants.MOUSE_BUTTON_LEFT) {
             if (drawTool == DrawTool.ERASER) {
                 eraseAt(mx, my);
             } else if (current != null) {
@@ -2754,7 +2754,7 @@ public class MapScreen extends Screen {
         pressed = false;
         double mx = e.x();
         double my = e.y();
-        if (tool == Tool.DRAW && pressButton == 0) {
+        if (tool == Tool.DRAW && pressButton == InputConstants.MOUSE_BUTTON_LEFT) {
             if (drawTool == DrawTool.ERASER) {
                 if (erased != null && !erased.isEmpty()) {
                     List<Stroke> list = session.strokes(dim);
