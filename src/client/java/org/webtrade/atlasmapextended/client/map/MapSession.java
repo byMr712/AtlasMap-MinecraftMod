@@ -55,6 +55,20 @@ public class MapSession {
                 }
             }
         }
+        long now = System.currentTimeMillis();
+        for (List<Region> list : regions.values()) {
+            for (Region r : list) {
+                if (r.screenshots == null) {
+                    r.screenshots = new ArrayList<>();
+                }
+                if (r.shotDrawings == null) {
+                    r.shotDrawings = new java.util.HashMap<>();
+                }
+                if (r.created == 0) {
+                    r.created = now;
+                }
+            }
+        }
     }
 
     public static MapSession open(WorldMeta meta) {
