@@ -181,6 +181,7 @@ public class MapScreen extends Screen {
 
     // input / hit testing
     private final List<Hit> hits = new ArrayList<>();
+    private final List<Hit> toolHits = new ArrayList<>();
     private final List<ScrollArea> scrolls = new ArrayList<>();
     private final List<int[]> uiRects = new ArrayList<>();
     private List<int[]> lastUiRects = new ArrayList<>();
@@ -465,6 +466,7 @@ public class MapScreen extends Screen {
         this.mouseX = mx;
         this.mouseY = my;
         hits.clear();
+        toolHits.clear();
         scrolls.clear();
         uiRects.clear();
         modalStart = -1;
@@ -740,7 +742,7 @@ public class MapScreen extends Screen {
             if (hover) {
                 tooltip = (Component) it[1];
             }
-            hit(x, y, TB, step, (Runnable) it[3]);
+            toolHit(ix - 2, iy - 2, iconSize + 4, iconSize + 4, (Runnable) it[3]);
             y += step;
         }
     }
@@ -2548,6 +2550,24 @@ public class MapScreen extends Screen {
         hits.add(new Hit(x, y, w, h, left, right));
     }
 
+    private void toolHit(int x, int y, int w, int h, Runnable left) {
+        toolHits.add(new Hit(x, y, w, h, left, null));
+    }
+
+    private boolean runToolHits(double mx, double my, int button) {
+        for (int i = toolHits.size() - 1; i >= 0; i--) {
+            Hit h = toolHits.get(i);
+            if (Paper.inside(mx, my, h.x, h.y, h.w, h.h)) {
+                Runnable r = button == InputConstants.MOUSE_BUTTON_RIGHT ? h.right : h.left;
+                if (r != null) {
+                    r.run();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void scroll(int x, int y, int w, int h, DoubleConsumer c) {
         scrolls.add(new ScrollArea(x, y, w, h, c));
     }
@@ -2639,6 +2659,9 @@ public class MapScreen extends Screen {
         }
         if (overlay != Overlay.NONE) {
             runHits(mx, my, button);
+            return true;
+        }
+        if (runToolHits(mx, my, button)) {
             return true;
         }
         if (super.mouseClicked(e, doubleClick)) {
