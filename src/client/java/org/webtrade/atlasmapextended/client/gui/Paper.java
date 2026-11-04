@@ -76,6 +76,15 @@ public final class Paper {
      * its PNGs with the texture manager itself.
      */
     public static void ensure(Identifier texture) {
+        ensure(texture, "/assets/" + texture.getNamespace() + "/" + texture.getPath());
+    }
+
+    /** Loads the image of {@code source} but registers it under {@code texture}. */
+    public static void ensureFrom(Identifier texture, Identifier source) {
+        ensure(texture, "/assets/" + source.getNamespace() + "/" + source.getPath());
+    }
+
+    private static void ensure(Identifier texture, String path) {
         net.minecraft.client.renderer.texture.TextureManager manager = Minecraft.getInstance().getTextureManager();
         net.minecraft.client.renderer.texture.DynamicTexture loaded = LOADED.get(texture);
         if (loaded != null && manager.getTexture(texture) == loaded) {
@@ -84,11 +93,10 @@ public final class Paper {
         if (MISSING.contains(texture)) {
             return;
         }
-        String path = "/assets/" + texture.getNamespace() + "/" + texture.getPath();
         try (java.io.InputStream in = Paper.class.getResourceAsStream(path)) {
             if (in == null) {
                 MISSING.add(texture);
-                LOG.warn("Missing texture {}", texture);
+                LOG.warn("Missing texture {}", path);
                 return;
             }
             net.minecraft.client.renderer.texture.DynamicTexture created =
@@ -97,7 +105,14 @@ public final class Paper {
             LOADED.put(texture, created);
         } catch (java.io.IOException e) {
             MISSING.add(texture);
-            LOG.warn("Failed to load texture {}", texture, e);
+            LOG.warn("Failed to load texture {}", path, e);
+        }
+    }
+
+    /** Frees a texture registered by this mod, so it can be loaded again later. */
+    public static void release(Identifier texture) {
+        if (LOADED.remove(texture) != null) {
+            Minecraft.getInstance().getTextureManager().release(texture);
         }
     }
 
