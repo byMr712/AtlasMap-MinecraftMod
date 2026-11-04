@@ -1,24 +1,24 @@
 package org.webtrade.atlasmapextended.client.gui;
 
-import net.minecraft.client.Camera;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector3fc;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
 import org.webtrade.atlasmapextended.client.map.MapManager;
 import org.webtrade.atlasmapextended.client.map.MapSession;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /** Draws marker icons over the game world while playing. */
 public final class WorldMarkerHud {
@@ -28,12 +28,9 @@ public final class WorldMarkerHud {
     private static final long TEXTURE_TTL_TICKS = 100;
 
     // Reused every frame so rendering does not allocate per marker.
-    private static final Matrix4f PROJECTION = new Matrix4f();
-    private static final Vector3f POINT = new Vector3f();
     private static final Map<String, IconEntry> ICONS = new HashMap<>();
 
     private static boolean screenshotPending;
-    private static boolean screenshotPanorama;
     private static boolean visibleLastFrame;
 
     private WorldMarkerHud() {
@@ -45,21 +42,27 @@ public final class WorldMarkerHud {
     }
 
     /** Defers a screenshot by one frame so marker icons are not captured in it. */
-    public static void requestScreenshot(boolean panorama) {
+    public static void requestScreenshot() {
         screenshotPending = true;
-        screenshotPanorama = panorama;
     }
 
-    /** Takes the screenshot queued by {@link #requestScreenshot(boolean)} after a marker-free frame. */
+    /** Takes the screenshot queued by {@link #requestScreenshot()} after a marker-free frame. */
     public static void finishScreenshot() {
         if (!screenshotPending) {
             return;
         }
         screenshotPending = false;
-        Screenshot.grab(Minecraft.getInstance(), screenshotPanorama);
+        captureNow();
     }
 
-    public static void render(GuiGraphicsExtractor g) {
+    /** Takes a screenshot with the same notification behaviour as the vanilla F2 key. */
+    public static void captureNow() {
+        Minecraft mc = Minecraft.getInstance();
+        Screenshot.grab(mc.gameDirectory, mc.getMainRenderTarget(),
+                component -> mc.gui.getChat().addMessage(component));
+    }
+
+    public static void render(GuiGraphics g) {
         ModConfig cfg = ModConfig.get();
         if (!cfg.worldMarkers || !cfg.markersVisible) {
             releaseAll();
@@ -72,19 +75,12 @@ public final class WorldMarkerHud {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         MapSession session = MapManager.live();
-        if (p == null || mc.level == null || session == null || mc.gui.screen() != null || session.markers.isEmpty()) {
-            visibleLastFrame = false;
-            return;
-        }
-        Camera camera = mc.gameRenderer.mainCamera();
-        if (camera == null || !camera.isInitialized()) {
+        if (p == null || mc.level == null || session == null || mc.screen != null || session.markers.isEmpty()) {
             visibleLastFrame = false;
             return;
         }
         String dim = mc.level.dimension().identifier().toString();
-        Vec3 eye = camera.position();
-        Vector3fc forward = camera.forwardVector();
-        camera.getViewRotationProjectionMatrix(PROJECTION);
+        Vec3 eye = p.getEyePosition();
 
         int sw = g.guiWidth();
         int sh = g.guiHeight();
@@ -112,16 +108,12 @@ public final class WorldMarkerHud {
             if (dx * dx + dz * dz > renderDistanceSq || !mc.level.hasChunk(m.x >> 4, m.z >> 4)) {
                 continue;
             }
-            if (dx * forward.x() + dy * forward.y() + dz * forward.z() <= 0) {
+            Vec3 screen = mc.gameRenderer.projectPointToScreen(new Vec3(m.x + 0.5, m.y + 1.0, m.z + 0.5));
+            if (screen.z < -1 || screen.z > 1) {
                 continue;
             }
-            POINT.set((float) dx, (float) dy, (float) dz);
-            PROJECTION.transformProject(POINT);
-            if (POINT.z < -1 || POINT.z > 1) {
-                continue;
-            }
-            int sx = Math.round((POINT.x + 1) * 0.5f * sw);
-            int sy = Math.round((1 - POINT.y) * 0.5f * sh);
+            int sx = Math.round((float) ((screen.x + 1) * 0.5 * sw));
+            int sy = Math.round((float) ((1 - screen.y) * 0.5 * sh));
             if (sx < -ICON_SIZE || sx > sw + ICON_SIZE || sy < -ICON_SIZE || sy > sh + ICON_SIZE) {
                 continue;
             }
@@ -167,7 +159,7 @@ public final class WorldMarkerHud {
         return entry;
     }
 
-    private static void drawName(GuiGraphicsExtractor g, Font font, Marker m, int sx, int sy, int sw, int sh) {
+    private static void drawName(GuiGraphics g, Font font, Marker m, int sx, int sy, int sw, int sh) {
         String name = m.name == null || m.name.isBlank() ? T.s("marker.unnamed") : m.name;
         name = font.plainSubstrByWidth(name, Math.min(180, sw - 12));
         int tw = font.width(name);
@@ -177,8 +169,8 @@ public final class WorldMarkerHud {
             ty = sy - ICON_SIZE / 2 - 16;
         }
         g.fill(tx - 4, ty - 2, tx + tw + 4, ty + 10, Paper.a(Paper.CREAM, 0xE8));
-        g.outline(tx - 4, ty - 2, tw + 8, 12, Paper.a(Paper.INK, 0xA0));
-        g.text(font, name, tx, ty, Paper.INK, false);
+        Paper.outline(g, tx - 4, ty - 2, tw + 8, 12, Paper.a(Paper.INK, 0xA0));
+        g.drawString(font, name, tx, ty, Paper.INK, false);
     }
 
     /** Frees icon textures that have been out of view for a while, so they load again on return. */
