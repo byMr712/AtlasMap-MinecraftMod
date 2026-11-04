@@ -2,6 +2,8 @@ package org.webtrade.atlasmapextended.client.gui;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.Identifier;
@@ -15,25 +17,49 @@ import org.webtrade.atlasmapextended.client.map.MapManager;
 import org.webtrade.atlasmapextended.client.map.MapSession;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /** Draws marker icons over the game world while playing. */
 public final class WorldMarkerHud {
     private static final int ICON_SIZE = 20;
     private static final double FADE_RADIUS_SQ = 5.0 * 5.0;
+    private static final double HOVER_RADIUS_SQ = (ICON_SIZE / 2.0 + 3) * (ICON_SIZE / 2.0 + 3);
+    private static final long TEXTURE_TTL_TICKS = 100;
 
     // Reused every frame so rendering does not allocate per marker.
     private static final Matrix4f PROJECTION = new Matrix4f();
     private static final Vector3f POINT = new Vector3f();
-    private static final Map<String, Identifier> PLAIN_ICONS = new HashMap<>();
-    private static final Map<String, Identifier> TINTED_ICONS = new HashMap<>();
+    private static final Map<String, IconEntry> ICONS = new HashMap<>();
+
+    private static boolean screenshotPending;
+    private static boolean screenshotPanorama;
 
     private WorldMarkerHud() {
+    }
+
+    /** Defers a screenshot by one frame so marker icons are not captured in it. */
+    public static void requestScreenshot(boolean panorama) {
+        screenshotPending = true;
+        screenshotPanorama = panorama;
+    }
+
+    /** Takes the screenshot queued by {@link #requestScreenshot(boolean)} after a marker-free frame. */
+    public static void finishScreenshot() {
+        if (!screenshotPending) {
+            return;
+        }
+        screenshotPending = false;
+        Screenshot.grab(Minecraft.getInstance(), screenshotPanorama);
     }
 
     public static void render(GuiGraphicsExtractor g) {
         ModConfig cfg = ModConfig.get();
         if (!cfg.worldMarkers || !cfg.markersVisible) {
+            releaseAll();
+            return;
+        }
+        if (screenshotPending) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -53,6 +79,17 @@ public final class WorldMarkerHud {
 
         int sw = g.guiWidth();
         int sh = g.guiHeight();
+        int crossX = sw / 2;
+        int crossY = sh / 2;
+        long now = mc.level.getGameTime();
+        for (IconEntry entry : ICONS.values()) {
+            entry.uses = 0;
+        }
+
+        Marker hovered = null;
+        double hoverDistance = Double.MAX_VALUE;
+        int hoverX = 0;
+        int hoverY = 0;
         for (Marker m : session.markers) {
             if (m.hidden || !m.dim.equals(dim)) {
                 continue;
@@ -74,12 +111,89 @@ public final class WorldMarkerHud {
                 continue;
             }
             int alpha = dx * dx + dy * dy + dz * dz <= FADE_RADIUS_SQ ? 128 : 255;
-            Identifier texture = m.color == 0
-                    ? PLAIN_ICONS.computeIfAbsent(m.icon, Paper::marker)
-                    : TINTED_ICONS.computeIfAbsent(m.icon,
-                            icon -> Paper.id("textures/gui/markers_tint/" + icon + ".png"));
+            IconEntry icon = iconEntry(m.icon, m.color != 0, now);
+            icon.uses++;
+            icon.lastUsed = now;
             int tint = m.color == 0 ? alpha << 24 | 0xFFFFFF : Paper.a(m.color, alpha);
-            Paper.icon(g, texture, sx - ICON_SIZE / 2, sy - ICON_SIZE / 2, ICON_SIZE, tint);
+            Paper.icon(g, icon.texture, sx - ICON_SIZE / 2, sy - ICON_SIZE / 2, ICON_SIZE, tint);
+
+            int hx = sx - crossX;
+            int hy = sy - crossY;
+            double hoverDist = hx * hx + hy * hy;
+            if (hoverDist <= HOVER_RADIUS_SQ && hoverDist < hoverDistance) {
+                hoverDistance = hoverDist;
+                hovered = m;
+                hoverX = sx;
+                hoverY = sy;
+            }
+        }
+        if (hovered != null) {
+            drawName(g, mc.font, hovered, hoverX, hoverY, sw, sh);
+        }
+        releaseUnused(now);
+    }
+
+    private static IconEntry iconEntry(String icon, boolean tinted, long now) {
+        String name = icon == null ? "pin" : icon;
+        String key = (tinted ? "t:" : "p:") + name;
+        IconEntry entry = ICONS.get(key);
+        if (entry == null) {
+            Identifier source = tinted
+                    ? Paper.id("textures/gui/markers_tint/" + name + ".png")
+                    : Paper.marker(name);
+            Identifier texture = Paper.id("textures/gui/markers_world/"
+                    + (tinted ? "tint/" : "") + name + ".png");
+            Paper.ensureFrom(texture, source);
+            entry = new IconEntry(texture, now);
+            ICONS.put(key, entry);
+        }
+        return entry;
+    }
+
+    private static void drawName(GuiGraphicsExtractor g, Font font, Marker m, int sx, int sy, int sw, int sh) {
+        String name = m.name == null || m.name.isBlank() ? T.s("marker.unnamed") : m.name;
+        name = font.plainSubstrByWidth(name, Math.min(180, sw - 12));
+        int tw = font.width(name);
+        int tx = Math.max(4, Math.min(sw - tw - 4, sx - tw / 2));
+        int ty = sy + ICON_SIZE / 2 + 4;
+        if (ty + 12 > sh - 4) {
+            ty = sy - ICON_SIZE / 2 - 16;
+        }
+        g.fill(tx - 4, ty - 2, tx + tw + 4, ty + 10, Paper.a(Paper.CREAM, 0xE8));
+        g.outline(tx - 4, ty - 2, tw + 8, 12, Paper.a(Paper.INK, 0xA0));
+        g.text(font, name, tx, ty, Paper.INK, false);
+    }
+
+    /** Frees icon textures that have been out of view for a while, so they load again on return. */
+    private static void releaseUnused(long now) {
+        Iterator<Map.Entry<String, IconEntry>> it = ICONS.entrySet().iterator();
+        while (it.hasNext()) {
+            IconEntry entry = it.next().getValue();
+            if (entry.uses == 0 && now - entry.lastUsed > TEXTURE_TTL_TICKS) {
+                Paper.release(entry.texture);
+                it.remove();
+            }
+        }
+    }
+
+    private static void releaseAll() {
+        if (ICONS.isEmpty()) {
+            return;
+        }
+        for (IconEntry entry : ICONS.values()) {
+            Paper.release(entry.texture);
+        }
+        ICONS.clear();
+    }
+
+    private static final class IconEntry {
+        final Identifier texture;
+        int uses;
+        long lastUsed;
+
+        IconEntry(Identifier texture, long now) {
+            this.texture = texture;
+            this.lastUsed = now;
         }
     }
 }
