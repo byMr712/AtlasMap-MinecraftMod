@@ -22,6 +22,8 @@
   "atlasmapextended.list.section.markers": "Markers",
   "atlasmapextended.list.section.regions": "Regions",
   "atlasmapextended.list.search_objects": "Search objects",
+  "atlasmapextended.list.search_markers": "Search markers",
+  "atlasmapextended.list.search_regions": "Search regions",
   "atlasmapextended.list.sort_tip": "LMB — next sort order, RMB — previous",
   "atlasmapextended.list.hide_all": "Hide all in this section",
   "atlasmapextended.list.show_all": "Show all in this section",
