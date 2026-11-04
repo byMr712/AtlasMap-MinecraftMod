@@ -846,7 +846,7 @@ public class MapScreen extends Screen {
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
         Paper.ensure(Paper.COMPASS);
-        g.blit(RenderType::guiTextured, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 48, 48, 64, 64, 64, 64);
+        g.blit(Paper.COMPASS, right - 52, height - 56, 48, 48, 0, 0, 64, 64, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list
