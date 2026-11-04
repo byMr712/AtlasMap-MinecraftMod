@@ -121,7 +121,6 @@
   "atlasmapextended.settings.teleport_note": "Телепорт работает, если разрешены команды: читы в одиночной игре или права оператора на сервере.",
   "atlasmapextended.settings.labels": "Подписи меток на карте: %s",
   "atlasmapextended.settings.world_markers": "Видеть метки в мире: %s",
-  "atlasmapextended.settings.world_markers_tip": "Иконки меток видны в мире и становятся на 50% прозрачными ближе 5 блоков",
   "atlasmapextended.theme.papyrus": "Папирус",
   "atlasmapextended.theme.stone": "Камень",
   "atlasmapextended.theme.deepslate": "Сланец",
