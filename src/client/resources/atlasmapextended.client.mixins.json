@@ -10,6 +10,7 @@
     "ClientPacketListenerMixin",
     "GameRendererMixin",
     "GuiMixin",
+    "KeyboardHandlerMixin",
     "LanguageManagerMixin",
     "MinecraftMixin",
     "MultiLineEditBoxMixin",
