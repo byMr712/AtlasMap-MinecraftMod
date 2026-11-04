@@ -101,6 +101,18 @@ public final class T {
         return tr(key, args).getString();
     }
 
+    /** Translations for the selected client language, injected into vanilla so key bindings are translated. */
+    public static Map<String, String> clientTranslations(List<String> languageCodes) {
+        boolean russian = false;
+        for (String code : languageCodes) {
+            if (code.startsWith("ru") || code.startsWith("uk") || code.startsWith("be")) {
+                russian = true;
+                break;
+            }
+        }
+        return russian ? LANG_RU : LANG_EN;
+    }
+
     public static String dimName(String dim) {
         return switch (dim) {
             case "minecraft:overworld" -> s("dim.overworld");
