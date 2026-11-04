@@ -717,18 +717,28 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"gear", T.tr("tool.settings"), false, (Runnable) this::openSettings});
         items.add(new Object[]{"close", T.tr("tool.close", keyName(ModKeys.OPEN_MAP)), false, (Runnable) this::onClose});
 
-        int h = items.size() * (TB + 3) + 5;
+        int count = items.size();
+        int step = TB + 3;
+        int iconSize = TB;
+        int available = height - 12;
+        if (count * step + 5 > available) {
+            step = Math.max(14, (available - 5) / count);
+            iconSize = Math.max(10, Math.min(TB, step - 2));
+        }
+        int h = count * step + 5;
         g.fill(x - 3, y - 3, x + TB + 3, y + h - 3, 0x40000000);
         ui(x - 3, y - 3, TB + 6, h);
         for (Object[] it : items) {
-            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, TB, TB);
+            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, TB, step);
             String ic = (String) it[0];
-            Paper.iconButton(g, ic.startsWith("marker:") ? Paper.marker(ic.substring(7)) : Paper.tool(ic), x, y, TB, hover, (Boolean) it[2]);
+            int ix = x + (TB - iconSize) / 2;
+            int iy = y + (step - iconSize) / 2;
+            Paper.iconButton(g, ic.startsWith("marker:") ? Paper.marker(ic.substring(7)) : Paper.tool(ic), ix, iy, iconSize, hover, (Boolean) it[2]);
             if (hover) {
                 tooltip = (Component) it[1];
             }
-            hit(x, y, TB, TB, (Runnable) it[3]);
-            y += TB + 3;
+            hit(x, y, TB, step, (Runnable) it[3]);
+            y += step;
         }
     }
 
