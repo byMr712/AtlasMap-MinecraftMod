@@ -163,6 +163,10 @@ public class SettingsScreen extends Screen {
             tooltip = T.tr("settings.teleport_tip");
         }
         y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.labels", onOff(cfg.markerLabels)), () -> cfg.markerLabels = !cfg.markerLabels);
+        y = option(g, mx, my, x, y, w, top, bottom, T.tr("settings.world_markers", onOff(cfg.worldMarkers)), () -> cfg.worldMarkers = !cfg.worldMarkers);
+        if (Paper.inside(mx, my, x, y - ROW, w, 16)) {
+            tooltip = T.tr("settings.world_markers_tip");
+        }
         for (FormattedCharSequence l : font.split(T.tr("settings.teleport_note"), w)) {
             g.text(font, l, x, y + 1, Paper.HINT, false);
             y += 10;
