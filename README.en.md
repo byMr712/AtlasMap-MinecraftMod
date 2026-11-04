@@ -63,7 +63,7 @@ Choose a loader and Minecraft version:
 
 The mod runs on **Fabric** and **NeoForge**. Fabric API and other libraries are not required.
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) (0.19.5 or newer) or [NeoForge](https://neoforged.net/) for Minecraft **1.21.8**.
+1. Install [Fabric Loader](https://fabricmc.net/use/) (0.16.13 or newer) or [NeoForge](https://neoforged.net/) for Minecraft **1.21.8**.
 2. Place one JAR for your loader into the `mods` folder:
    - `AtlasMapExtended-Fabric-1.21.8-v1.1.jar` for Fabric;
    - `AtlasMapExtended-NeoForge-1.21.8-v1.1.jar` for NeoForge.
