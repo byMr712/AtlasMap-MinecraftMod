@@ -1,6 +1,7 @@
 package org.webtrade.atlasmapextended.client.gui;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.Font;
@@ -9,6 +10,9 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
 import org.webtrade.atlasmapextended.client.map.MapManager;
@@ -29,6 +33,8 @@ public final class WorldMarkerHud {
 
     // Reused every frame so rendering does not allocate per marker.
     private static final Map<String, IconEntry> ICONS = new HashMap<>();
+    private static final Matrix4f PROJECTION = new Matrix4f();
+    private static final Vector3f POINT = new Vector3f();
 
     private static boolean screenshotPending;
     private static boolean visibleLastFrame;
@@ -81,6 +87,14 @@ public final class WorldMarkerHud {
         }
         String dim = mc.level.dimension().location().toString();
         Vec3 eye = p.getEyePosition();
+        Camera camera = mc.gameRenderer.getMainCamera();
+        if (!camera.isInitialized()) {
+            visibleLastFrame = false;
+            return;
+        }
+        float fov = mc.options.fov().get().floatValue();
+        PROJECTION.set(mc.gameRenderer.getProjectionMatrix(fov));
+        PROJECTION.mul(new Matrix4f().rotation(new Quaternionf(camera.rotation()).conjugate()));
 
         int sw = g.guiWidth();
         int sh = g.guiHeight();
@@ -108,12 +122,13 @@ public final class WorldMarkerHud {
             if (dx * dx + dz * dz > renderDistanceSq || !mc.level.hasChunk(m.x >> 4, m.z >> 4)) {
                 continue;
             }
-            Vec3 screen = mc.gameRenderer.projectPointToScreen(new Vec3(m.x + 0.5, m.y + 1.0, m.z + 0.5));
-            if (screen.z < -1 || screen.z > 1) {
+            POINT.set((float) dx, (float) dy, (float) dz);
+            PROJECTION.transformProject(POINT);
+            if (POINT.z < -1 || POINT.z > 1) {
                 continue;
             }
-            int sx = Math.round((float) ((screen.x + 1) * 0.5 * sw));
-            int sy = Math.round((float) ((1 - screen.y) * 0.5 * sh));
+            int sx = Math.round((POINT.x + 1) * 0.5f * sw);
+            int sy = Math.round((1 - POINT.y) * 0.5f * sh);
             if (sx < -ICON_SIZE || sx > sw + ICON_SIZE || sy < -ICON_SIZE || sy > sh + ICON_SIZE) {
                 continue;
             }

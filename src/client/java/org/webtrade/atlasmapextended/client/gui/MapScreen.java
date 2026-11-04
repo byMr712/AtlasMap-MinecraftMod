@@ -6,10 +6,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -294,7 +291,6 @@ public class MapScreen extends Screen {
         nameBox = new EditBox(font, 0, 0, 100, 12, T.tr("field.name"));
         nameBox.setBordered(false);
         nameBox.setTextColor(Paper.INK);
-        nameBox.setTextShadow(false);
         nameBox.setMaxLength(64);
         nameBox.setResponder(s -> {
             if (working != null) {
@@ -304,14 +300,7 @@ public class MapScreen extends Screen {
         xBox = coordBox();
         yBox = coordBox();
         zBox = coordBox();
-        descBox = MultiLineEditBox.builder()
-                .setTextColor(Paper.INK)
-                .setCursorColor(Paper.INK)
-                .setTextShadow(false)
-                .setShowBackground(false)
-                .setShowDecorations(false)
-                .setPlaceholder(T.tr("field.desc_hint"))
-                .build(font, 100, 60, T.tr("field.desc"));
+        descBox = new MultiLineEditBox(font, 0, 0, 100, 60, T.tr("field.desc_hint"), T.tr("field.desc"));
         descBox.setCharacterLimit(4000);
         descBox.setValueListener(s -> {
             if (working != null) {
@@ -321,7 +310,6 @@ public class MapScreen extends Screen {
         searchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search"));
         searchBox.setBordered(false);
         searchBox.setTextColor(Paper.INK);
-        searchBox.setTextShadow(false);
         searchBox.setValue(search);
         searchBox.setResponder(s -> {
             search = s;
@@ -330,7 +318,6 @@ public class MapScreen extends Screen {
         markerSearchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search_markers"));
         markerSearchBox.setBordered(false);
         markerSearchBox.setTextColor(Paper.INK);
-        markerSearchBox.setTextShadow(false);
         markerSearchBox.setValue(markerSearch);
         markerSearchBox.setResponder(s -> {
             markerSearch = s;
@@ -339,7 +326,6 @@ public class MapScreen extends Screen {
         regionSearchBox = new EditBox(font, 0, 0, 100, 12, T.tr("list.search_regions"));
         regionSearchBox.setBordered(false);
         regionSearchBox.setTextColor(Paper.INK);
-        regionSearchBox.setTextShadow(false);
         regionSearchBox.setValue(regionSearch);
         regionSearchBox.setResponder(s -> {
             regionSearch = s;
@@ -356,13 +342,11 @@ public class MapScreen extends Screen {
         iconSearch = new EditBox(font, 0, 0, 100, 12, T.tr("icons.search_hint"));
         iconSearch.setBordered(false);
         iconSearch.setTextColor(Paper.INK);
-        iconSearch.setTextShadow(false);
         iconSearch.setResponder(v -> iconScroll = 0);
         addWidget(iconSearch);
         regionNameBox = new EditBox(font, 0, 0, 100, 12, T.tr("region.name"));
         regionNameBox.setBordered(false);
         regionNameBox.setTextColor(Paper.INK);
-        regionNameBox.setTextShadow(false);
         regionNameBox.setMaxLength(48);
         addWidget(regionNameBox);
         if (working != null) {
@@ -375,7 +359,6 @@ public class MapScreen extends Screen {
         EditBox b = new EditBox(font, 0, 0, 30, 12, Component.empty());
         b.setBordered(false);
         b.setTextColor(Paper.INK);
-        b.setTextShadow(false);
         b.setMaxLength(9);
         return b;
     }
@@ -476,7 +459,6 @@ public class MapScreen extends Screen {
             lastUiRects = new ArrayList<>();
             return;
         }
-        g.nextStratum();
 
         drawToolbar(g, mx, my);
         if (tool == Tool.DRAW) {
@@ -501,8 +483,7 @@ public class MapScreen extends Screen {
         super.render(g, overlay == Overlay.NONE ? mx : -1, overlay == Overlay.NONE ? my : -1, pt);
 
         if (overlay != Overlay.NONE) {
-            g.nextStratum();
-            tooltip = null;
+                tooltip = null;
             modalStart = hits.size();
             switch (overlay) {
                 case ICONS -> drawIconPicker(g, mx, my);
@@ -517,7 +498,7 @@ public class MapScreen extends Screen {
             }
         }
         if (tooltip != null) {
-            g.setTooltipForNextFrame(font, tooltip, mx, my);
+            g.renderTooltip(font, tooltip, mx, my);
         }
         lastUiRects = new ArrayList<>(uiRects);
     }
@@ -865,7 +846,7 @@ public class MapScreen extends Screen {
 
         int right = panel != Panel.NONE ? width - panelWidth() - 12 : width - 6;
         Paper.ensure(Paper.COMPASS);
-        g.blit(RenderPipelines.GUI_TEXTURED, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 48, 48, 64, 64, 64, 64);
+        g.blit(RenderType::guiTextured, Paper.COMPASS, right - 52, height - 56, 0f, 0f, 48, 48, 64, 64, 64, 64);
     }
 
     // ------------------------------------------------------------------ marker list
@@ -2608,22 +2589,19 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
-        double mx = e.x();
-        double my = e.y();
-        int button = e.button();
+    public boolean mouseClicked(double mx, double my, int button) {
         if (overlay == Overlay.VIEWER && annotationPress(mx, my, button)) {
             return true;
         }
         if (overlay == Overlay.ICONS && iconSearch.isMouseOver(mx, my)) {
             setFocused(iconSearch);
-            iconSearch.mouseClicked(e, doubleClick);
+            iconSearch.mouseClicked(mx, my, button);
             return true;
         }
         if (overlay == Overlay.REGION) {
             if (regionNameBox.isMouseOver(mx, my)) {
                 setFocused(regionNameBox);
-                regionNameBox.mouseClicked(e, doubleClick);
+                regionNameBox.mouseClicked(mx, my, button);
             } else {
                 runHits(mx, my, button);
             }
@@ -2633,7 +2611,7 @@ public class MapScreen extends Screen {
             runHits(mx, my, button);
             return true;
         }
-        if (super.mouseClicked(e, doubleClick)) {
+        if (super.mouseClicked(mx, my, button)) {
             return true;
         }
         setFocused(null);
@@ -2692,31 +2670,29 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
+    public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (annotPressed) {
-            annotationDrag(e.x(), e.y());
+            annotationDrag(mx, my);
             return true;
         }
         if (regionDrawing) {
-            regionCurrentWX = view.wx(e.x());
-            regionCurrentWZ = view.wz(e.y());
+            regionCurrentWX = view.wx(mx);
+            regionCurrentWZ = view.wz(my);
             if (regionShape == RegionShape.FREEHAND) {
-                addRegionPoint(e.x(), e.y());
+                addRegionPoint(mx, my);
             }
             return true;
         }
         if (markerDrag && working != null) {
-            working.x = (int) Math.floor(view.wx(e.x()) + markerDragOffX);
-            working.z = (int) Math.floor(view.wz(e.y()) + markerDragOffZ);
+            working.x = (int) Math.floor(view.wx(mx) + markerDragOffX);
+            working.z = (int) Math.floor(view.wz(my) + markerDragOffZ);
             xBox.setValue(Integer.toString(working.x));
             zBox.setValue(Integer.toString(working.z));
             return true;
         }
         if (!pressed) {
-            return super.mouseDragged(e, dx, dy);
+            return super.mouseDragged(mx, my, button, dx, dy);
         }
-        double mx = e.x();
-        double my = e.y();
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 eraseAt(mx, my);
@@ -2748,14 +2724,14 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent e) {
+    public boolean mouseReleased(double mx, double my, int button) {
         if (annotPressed) {
             annotationRelease();
             return true;
         }
         if (regionDrawing) {
             regionDrawing = false;
-            finishRegion(e.x(), e.y());
+            finishRegion(mx, my);
             return true;
         }
         if (markerDrag) {
@@ -2763,11 +2739,9 @@ public class MapScreen extends Screen {
             return true;
         }
         if (!pressed) {
-            return super.mouseReleased(e);
+            return super.mouseReleased(mx, my, button);
         }
         pressed = false;
-        double mx = e.x();
-        double my = e.y();
         if (tool == Tool.DRAW && pressButton == 0) {
             if (drawTool == DrawTool.ERASER) {
                 if (erased != null && !erased.isEmpty()) {
@@ -3366,15 +3340,15 @@ public class MapScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent e) {
-        int key = e.key();
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        int key = keyCode;
         if (overlay == Overlay.CONFIRM) {
             if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
                 overlay = Overlay.NONE;
                 if (confirmAction != null) {
                     confirmAction.run();
                 }
-            } else if (e.isEscape()) {
+            } else if (key == InputConstants.KEY_ESCAPE) {
                 overlay = Overlay.NONE;
             }
             return true;
@@ -3382,10 +3356,10 @@ public class MapScreen extends Screen {
         if (overlay == Overlay.REGION) {
             if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
                 saveRegion();
-            } else if (e.isEscape()) {
+            } else if (key == InputConstants.KEY_ESCAPE) {
                 cancelRegion();
             } else {
-                regionNameBox.keyPressed(e);
+                regionNameBox.keyPressed(keyCode, scanCode, modifiers);
             }
             return true;
         }
@@ -3394,23 +3368,23 @@ public class MapScreen extends Screen {
                 switchShot(-1);
             } else if (key == InputConstants.KEY_RIGHT) {
                 switchShot(1);
-            } else if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+            } else if (key == InputConstants.KEY_Z && hasControlDown()) {
                 undo();
-            } else if (e.isEscape() && annotating) {
+            } else if (key == InputConstants.KEY_ESCAPE && annotating) {
                 annotating = false;
                 annotCurrent = null;
-            } else if (e.isEscape() || ModKeys.OPEN_MAP.matches(e)) {
+            } else if (key == InputConstants.KEY_ESCAPE || ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
                 overlay = Overlay.NONE;
             }
             return true;
         }
-        if (overlay == Overlay.ICONS && !e.isEscape()) {
+        if (overlay == Overlay.ICONS && key != InputConstants.KEY_ESCAPE) {
             setFocused(iconSearch);
-            iconSearch.keyPressed(e);
+            iconSearch.keyPressed(keyCode, scanCode, modifiers);
             return true;
         }
         if (overlay != Overlay.NONE) {
-            if (e.isEscape()) {
+            if (key == InputConstants.KEY_ESCAPE) {
                 if (overlay == Overlay.ICONS && !iconSearch.getValue().isEmpty()) {
                     iconSearch.setValue("");
                 } else {
@@ -3421,13 +3395,13 @@ public class MapScreen extends Screen {
             return true;
         }
         if (typing()) {
-            if (e.isEscape()) {
+            if (key == InputConstants.KEY_ESCAPE) {
                 setFocused(null);
                 return true;
             }
-            return super.keyPressed(e);
+            return super.keyPressed(keyCode, scanCode, modifiers);
         }
-        if (e.isEscape()) {
+        if (key == InputConstants.KEY_ESCAPE) {
             if (tool != Tool.NONE) {
                 setTool(Tool.NONE);
                 return true;
@@ -3435,31 +3409,31 @@ public class MapScreen extends Screen {
             onClose();
             return true;
         }
-        if (ModKeys.OPEN_MAP.matches(e)) {
+        if (ModKeys.OPEN_MAP.matches(keyCode, scanCode)) {
             onClose();
             return true;
         }
-        if (ModKeys.MARKER_LIST.matches(e)) {
+        if (ModKeys.MARKER_LIST.matches(keyCode, scanCode)) {
             toggleList();
             return true;
         }
-        if (ModKeys.RULER.matches(e)) {
+        if (ModKeys.RULER.matches(keyCode, scanCode)) {
             setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER);
             return true;
         }
-        if (ModKeys.EDITOR.matches(e)) {
+        if (ModKeys.EDITOR.matches(keyCode, scanCode)) {
             setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW);
             return true;
         }
-        if (ModKeys.TOGGLE_DRAWINGS.matches(e)) {
+        if (ModKeys.TOGGLE_DRAWINGS.matches(keyCode, scanCode)) {
             toggleDrawings();
             return true;
         }
-        if (ModKeys.NEW_MARKER.matches(e)) {
+        if (ModKeys.NEW_MARKER.matches(keyCode, scanCode)) {
             newMarkerAtPlayer();
             return true;
         }
-        if (key == InputConstants.KEY_Z && e.hasControlDown()) {
+        if (key == InputConstants.KEY_Z && hasControlDown()) {
             undo();
             return true;
         }
@@ -3483,19 +3457,19 @@ public class MapScreen extends Screen {
             zoomBy(1 / 1.5f, width / 2.0, height / 2.0);
             return true;
         }
-        return super.keyPressed(e);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean charTyped(CharacterEvent e) {
+    public boolean charTyped(char chr, int modifiers) {
         if (overlay == Overlay.ICONS) {
             setFocused(iconSearch);
-            return iconSearch.charTyped(e);
+            return iconSearch.charTyped(chr, modifiers);
         }
         if (overlay != Overlay.NONE) {
             return true;
         }
-        return super.charTyped(e);
+        return super.charTyped(chr, modifiers);
     }
 
     // ------------------------------------------------------------------ utils
