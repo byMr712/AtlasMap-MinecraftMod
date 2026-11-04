@@ -2,7 +2,7 @@ package org.webtrade.atlasmapextended.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** A small parchment plaque above the hotbar shown when the player enters or leaves a region. */
 public final class RegionToast {
@@ -26,7 +26,7 @@ public final class RegionToast {
         }
     }
 
-    public static void render(GuiGraphicsExtractor g, Font font) {
+    public static void render(GuiGraphics g, Font font) {
         if (ticks <= 0 || title.isEmpty()) {
             return;
         }
@@ -39,7 +39,7 @@ public final class RegionToast {
         int x = (w - bw) / 2;
         int y = h - 78;
         Paper.panel(g, x, y, bw, bh);
-        g.text(font, title, x + (bw - font.width(title)) / 2, y + 5, Paper.INK_SOFT, false);
-        g.text(font, name, x + (bw - font.width(name)) / 2, y + 14, Paper.INK, false);
+        g.drawString(font, title, x + (bw - font.width(title)) / 2, y + 5, Paper.INK_SOFT, false);
+        g.drawString(font, name, x + (bw - font.width(name)) / 2, y + 14, Paper.INK, false);
     }
 }
