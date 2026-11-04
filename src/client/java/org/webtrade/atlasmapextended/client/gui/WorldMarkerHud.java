@@ -7,7 +7,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
@@ -79,7 +79,7 @@ public final class WorldMarkerHud {
             visibleLastFrame = false;
             return;
         }
-        String dim = mc.level.dimension().identifier().toString();
+        String dim = mc.level.dimension().location().toString();
         Vec3 eye = p.getEyePosition();
 
         int sw = g.guiWidth();
@@ -147,10 +147,10 @@ public final class WorldMarkerHud {
         String key = (tinted ? "t:" : "p:") + name;
         IconEntry entry = ICONS.get(key);
         if (entry == null) {
-            Identifier source = tinted
+            ResourceLocation source = tinted
                     ? Paper.id("textures/gui/markers_tint/" + name + ".png")
                     : Paper.marker(name);
-            Identifier texture = Paper.id("textures/gui/markers_world/"
+            ResourceLocation texture = Paper.id("textures/gui/markers_world/"
                     + (tinted ? "tint/" : "") + name + ".png");
             Paper.ensureFrom(texture, source);
             entry = new IconEntry(texture, now);
@@ -196,11 +196,11 @@ public final class WorldMarkerHud {
     }
 
     private static final class IconEntry {
-        final Identifier texture;
+        final ResourceLocation texture;
         int uses;
         long lastUsed;
 
-        IconEntry(Identifier texture, long now) {
+        IconEntry(ResourceLocation texture, long now) {
             this.texture = texture;
             this.lastUsed = now;
         }
