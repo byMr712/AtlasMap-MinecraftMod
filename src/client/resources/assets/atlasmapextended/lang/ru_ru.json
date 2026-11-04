@@ -22,6 +22,8 @@
   "atlasmapextended.list.section.markers": "Метки",
   "atlasmapextended.list.section.regions": "Районы",
   "atlasmapextended.list.search_objects": "Поиск по объектам",
+  "atlasmapextended.list.search_markers": "Поиск по меткам",
+  "atlasmapextended.list.search_regions": "Поиск по районам",
   "atlasmapextended.list.sort_tip": "ЛКМ — следующая сортировка, ПКМ — предыдущая",
   "atlasmapextended.list.hide_all": "Скрыть всё в разделе",
   "atlasmapextended.list.show_all": "Показать всё в разделе",
