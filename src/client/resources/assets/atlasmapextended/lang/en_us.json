@@ -120,6 +120,8 @@
   "atlasmapextended.settings.teleport_tip": "Adds a “Teleport” button to the marker card",
   "atlasmapextended.settings.teleport_note": "Teleport works where commands are allowed: cheats in singleplayer or operator rights on a server.",
   "atlasmapextended.settings.labels": "Marker names on the map: %s",
+  "atlasmapextended.settings.world_markers": "See markers in the world: %s",
+  "atlasmapextended.settings.world_markers_tip": "Marker icons appear in the world and fade to 50% within 5 blocks",
   "atlasmapextended.theme.papyrus": "Papyrus",
   "atlasmapextended.theme.stone": "Stone",
   "atlasmapextended.theme.deepslate": "Deepslate",
