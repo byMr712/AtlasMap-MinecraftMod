@@ -144,6 +144,7 @@ public class MapScreen extends Screen {
 
     // input / hit testing
     private final List<Hit> hits = new ArrayList<>();
+    private final List<Hit> toolHits = new ArrayList<>();
     private final List<ScrollArea> scrolls = new ArrayList<>();
     private final List<int[]> uiRects = new ArrayList<>();
     private List<int[]> lastUiRects = new ArrayList<>();
@@ -345,6 +346,7 @@ public class MapScreen extends Screen {
         this.mouseX = mx;
         this.mouseY = my;
         hits.clear();
+        toolHits.clear();
         scrolls.clear();
         uiRects.clear();
         modalStart = -1;
@@ -550,21 +552,31 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"gear", T.tr("tool.settings"), false, (Runnable) this::openSettings});
         items.add(new Object[]{"close", T.tr("tool.close", keyName(ModKeys.OPEN_MAP)), false, (Runnable) this::onClose});
 
-        int h = items.size() * (TB + 3) + 5;
+        int count = items.size();
+        int step = TB + 3;
+        int iconSize = TB;
+        int available = height - 12;
+        if (count * step + 5 > available) {
+            step = Math.max(14, (available - 5) / count);
+            iconSize = Math.max(10, Math.min(TB, step - 2));
+        }
+        int h = count * step + 5;
         if (Paper.inside(mx, my, x - 3, y - 3, TB + 6, h)) {
             tooltip = null;
         }
         g.fill(x - 3, y - 3, x + TB + 3, y + h - 3, 0x40000000);
         ui(x - 3, y - 3, TB + 6, h);
         for (Object[] it : items) {
-            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, TB, TB);
+            boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, TB, step);
             String ic = (String) it[0];
-            Paper.iconButton(g, ic.startsWith("marker:") ? Paper.marker(ic.substring(7)) : Paper.tool(ic), x, y, TB, hover, (Boolean) it[2]);
+            int ix = x + (TB - iconSize) / 2;
+            int iy = y + (step - iconSize) / 2;
+            Paper.iconButton(g, ic.startsWith("marker:") ? Paper.marker(ic.substring(7)) : Paper.tool(ic), ix, iy, iconSize, hover, (Boolean) it[2]);
             if (hover) {
                 tooltip = (Component) it[1];
             }
-            hit(x, y, TB, TB, (Runnable) it[3]);
-            y += TB + 3;
+            toolHit(ix - 2, iy - 2, iconSize + 4, iconSize + 4, (Runnable) it[3]);
+            y += step;
         }
     }
 
@@ -2035,6 +2047,24 @@ public class MapScreen extends Screen {
         hits.add(new Hit(x, y, w, h, left, right));
     }
 
+    private void toolHit(int x, int y, int w, int h, Runnable left) {
+        toolHits.add(new Hit(x, y, w, h, left, null));
+    }
+
+    private boolean runToolHits(double mx, double my, int button) {
+        for (int i = toolHits.size() - 1; i >= 0; i--) {
+            Hit h = toolHits.get(i);
+            if (Paper.inside(mx, my, h.x, h.y, h.w, h.h)) {
+                Runnable r = button == InputConstants.MOUSE_BUTTON_RIGHT ? h.right : h.left;
+                if (r != null) {
+                    r.run();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void scroll(int x, int y, int w, int h, DoubleConsumer c) {
         scrolls.add(new ScrollArea(x, y, w, h, c));
     }
@@ -2114,6 +2144,9 @@ public class MapScreen extends Screen {
             runHits(mx, my, button);
             return true;
         }
+        if (runToolHits(mouseX, mouseY, button)) {
+            return true;
+        }
         if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -2158,7 +2191,7 @@ public class MapScreen extends Screen {
         }
         double mx = mouseX;
         double my = mouseY;
-        if (tool == Tool.DRAW && pressButton == 0) {
+        if (tool == Tool.DRAW && pressButton == InputConstants.MOUSE_BUTTON_LEFT) {
             if (drawTool == DrawTool.ERASER) {
                 eraseAt(mx, my);
             } else if (current != null) {
@@ -2200,7 +2233,7 @@ public class MapScreen extends Screen {
         pressed = false;
         double mx = mouseX;
         double my = mouseY;
-        if (tool == Tool.DRAW && pressButton == 0) {
+        if (tool == Tool.DRAW && pressButton == InputConstants.MOUSE_BUTTON_LEFT) {
             if (drawTool == DrawTool.ERASER) {
                 if (erased != null && !erased.isEmpty()) {
                     List<Stroke> list = session.strokes(dim);
