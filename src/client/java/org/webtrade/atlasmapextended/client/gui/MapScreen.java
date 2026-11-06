@@ -464,6 +464,8 @@ public class MapScreen extends Screen {
         this.mouseY = my;
         hits.clear();
         toolHits.clear();
+        toolHits.clear();
+        toolHits.clear();
         scrolls.clear();
         uiRects.clear();
         modalStart = -1;
@@ -519,7 +521,16 @@ public class MapScreen extends Screen {
             drawBiomeHint(g, mx, my);
         }
         if (tooltip != null) {
-            g.renderTooltip(font, tooltip, mx, my);
+            String tip = tooltip.getString();
+            if (tip.indexOf('\n') >= 0) {
+                List<Component> lines = new ArrayList<>();
+                for (String line : tip.split("\n", -1)) {
+                    lines.add(Component.literal(line));
+                }
+                g.renderComponentTooltip(font, lines, mx, my);
+            } else {
+                g.renderTooltip(font, tooltip, mx, my);
+            }
         }
         lastUiRects = new ArrayList<>(uiRects);
     }
@@ -2826,6 +2837,9 @@ public class MapScreen extends Screen {
         }
         if (overlay != Overlay.NONE) {
             runHits(mx, my, button);
+            return true;
+        }
+        if (runToolHits(mx, my, button)) {
             return true;
         }
         if (super.mouseClicked(mx, my, button)) {
