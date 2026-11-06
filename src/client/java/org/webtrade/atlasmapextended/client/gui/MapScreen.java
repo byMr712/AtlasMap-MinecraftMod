@@ -450,7 +450,7 @@ public class MapScreen extends Screen {
                     .append(Component.literal("  " + hovered.x + ", " + hovered.y + ", " + hovered.z).withColor(0xFFAAAAAA));
         }
         if (session.isLive() && mc.level != null
-                && !dim.equals(mc.level.dimension().location().toString())) {
+                && !dim.equals(mc.level.dimension().identifier().toString())) {
             MapManager.rememberView(dim, view.cx, view.cz, view.zoom);
         }
     }
