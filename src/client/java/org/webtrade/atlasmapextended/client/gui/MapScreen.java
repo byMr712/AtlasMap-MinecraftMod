@@ -10,8 +10,11 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
@@ -196,6 +199,13 @@ public class MapScreen extends Screen {
     private boolean dragging;
     private double mouseX;
     private double mouseY;
+    private int biomeCellX = Integer.MIN_VALUE;
+    private int biomeCellZ = Integer.MIN_VALUE;
+    private long biomeHoverSince;
+    private boolean biomeResolved;
+    private String biomeName;
+    private int biomeX;
+    private int biomeZ;
 
     public MapScreen(Screen parent, MapSession session, boolean ownsSession) {
         super(T.tr("map.title"));
@@ -474,6 +484,7 @@ public class MapScreen extends Screen {
         MapView.newFrame();
 
         drawMap(g, mx, my);
+        updateBiomeHover(mx, my);
         if (clean) {
             lastUiRects = new ArrayList<>();
             return;
@@ -518,10 +529,94 @@ public class MapScreen extends Screen {
                 }
             }
         }
+        if (tooltip == null) {
+            drawBiomeHint(g, mx, my);
+        }
         if (tooltip != null) {
             g.setTooltipForNextFrame(font, tooltip, mx, my);
         }
         lastUiRects = new ArrayList<>(uiRects);
+    }
+
+    // ------------------------------------------------------------- biome hover
+
+    /** Shows the biome plaque after the cursor rests on the same spot for two seconds. */
+    private void updateBiomeHover(double mx, double my) {
+        if (overlay != Overlay.NONE || regionDrawing || listOpen
+                || !mouseOverMap(mx, my)) {
+            resetBiomeHover();
+            return;
+        }
+        double cell = Math.max(1.0, 4.0 / view.zoom);
+        int cellX = (int) Math.floor(view.wx(mx) / cell);
+        int cellZ = (int) Math.floor(view.wz(my) / cell);
+        if (cellX != biomeCellX || cellZ != biomeCellZ) {
+            biomeCellX = cellX;
+            biomeCellZ = cellZ;
+            biomeHoverSince = System.currentTimeMillis();
+            biomeResolved = false;
+            biomeName = null;
+            return;
+        }
+        if (!biomeResolved && System.currentTimeMillis() - biomeHoverSince >= 2000L) {
+            biomeResolved = true;
+            biomeX = (int) Math.floor(view.wx(mx));
+            biomeZ = (int) Math.floor(view.wz(my));
+            biomeName = biomeAt(biomeX, biomeZ);
+        }
+    }
+
+    private void resetBiomeHover() {
+        biomeCellX = Integer.MIN_VALUE;
+        biomeCellZ = Integer.MIN_VALUE;
+        biomeResolved = false;
+        biomeName = null;
+    }
+
+    /** Localized biome name, or null when that spot has no scanned map data. */
+    private String biomeAt(int x, int z) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !dim.equals(mc.level.dimension().identifier().toString())
+                || !session.layer(dim).hasData(x, z)
+                || !mc.level.hasChunk(x >> 4, z >> 4)) {
+            return null;
+        }
+        Holder<Biome> holder = mc.level.getBiome(new BlockPos(x, mc.level.getSeaLevel(), z));
+        return holder.unwrapKey()
+                .map(key -> key.identifier().toString().replace(':', '.'))
+                .map(id -> Component.translatable("biome." + id).getString())
+                .orElse(null);
+    }
+
+    /** Test hook: the biome shown by the hover plaque, or null when hidden. */
+    public String hoveredBiome() {
+        return biomeName;
+    }
+
+    private void drawBiomeHint(GuiGraphics g, int mx, int my) {
+        if (biomeName == null) {
+            return;
+        }
+        String title = T.s("biome.title");
+        String coords = "x " + biomeX + "   z " + biomeZ;
+        int inner = Math.max(font.width(biomeName), Math.max(font.width(title), font.width(coords)));
+        int w = inner + 16;
+        int h = 40;
+        int px = mx + 16;
+        int py = my + 12;
+        if (px + w > width - 4) {
+            px = mx - w - 12;
+        }
+        if (py + h > height - 4) {
+            py = height - h - 4;
+        }
+        px = Math.max(4, px);
+        py = Math.max(4, py);
+        Paper.panel(g, px, py, w, h);
+        g.text(font, title, px + 8, py + 5, Paper.INK_SOFT, false);
+        Paper.separator(g, px + 6, py + 16, w - 12);
+        g.text(font, biomeName, px + 8, py + 19, Paper.INK, false);
+        g.text(font, coords, px + 8, py + 29, Paper.a(Paper.INK, 0x90), false);
     }
 
     private void drawMap(GuiGraphics g, int mx, int my) {

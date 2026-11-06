@@ -66,6 +66,19 @@ public class MapLayer {
         return onDisk.isEmpty() && tiles.isEmpty();
     }
 
+    /** True when this layer already has scanned pixels at the given world block. */
+    public boolean hasData(int wx, int wz) {
+        int rx = Math.floorDiv(wx, MapTile.SIZE);
+        int rz = Math.floorDiv(wz, MapTile.SIZE);
+        MapTile t = getForRender(rx, rz);
+        if (t == null) {
+            return false;
+        }
+        int px = Math.floorMod(wx, MapTile.SIZE);
+        int pz = Math.floorMod(wz, MapTile.SIZE);
+        return (t.getPixel(px, pz) >>> 24) != 0;
+    }
+
     /** Returns the tile for rendering, loading it from disk if the per-frame budget allows. */
     public MapTile getForRender(int rx, int rz) {
         long k = pack(rx, rz);
