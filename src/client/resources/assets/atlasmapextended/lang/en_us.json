@@ -31,6 +31,7 @@
   "atlasmapextended.list.empty_regions": "No regions yet. Use the region tool to draw one.",
   "atlasmapextended.list.nothing_found": "Nothing found.",
   "atlasmapextended.marker.unnamed": "Unnamed",
+  "atlasmapextended.biome.title": "Biome",
   "atlasmapextended.marker.show": "Show",
   "atlasmapextended.marker.hide": "Hide",
   "atlasmapextended.marker.no_desc": "— no description —",
