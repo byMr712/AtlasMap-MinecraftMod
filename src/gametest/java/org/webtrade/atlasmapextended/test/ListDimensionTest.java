@@ -1,6 +1,5 @@
 package org.webtrade.atlasmapextended.test;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -12,8 +11,8 @@ import org.webtrade.atlasmapextended.client.gui.MapScreen;
 import org.webtrade.atlasmapextended.client.map.MapManager;
 import org.webtrade.atlasmapextended.client.map.MapSession;
 
-/** The object list groups markers and regions by dimension. */
-public class ListDimensionsTest implements FabricClientGameTest {
+/** The object list shows only the dimension selected with the toolbar button. */
+public class ListDimensionTest implements FabricClientGameTest {
 
     private static final String NETHER = "minecraft:the_nether";
 
@@ -51,34 +50,18 @@ public class ListDimensionsTest implements FabricClientGameTest {
             ctx.waitTicks(5);
             input.pressKey(ModKeys.MARKER_LIST);
             ctx.waitTicks(5);
-            ctx.takeScreenshot("dims_1_current_open");
+            ctx.takeScreenshot("list_dim_overworld");
 
-            // collapse the current dimension, expand the nether one, then its two sections
-            click(ctx, input, 55);
-            ctx.takeScreenshot("dims_2_current_closed");
-            click(ctx, input, 73);
-            ctx.waitTicks(3);
-            ctx.takeScreenshot("dims_3_nether_open");
-            click(ctx, input, 91);
-            ctx.waitTicks(3);
-            ctx.takeScreenshot("dims_4_nether_markers");
-            click(ctx, input, 157);
-            ctx.waitTicks(3);
-            ctx.takeScreenshot("dims_5_nether_regions");
-
-            boolean ok = ctx.computeOnClient(mc -> {
-                MapScreen s = (MapScreen) mc.gui.screen();
-                return s.listDimensionOpen(NETHER) && s.markersSectionOpen();
-            });
-            System.out.println("[list dims] nether expanded with sections: " + ok);
-            if (!ok) {
-                throw new AssertionError("dimension group did not expand");
-            }
-
-            // clicking a marker row of another dimension opens it
+            String over = ctx.computeOnClient(mc -> ((MapScreen) mc.gui.screen()).shownDimension());
+            // the "dimension" button is the globe in the toolbar; switch through a nether marker
             ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).showMarker(MapManager.live().markers.get(3)));
             ctx.waitTicks(5);
-            ctx.takeScreenshot("dims_6_nether_marker");
+            String nether = ctx.computeOnClient(mc -> ((MapScreen) mc.gui.screen()).shownDimension());
+            ctx.takeScreenshot("list_dim_nether");
+            System.out.println("[list dim] overworld=" + over + " switched to=" + nether);
+            if (!NETHER.equals(nether)) {
+                throw new AssertionError("dimension did not switch: " + nether);
+            }
         }
     }
 
@@ -100,18 +83,5 @@ public class ListDimensionsTest implements FabricClientGameTest {
         r.dim = dim;
         r.pts = new double[]{x1, z1, x2, z1, x2, z2, x1, z2};
         return r;
-    }
-
-    private static void click(ClientGameTestContext ctx, TestInput input, int gy) {
-        int[] p = ctx.computeOnClient(mc -> {
-            int s = mc.getWindow().getGuiScale();
-            int w = mc.gui.screen().width;
-            int lw = Math.max(130, Math.min(180, w / 4));
-            return new int[]{(34 + 4 + (lw - 8) / 2) * s, gy * s};
-        });
-        input.setCursorPos(p[0], p[1]);
-        ctx.waitTicks(2);
-        input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
-        ctx.waitTicks(2);
     }
 }
