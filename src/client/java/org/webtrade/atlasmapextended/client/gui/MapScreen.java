@@ -449,6 +449,10 @@ public class MapScreen extends Screen {
             tooltip = Component.literal(hovered.name.isEmpty() ? T.s("marker.unnamed") : hovered.name)
                     .append(Component.literal("  " + hovered.x + ", " + hovered.y + ", " + hovered.z).withColor(0xFFAAAAAA));
         }
+        if (session.isLive() && mc.level != null
+                && !dim.equals(mc.level.dimension().location().toString())) {
+            MapManager.rememberView(dim, view.cx, view.cz, view.zoom);
+        }
     }
 
     private void vignette(GuiGraphics g) {
@@ -1827,12 +1831,21 @@ public class MapScreen extends Screen {
                     n++;
                 }
             }
-            if (n > 0) {
+            double[] remembered = MapManager.remoteView(d);
+            double[] pos = remembered != null ? remembered : session.meta.posFor(d);
+            if (pos != null) {
+                view.cx = pos[0];
+                view.cz = pos[1];
+                if (remembered != null) {
+                    Float z = MapManager.remoteZoom(d);
+                    if (z != null) {
+                        view.zoom = z;
+                    }
+                }
+            } else if (n > 0) {
                 view.cx = sx / n;
                 view.cz = sz / n;
             } else {
-                // No markers: jump to where this dimension was actually explored, otherwise
-                // the view stays at 0,0 and a base far away looks like a blank map.
                 double[] c = session.layer(d).center();
                 view.cx = c != null ? c[0] : 0;
                 view.cz = c != null ? c[1] : 0;
