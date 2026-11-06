@@ -10,6 +10,7 @@
   "key.atlasmapextended.editor": "Редактор рисунков (на карте)",
   "key.atlasmapextended.toggle_drawings": "Показать/скрыть рисунки (на карте)",
   "atlasmapextended.map.title": "Карта мира",
+  "atlasmapextended.map.last_seen": "Вы были тут последний раз",
   "atlasmapextended.field.name": "Название",
   "atlasmapextended.field.name_hint": "Введите название…",
   "atlasmapextended.field.desc": "Описание",
