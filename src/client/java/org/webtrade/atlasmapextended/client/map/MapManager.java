@@ -14,6 +14,8 @@ import org.webtrade.atlasmapextended.client.gui.T;
 import org.webtrade.atlasmapextended.client.data.WorldMeta;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Owns the map session of the world the player is currently in and keeps it up to date. */
 public final class MapManager {
@@ -21,8 +23,8 @@ public final class MapManager {
 
     private static MapSession live;
     private static String liveDim;
-    private static String lastRegion;
-    private static String lastRegionName;
+    /** Regions the player is currently inside (id → display name). */
+    private static final Map<String, String> insideRegions = new HashMap<>();
     private static final LongLinkedOpenHashSet queue = new LongLinkedOpenHashSet();
     private static int ticks;
 
@@ -43,8 +45,7 @@ public final class MapManager {
         live = MapSession.open(meta);
         live.live = true;
         liveDim = null;
-        lastRegion = null;
-        lastRegionName = null;
+        insideRegions.clear();
         queue.clear();
         live.saveMeta();
     }
@@ -64,8 +65,7 @@ public final class MapManager {
             live = null;
         }
         liveDim = null;
-        lastRegion = null;
-        lastRegionName = null;
+        insideRegions.clear();
         queue.clear();
     }
 
@@ -93,8 +93,7 @@ public final class MapManager {
         int pcz = mc.player.getBlockZ() >> 4;
         if (!dim.equals(liveDim)) {
             liveDim = dim;
-            lastRegion = null;
-            lastRegionName = null;
+            insideRegions.clear();
             queue.clear();
             int r = mc.options.getEffectiveRenderDistance();
             enqueueAround(pcx, pcz, r);
@@ -104,24 +103,26 @@ public final class MapManager {
             enqueueAround(pcx, pcz, 2);
         }
         if (ticks % 10 == 0) {
-            Region inside = null;
+            // track the whole set, not just one region: with nested regions the player can be
+            // inside several at once, and only the actual boundary crossings must be announced
+            Map<String, String> now = new HashMap<>();
             for (Region r : live.regions(dim)) {
                 if (!r.hidden && r.dim.equals(dim) && r.contains(mc.player.getX(), mc.player.getZ())) {
-                    inside = r;
-                    break;
+                    now.put(r.id, r.name == null || r.name.isBlank() ? "Region" : r.name);
                 }
             }
-            if (inside != null) {
-                if (!inside.id.equals(lastRegion)) {
-                    lastRegion = inside.id;
-                    lastRegionName = inside.name == null || inside.name.isBlank() ? "Region" : inside.name;
-                    RegionToast.show(T.s("region.enter_title"), lastRegionName);
+            for (Map.Entry<String, String> e : insideRegions.entrySet()) {
+                if (!now.containsKey(e.getKey())) {
+                    RegionToast.show(T.s("region.exit_title"), e.getValue());
                 }
-            } else if (lastRegion != null) {
-                RegionToast.show(T.s("region.exit_title"), lastRegionName);
-                lastRegion = null;
-                lastRegionName = null;
             }
+            for (Map.Entry<String, String> e : now.entrySet()) {
+                if (!insideRegions.containsKey(e.getKey())) {
+                    RegionToast.show(T.s("region.enter_title"), e.getValue());
+                }
+            }
+            insideRegions.clear();
+            insideRegions.putAll(now);
         }
 
         MapLayer layer = live.layer(dim);

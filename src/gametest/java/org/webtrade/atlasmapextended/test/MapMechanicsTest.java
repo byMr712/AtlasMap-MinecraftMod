@@ -235,6 +235,37 @@ public class MapMechanicsTest implements FabricClientGameTest {
         r.pts = new double[]{0, 0, 20, 0, 10, 20};
         check(r.contains(10, 10), "triangle contains");
         check(!r.contains(1, 18), "triangle outside");
+
+        Region big = new Region();
+        big.name = "Big";
+        big.dim = "minecraft:overworld";
+        big.pts = new double[]{-100, -100, 100, -100, 100, 100, -100, 100};
+        Region small = new Region();
+        small.name = "Small";
+        small.dim = "minecraft:overworld";
+        small.pts = new double[]{-10, -10, 10, -10, 10, 10, -10, 10};
+        check(Math.abs(big.area() - 40_000) < 0.001, "region area big");
+        check(Math.abs(small.area() - 400) < 0.001, "region area small");
+        List<Region> outerFirst = List.of(big, small);
+        List<Region> innerFirst = List.of(small, big);
+        check(Region.innermostAt(outerFirst, "minecraft:overworld", 0, 0) == small, "innermost: outer created first");
+        check(Region.innermostAt(innerFirst, "minecraft:overworld", 0, 0) == small, "innermost: inner created first");
+        check(Region.innermostAt(outerFirst, "minecraft:overworld", 90, 90) == big, "innermost: only the big one");
+        check(Region.innermostAt(outerFirst, "minecraft:overworld", 500, 500) == null, "innermost: outside");
+        check(Region.innermostAt(outerFirst, "minecraft:the_nether", 0, 0) == null, "innermost: other dimension");
+        small.hidden = true;
+        check(Region.innermostAt(outerFirst, "minecraft:overworld", 0, 0) == big, "innermost: hidden is skipped");
+
+        // the same rule must apply to map clicks: a click inside the nested region picks it
+        small.hidden = false;
+        MapView view = new MapView();
+        view.setRect(0, 0, 100, 100);
+        view.cx = 0;
+        view.cz = 0;
+        view.zoom = 1;
+        check(view.regionAt(outerFirst, "minecraft:overworld", 50, 50) == small, "regionAt: nested wins");
+        check(view.regionAt(outerFirst, "minecraft:overworld", 90, 50) == big, "regionAt: outer area");
+        check(view.regionAt(innerFirst, "minecraft:overworld", 50, 50) == small, "regionAt: nested wins (other order)");
     }
 
     private void persistence() {
