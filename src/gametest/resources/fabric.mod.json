@@ -8,7 +8,8 @@
     "fabric-client-gametest": [
       "org.webtrade.atlasmapextended.test.MapClientGameTest",
       "org.webtrade.atlasmapextended.test.ThumbnailShots",
-      "org.webtrade.atlasmapextended.test.MapMechanicsTest"
+      "org.webtrade.atlasmapextended.test.MapMechanicsTest",
+      "org.webtrade.atlasmapextended.test.ListHeaderClickTest"
     ]
   },
   "depends": {
