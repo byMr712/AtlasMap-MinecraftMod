@@ -1812,8 +1812,16 @@ public class MapScreen extends Screen {
                     n++;
                 }
             }
-            view.cx = n > 0 ? sx / n : 0;
-            view.cz = n > 0 ? sz / n : 0;
+            if (n > 0) {
+                view.cx = sx / n;
+                view.cz = sz / n;
+            } else {
+                // No markers: jump to where this dimension was actually explored, otherwise
+                // the view stays at 0,0 and a base far away looks like a blank map.
+                double[] c = session.layer(d).center();
+                view.cx = c != null ? c[0] : 0;
+                view.cz = c != null ? c[1] : 0;
+            }
         }
     }
 
