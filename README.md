@@ -1,6 +1,12 @@
 > **Language:** Русский · [English](README.en.md)
 
-### AtlasMapExtended
+<div align="center">
+
+  <img width="150" alt="Логотип AtlasMapExtended" src="images/icon.png">
+  <h3>AtlasMapExtended</h3>
+
+</div>
+
 ![Java 25+](https://img.shields.io/badge/Java-25+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.1.1-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
