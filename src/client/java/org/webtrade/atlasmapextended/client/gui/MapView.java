@@ -483,6 +483,14 @@ public class MapView {
         return null;
     }
 
+    /** Non-clickable "you were here" pin. Returns true when the cursor is over it. */
+    public boolean drawLastSeen(GuiGraphics g, double px, double pz, int size, double mx, double my) {
+        int x = Math.round(sx(px)) - size / 2;
+        int y = Math.round(sy(pz)) - size / 2;
+        Paper.icon(g, Paper.tool("target"), x, y, size);
+        return Paper.inside(mx, my, x, y, size, size);
+    }
+
     public void drawPlayer(GuiGraphics g, double px, double pz, float yaw, int size) {
         float sx = sx(px);
         float sy = sy(pz);

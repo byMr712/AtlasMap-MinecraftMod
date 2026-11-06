@@ -241,6 +241,17 @@ public class MapScreen extends Screen {
         setListOpen(true);
     }
 
+    /** Switches the shown dimension (also used by the client gametest). */
+    public void showDimension(String d) {
+        switchDim(d);
+    }
+
+    /** View centre and zoom (used by the client gametest). */
+    public double[] viewCenter() {
+        return new double[]{view.cx, view.cz, view.zoom};
+    }
+
+
     /** Dimension currently shown on the map and in the object list (used by the client gametest). */
     public String shownDimension() {
         return dim;
@@ -671,6 +682,15 @@ public class MapScreen extends Screen {
         if (hovered != null && overlay == Overlay.NONE) {
             tooltip = Component.literal(hovered.name.isEmpty() ? T.s("marker.unnamed") : hovered.name)
                     .append(Component.literal("  " + hovered.x + ", " + hovered.y + ", " + hovered.z).withColor(0xFFAAAAAA));
+        }
+        if (session.isLive() && mc.level != null
+                && !dim.equals(mc.level.dimension().location().toString())) {
+            double[] last = session.meta.posFor(dim);
+            if (last != null && overlay == Overlay.NONE
+                    && view.drawLastSeen(g, last[0], last[1], 16, mx, my)) {
+                tooltip = T.tr("map.last_seen");
+            }
+            MapManager.rememberView(dim, view.cx, view.cz, view.zoom);
         }
     }
 
@@ -2441,8 +2461,26 @@ public class MapScreen extends Screen {
                     n++;
                 }
             }
-            view.cx = n > 0 ? sx / n : 0;
-            view.cz = n > 0 ? sz / n : 0;
+            double[] remembered = MapManager.remoteView(d);
+            double[] pos = remembered != null ? remembered : session.meta.posFor(d);
+            if (pos != null) {
+                view.cx = pos[0];
+                view.cz = pos[1];
+                if (remembered != null) {
+                    Float z = MapManager.remoteZoom(d);
+                    if (z != null) {
+                        view.zoom = z;
+                    }
+                }
+            } else if (n > 0) {
+                view.cx = sx / n;
+                view.cz = sz / n;
+            } else {
+                // No markers: jump to where this dimension was actually explored.
+                double[] c = session.layer(d).center();
+                view.cx = c != null ? c[0] : 0;
+                view.cz = c != null ? c[1] : 0;
+            }
         }
     }
 
