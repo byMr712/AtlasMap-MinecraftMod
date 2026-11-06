@@ -11,7 +11,8 @@
     "MinecraftMixin",
     "OptionsMixin",
     "ScreenAccessor",
-    "TitleScreenMixin"
+    "TitleScreenMixin",
+    "KeyMappingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
