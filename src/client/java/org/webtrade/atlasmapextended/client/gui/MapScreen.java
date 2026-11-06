@@ -86,7 +86,7 @@ public class MapScreen extends Screen {
 
     private enum Panel { NONE, VIEW, EDIT }
 
-    private enum Overlay { NONE, ICONS, COLOR, PICKER, VIEWER, CONFIRM, DIMS, REGION }
+    private enum Overlay { NONE, ICONS, COLOR, PICKER, VIEWER, CONFIRM, DIMS, REGION, REGION_COLOR }
 
     private record Hit(int x, int y, int w, int h, Runnable left, Runnable right) {
     }
@@ -105,6 +105,8 @@ public class MapScreen extends Screen {
     private Tool tool = Tool.NONE;
     private DrawTool drawTool = DrawTool.PEN;
     private int colorIdx = PAL_COLS;
+    private int regionColorIdx = PAL_COLS;
+    private boolean regionFill = true;
     private int widthIdx = 1;
     private Stroke current;
     private List<Stroke> erased;
@@ -170,6 +172,8 @@ public class MapScreen extends Screen {
     private double iconScroll;
     private Marker colorTarget;
     private String colorIcon = "pin";
+    private Marker colorMarker;
+    private Region colorRegion;
     private EditBox iconSearch;
 
     // widgets
@@ -520,6 +524,7 @@ public class MapScreen extends Screen {
             switch (overlay) {
                 case ICONS -> drawIconPicker(g, mx, my);
                 case COLOR -> drawColorPicker(g, mx, my);
+                case REGION_COLOR -> drawRegionColorPicker(g, mx, my);
                 case PICKER -> drawShotPicker(g, mx, my);
                 case VIEWER -> drawViewer(g, mx, my);
                 case CONFIRM -> drawConfirm(g, mx, my);
@@ -639,7 +644,8 @@ public class MapScreen extends Screen {
         if (current != null) {
             view.drawStroke(g, current, 1f);
         }
-        view.drawRegionLabels(g, font, regionsForDisplay(), dim);
+        view.drawRegionLabels(g, font, regionsForDisplay(), dim,
+                regionMode ? selectedRegionId : null);
         if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
             Paper.outline(g, mx - 6, my - 6, 12, 12, Paper.RED);
         }
@@ -692,6 +698,7 @@ public class MapScreen extends Screen {
             preview.name = r.name;
             preview.description = r.description;
             preview.color = working.color;
+            preview.filled = workingRegion != null ? workingRegion.filled : r.filled;
             preview.dim = r.dim;
             preview.pts = r.pts;
             preview.hidden = r.hidden;
@@ -802,7 +809,7 @@ public class MapScreen extends Screen {
         items.add(new Object[]{"list", T.tr("tool.list", keyName(ModKeys.MARKER_LIST)), listOpen, (Runnable) this::toggleList});
         items.add(new Object[]{"ruler", T.tr("tool.ruler", keyName(ModKeys.RULER)), tool == Tool.RULER, (Runnable) () -> setTool(tool == Tool.RULER ? Tool.NONE : Tool.RULER)});
         items.add(new Object[]{"quill", T.tr("tool.editor", keyName(ModKeys.EDITOR)), tool == Tool.DRAW, (Runnable) () -> setTool(tool == Tool.DRAW ? Tool.NONE : Tool.DRAW)});
-        items.add(new Object[]{"region", T.tr("tool.regions"), tool == Tool.REGION, (Runnable) () -> setTool(tool == Tool.REGION ? Tool.NONE : Tool.REGION)});
+        items.add(new Object[]{"region", regionTooltip(), tool == Tool.REGION, (Runnable) () -> setTool(tool == Tool.REGION ? Tool.NONE : Tool.REGION)});
         items.add(new Object[]{cfg.drawingsVisible ? "eye" : "eye_off", T.tr(cfg.drawingsVisible ? "tool.hide_drawings" : "tool.show_drawings", keyName(ModKeys.TOGGLE_DRAWINGS)), !cfg.drawingsVisible, (Runnable) this::toggleDrawings});
         items.add(new Object[]{"marker:pin", T.tr(cfg.markersVisible ? "tool.hide_markers" : "tool.show_markers"), !cfg.markersVisible, (Runnable) () -> {
             cfg.markersVisible = !cfg.markersVisible;
@@ -845,6 +852,16 @@ public class MapScreen extends Screen {
         }
     }
 
+    /** The region tooltip: a title plus a one-sentence explanation. */
+    private static Component regionTooltip() {
+        return Component.literal(T.s("tool.regions"))
+                .append(Component.literal("\n" + T.s("tool.regions.tip")).withColor(0xFF9A9A9A));
+    }
+
+    private static String onOff(boolean value) {
+        return T.s(value ? "on" : "off");
+    }
+
     private static final int DRAW_BAR_W = PAL_COLS * 11 + 15;
     private static final int DRAW_BAR_H = 64;
 
@@ -856,8 +873,8 @@ public class MapScreen extends Screen {
 
     /** The region tool's top bar: freehand (default), rectangle and circle presets. */
     private void drawRegionBar(GuiGraphics g, int mx, int my) {
-        int w = 76;
-        int h = 28;
+        int w = DRAW_BAR_W;
+        int h = DRAW_BAR_H + 22;
         int x = (freeLeft() + freeRight()) / 2 - w / 2;
         int y = 6;
         Paper.panel(g, x, y, w, h);
@@ -868,7 +885,7 @@ public class MapScreen extends Screen {
         String[] icons = {"pen", "rect", "circle"};
         String[] tips = {"region.freehand", "region.rect", "region.circle"};
         for (int i = 0; i < shapes.length; i++) {
-            int bx = x + 5 + i * 22;
+            int bx = x + 7 + i * 22;
             boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, bx, y + 5, 18, 18);
             Paper.iconButton(g, Paper.tool(icons[i]), bx, y + 5, 18, hover, regionShape == shapes[i]);
             if (hover) {
@@ -877,6 +894,24 @@ public class MapScreen extends Screen {
             RegionShape shape = shapes[i];
             hit(bx, y + 5, 18, 18, () -> regionShape = shape);
         }
+        int py = y + 28;
+        for (int i = 0; i < COLORS.length; i++) {
+            int idx = i;
+            int sx = x + 8 + (i % PAL_COLS) * 11;
+            int sy = py + (i / PAL_COLS) * 11;
+            g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
+            g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
+            if (regionColorIdx == i) {
+                Paper.outline(g, sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                Paper.outline(g, sx - 1, sy - 1, 11, 11, Paper.GOLD);
+            }
+            hit(sx - 1, sy - 1, 11, 11, () -> regionColorIdx = idx);
+        }
+        int bw = PAL_COLS * 11;
+        int by = py + 3 * 11 + 3;
+        boolean hf = overlay == Overlay.NONE && Paper.inside(mx, my, x + 8, by, bw, 16);
+        Paper.button(g, font, T.tr("region.fill", onOff(regionFill)), x + 8, by, bw, 16, hf, true);
+        hit(x + 8, by, bw, 16, () -> regionFill = !regionFill);
     }
 
     /** Tool selector, line widths and the 60 colour palette. Shared by the map editor and the screenshot editor. */
@@ -1892,6 +1927,62 @@ public class MapScreen extends Screen {
         }
         overlay = Overlay.NONE;
         Paper.click();
+    }
+
+    /** Opens the compact colour chooser used by the region settings. */
+    private void openRegionColors(Marker target, Region region) {
+        colorMarker = target;
+        colorRegion = region;
+        overlay = Overlay.REGION_COLOR;
+        Paper.click();
+    }
+
+    private void applyRegionColor(int color) {
+        if (colorMarker != null) {
+            colorMarker.color = color;
+        }
+        overlay = Overlay.NONE;
+        Paper.click();
+    }
+
+    /** Small centred palette without the drawing controls. */
+    private void drawRegionColorPicker(GuiGraphics g, int mx, int my) {
+        blocker(() -> overlay = Overlay.NONE);
+        g.fill(0, 0, width, height, Paper.DIM);
+        int ow = PAL_COLS * 11 + 16;
+        int oh = 80;
+        int ox = (width - ow) / 2;
+        int oy = (height - oh) / 2;
+        Paper.panel(g, ox, oy, ow, oh);
+        hit(ox, oy, ow, oh, () -> {
+        });
+        Paper.title(g, font, T.s("region.color"), ox + ow / 2, oy + 7);
+        boolean hc = Paper.inside(mx, my, ox + ow - 18, oy + 5, 13, 13);
+        Paper.iconButton(g, Paper.tool("close"), ox + ow - 18, oy + 5, 13, hc, false);
+        hit(ox + ow - 18, oy + 5, 13, 13, () -> overlay = Overlay.NONE);
+
+        int current = colorMarker == null ? 0 : colorMarker.color;
+        int py = oy + 22;
+        for (int i = 0; i < COLORS.length; i++) {
+            int sx = ox + 8 + (i % PAL_COLS) * 11;
+            int sy = py + (i / PAL_COLS) * 11;
+            g.fill(sx - 1, sy - 1, sx + 10, sy + 10, Paper.INK);
+            g.fill(sx, sy, sx + 9, sy + 9, COLORS[i]);
+            if ((COLORS[i] & 0xFFFFFF) == (current & 0xFFFFFF)) {
+                Paper.outline(g, sx - 2, sy - 2, 13, 13, Paper.GOLD_LIGHT);
+                Paper.outline(g, sx - 1, sy - 1, 11, 11, Paper.GOLD);
+            }
+            int c = COLORS[i];
+            hit(sx - 1, sy - 1, 11, 11, () -> applyRegionColor(c));
+        }
+        if (colorRegion != null) {
+            int bw = PAL_COLS * 11;
+            int by = py + 3 * 11 + 3;
+            boolean hf = Paper.inside(mx, my, ox + 8, by, bw, 16);
+            Paper.button(g, font, T.tr("region.fill", onOff(colorRegion.filled)),
+                    ox + 8, by, bw, 16, hf, true);
+            hit(ox + 8, by, bw, 16, () -> colorRegion.filled = !colorRegion.filled);
+        }
     }
 
     private void openPicker() {
@@ -2968,6 +3059,9 @@ public class MapScreen extends Screen {
             regionCurrentWZ = view.wz(my);
             pts = shapePoints();
         }
+        if (regionShape == RegionShape.FREEHAND && Region.selfIntersects(pts)) {
+            pts = Region.convexHull(pts);
+        }
         regionPoints.clear();
         if (pts.length < 6) {
             return;
@@ -2982,7 +3076,8 @@ public class MapScreen extends Screen {
         }
         Region r = new Region();
         r.name = T.s("region.default_name", session.regions(dim).size() + 1);
-        r.color = COLORS[colorIdx];
+        r.color = COLORS[regionColorIdx];
+        r.filled = regionFill;
         r.dim = dim;
         r.pts = pts;
         session.regions(dim).add(r);
@@ -3272,17 +3367,13 @@ public class MapScreen extends Screen {
         y += 22;
 
         g.drawString(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
-        int sw = 14;
-        int sy = y + 9;
-        for (int i = 0; i < 10; i++) {
-            int col = COLORS[Math.min(COLORS.length - 1, i * 6)];
-            int sx = cx + i * (sw + 4);
-            g.fill(sx, sy, sx + sw, sy + sw, col);
-            boolean sel = (working.color & 0xFFFFFF) == (col & 0xFFFFFF);
-            Paper.outline(g, sx, sy, sw, sw, sel ? Paper.GOLD : Paper.INK);
-            hit(sx, sy, sw, sw, () -> working.color = col);
-        }
-        y = sy + sw + 8;
+        int by = y + 9;
+        boolean hcol = overlay == Overlay.NONE && Paper.inside(mx, my, cx, by, cw, 16);
+        Paper.button(g, font, T.tr("region.set_color"), cx, by, cw, 16, hcol, true);
+        g.fill(cx + cw - 18, by + 2, cx + cw - 6, by + 14, working.color);
+        Paper.outline(g, cx + cw - 18, by + 2, 12, 12, Paper.INK);
+        hit(cx, by, cw, 16, () -> openRegionColors(working, workingRegion));
+        y = by + 16 + 8;
 
         g.drawString(font, T.tr("field.desc"), cx, y, Paper.INK_SOFT, false);
         y += 10;
@@ -3379,8 +3470,8 @@ public class MapScreen extends Screen {
     private void drawRegionEditor(GuiGraphics g, int mx, int my) {
         blocker(this::cancelRegion);
         g.fill(0, 0, width, height, Paper.DIM);
-        int ow = Math.min(250, width - 20);
-        int oh = 126;
+        int ow = Math.min(262, width - 20);
+        int oh = 134;
         int ox = (width - ow) / 2;
         int oy = (height - oh) / 2;
         Paper.panel(g, ox, oy, ow, oh);
@@ -3399,19 +3490,6 @@ public class MapScreen extends Screen {
         regionNameBox.render(g, mx, my, 0);
         y += 22;
 
-        g.drawString(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
-        int sw = 14;
-        int sy = y + 9;
-        for (int i = 0; i < 10; i++) {
-            int col = COLORS[Math.min(COLORS.length - 1, i * 6)];
-            int sx = cx + i * (sw + 4);
-            g.fill(sx, sy, sx + sw, sy + sw, col);
-            boolean sel = (editingRegion.color & 0xFFFFFF) == (col & 0xFFFFFF);
-            Paper.outline(g, sx, sy, sw, sw, sel ? Paper.GOLD : Paper.INK);
-            hit(sx, sy, sw, sw, () -> editingRegion.color = col);
-        }
-        y = sy + sw + 8;
-
         int bw = (cw - 8) / 3;
         boolean hs = Paper.inside(mx, my, cx, y, bw, 14);
         Paper.button(g, font, T.tr("button.save"), cx, y, bw, 14, hs, true);
@@ -3422,6 +3500,26 @@ public class MapScreen extends Screen {
         boolean hd = Paper.inside(mx, my, cx + 2 * (bw + 4), y, bw, 14);
         Paper.button(g, font, T.tr("button.delete"), cx + 2 * (bw + 4), y, bw, 14, hd, true);
         hit(cx + 2 * (bw + 4), y, bw, 14, this::deleteRegion);
+
+        y += 14 + 8;
+        g.drawString(font, T.tr("region.color"), cx, y, Paper.INK_SOFT, false);
+        int sy = y + 10;
+        for (int i = 0; i < COLORS.length; i++) {
+            int idx = i;
+            int sx = cx + (i % PAL_COLS) * 11;
+            int py2 = sy + (i / PAL_COLS) * 11;
+            g.fill(sx - 1, py2 - 1, sx + 10, py2 + 10, Paper.INK);
+            g.fill(sx, py2, sx + 9, py2 + 9, COLORS[i]);
+            boolean sel = (editingRegion.color & 0xFFFFFF) == (COLORS[i] & 0xFFFFFF);
+            if (sel) {
+                Paper.outline(g, sx - 2, py2 - 2, 13, 13, Paper.GOLD_LIGHT);
+                Paper.outline(g, sx - 1, py2 - 1, 11, 11, Paper.GOLD);
+            }
+            hit(sx - 1, py2 - 1, 11, 11, () -> {
+                regionColorIdx = idx;
+                editingRegion.color = COLORS[idx];
+            });
+        }
     }
 
     private void onMapClick(double mx, double my, int button) {        Marker hit = cfg.markersVisible ? view.markerAt(session.markers, dim, mx, my, 16) : null;
