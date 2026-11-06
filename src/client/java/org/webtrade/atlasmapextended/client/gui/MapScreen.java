@@ -480,6 +480,7 @@ public class MapScreen extends Screen {
         this.mouseY = my;
         hits.clear();
         toolHits.clear();
+        toolHits.clear();
         scrolls.clear();
         uiRects.clear();
         modalStart = -1;
