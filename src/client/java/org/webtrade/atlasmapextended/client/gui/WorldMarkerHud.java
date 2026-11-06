@@ -23,7 +23,6 @@ import java.util.Map;
 /** Draws marker icons over the game world while playing. */
 public final class WorldMarkerHud {
     private static final int ICON_SIZE = 20;
-    private static final double FADE_RADIUS_SQ = 5.0 * 5.0;
     private static final double HOVER_RADIUS_SQ = (ICON_SIZE / 2.0 + 3) * (ICON_SIZE / 2.0 + 3);
     private static final long TEXTURE_TTL_TICKS = 100;
 
@@ -125,14 +124,6 @@ public final class WorldMarkerHud {
             if (sx < -ICON_SIZE || sx > sw + ICON_SIZE || sy < -ICON_SIZE || sy > sh + ICON_SIZE) {
                 continue;
             }
-            int alpha = dx * dx + dy * dy + dz * dz <= FADE_RADIUS_SQ ? 128 : 255;
-            IconEntry icon = iconEntry(m.icon, m.color != 0, now);
-            icon.uses++;
-            icon.lastUsed = now;
-            int tint = m.color == 0 ? alpha << 24 | 0xFFFFFF : Paper.a(m.color, alpha);
-            Paper.icon(g, icon.texture, sx - ICON_SIZE / 2, sy - ICON_SIZE / 2, ICON_SIZE, tint);
-            drawn++;
-
             int hx = sx - crossX;
             int hy = sy - crossY;
             double hoverDist = hx * hx + hy * hy;
@@ -142,6 +133,60 @@ public final class WorldMarkerHud {
                 hoverX = sx;
                 hoverY = sy;
             }
+        }
+
+        for (Marker m : session.markers) {
+            if (m.hidden || !m.dim.equals(dim)) {
+                continue;
+            }
+            double dx = m.x + 0.5 - eye.x;
+            double dy = m.y + 1.0 - eye.y;
+            double dz = m.z + 0.5 - eye.z;
+            if (dx * dx + dz * dz > renderDistanceSq || !mc.level.hasChunk(m.x >> 4, m.z >> 4)) {
+                continue;
+            }
+            if (dx * forward.x() + dy * forward.y() + dz * forward.z() <= 0) {
+                continue;
+            }
+            POINT.set((float) dx, (float) dy, (float) dz);
+            PROJECTION.transformProject(POINT);
+            if (POINT.z < -1 || POINT.z > 1) {
+                continue;
+            }
+            int sx = Math.round((POINT.x + 1) * 0.5f * sw);
+            int sy = Math.round((1 - POINT.y) * 0.5f * sh);
+            if (sx < -ICON_SIZE || sx > sw + ICON_SIZE || sy < -ICON_SIZE || sy > sh + ICON_SIZE) {
+                continue;
+            }
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            int alpha = 178;
+            if (m == hovered) {
+                alpha = 128;
+            }
+            if (distance < 5.0) {
+                double t = Math.max(0, Math.min(1, (distance - 1.0) / 4.0));
+                int near = (int) Math.round(102 + (178 - 102) * t);
+                if (distance < 1.0) {
+                    double close = Math.max(0, distance);
+                    near = (int) Math.round(20 + (near - 20) * close);
+                }
+                alpha = Math.min(alpha, near);
+            }
+            double scale;
+            if (distance <= 10.0) {
+                scale = 0.65;
+            } else if (distance >= 40.0) {
+                scale = 1.0;
+            } else {
+                scale = 0.65 + 0.35 * (distance - 10.0) / 30.0;
+            }
+            int iconSize = (int) Math.round(ICON_SIZE * scale);
+            IconEntry icon = iconEntry(m.icon, m.color != 0, now);
+            icon.uses++;
+            icon.lastUsed = now;
+            int tint = m.color == 0 ? alpha << 24 | 0xFFFFFF : Paper.a(m.color, alpha);
+            Paper.icon(g, icon.texture, sx - iconSize / 2, sy - iconSize / 2, iconSize, tint);
+            drawn++;
         }
         if (hovered != null) {
             drawName(g, mc.font, hovered, hoverX, hoverY, sw, sh);

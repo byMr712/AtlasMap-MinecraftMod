@@ -331,28 +331,53 @@ public class MapView {
         int outline = rgb | 0xFF000000;
 
         // scanline fill so the polygon follows the parchment look without a custom render type
-        int y0 = Math.max(y, (int) Math.floor(minY));
-        int y1 = Math.min(y + h - 1, (int) Math.ceil(maxY));
-        float[] cross = new float[n];
-        for (int yy = y0; yy <= y1; yy++) {
-            float cy = yy + 0.5f;
-            int count = 0;
-            for (int i = 0, j = n - 1; i < n; j = i++) {
-                float yi = ys[i];
-                float yj = ys[j];
-                if ((yi > cy) != (yj > cy)) {
-                    cross[count++] = xs[i] + (cy - yi) / (yj - yi) * (xs[j] - xs[i]);
+        if (r.filled) {
+            int y0 = Math.max(y, (int) Math.floor(minY));
+            int y1 = Math.min(y + h - 1, (int) Math.ceil(maxY));
+            float[] cross = new float[n];
+            int[] dir = new int[n];
+            for (int yy = y0; yy <= y1; yy++) {
+                float cy = yy + 0.5f;
+                int count = 0;
+                for (int i = 0, j = n - 1; i < n; j = i++) {
+                    float yi = ys[i];
+                    float yj = ys[j];
+                    if ((yi > cy) != (yj > cy)) {
+                        cross[count] = xs[i] + (cy - yi) / (yj - yi) * (xs[j] - xs[i]);
+                        dir[count] = yj > yi ? 1 : -1;
+                        count++;
+                    }
                 }
-            }
-            if (count < 2) {
-                continue;
-            }
-            Arrays.sort(cross, 0, count);
-            for (int k = 0; k + 1 < count; k += 2) {
-                int x1 = Math.max(x, (int) Math.floor(cross[k]));
-                int x2 = Math.min(x + w, (int) Math.ceil(cross[k + 1]));
-                if (x2 > x1) {
-                    g.fill(x1, yy, x2, yy + 1, fill);
+                if (count < 2) {
+                    continue;
+                }
+                for (int a = 1; a < count; a++) {
+                    float keyX = cross[a];
+                    int keyDir = dir[a];
+                    int b = a - 1;
+                    while (b >= 0 && cross[b] > keyX) {
+                        cross[b + 1] = cross[b];
+                        dir[b + 1] = dir[b];
+                        b--;
+                    }
+                    cross[b + 1] = keyX;
+                    dir[b + 1] = keyDir;
+                }
+                // Non-zero winding: self-intersections and nested loops fill as one shape.
+                int wind = 0;
+                int spanStart = 0;
+                for (int k = 0; k < count; k++) {
+                    int before = wind;
+                    wind += dir[k];
+                    if (before == 0 && wind != 0) {
+                        spanStart = (int) Math.ceil(cross[k]);
+                    } else if (before != 0 && wind == 0) {
+                        int x1 = Math.max(x, spanStart);
+                        int x2 = Math.min(x + w, (int) Math.ceil(cross[k]));
+                        if (x2 > x1) {
+                            g.fill(x1, yy, x2, yy + 1, fill);
+                        }
+                    }
                 }
             }
         }
@@ -366,28 +391,42 @@ public class MapView {
     }
 
     /** Draws only the region names, so drawings never cover them. */
-    public void drawRegionLabels(GuiGraphicsExtractor g, Font font, List<Region> regions, String dim) {
+    public void drawRegionLabels(GuiGraphicsExtractor g, Font font, List<Region> regions, String dim, String selectedId) {
+        if (zoom < 0.5f) {
+            for (Region r : regions) {
+                if (r.hidden || !r.dim.equals(dim) || r.name.isBlank() || r.pointCount() < 3
+                        || selectedId == null || !r.id.equals(selectedId)) {
+                    continue;
+                }
+                drawRegionLabel(g, font, r);
+            }
+            return;
+        }
         for (Region r : regions) {
             if (r.hidden || !r.dim.equals(dim) || r.name.isBlank() || r.pointCount() < 3) {
                 continue;
             }
-            float minX = Float.MAX_VALUE;
-            float maxX = -Float.MAX_VALUE;
-            float minY = Float.MAX_VALUE;
-            float maxY = -Float.MAX_VALUE;
-            for (int p = 0; p < r.pointCount(); p++) {
-                float px = sx(r.pts[p * 2]);
-                float py = sy(r.pts[p * 2 + 1]);
-                minX = Math.min(minX, px);
-                maxX = Math.max(maxX, px);
-                minY = Math.min(minY, py);
-                maxY = Math.max(maxY, py);
-            }
-            if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
-                continue;
-            }
-            drawRegionName(g, font, r, minX, maxX, minY, maxY);
+            drawRegionLabel(g, font, r);
         }
+    }
+
+    private void drawRegionLabel(GuiGraphicsExtractor g, Font font, Region r) {
+        float minX = Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxY = -Float.MAX_VALUE;
+        for (int p = 0; p < r.pointCount(); p++) {
+            float px = sx(r.pts[p * 2]);
+            float py = sy(r.pts[p * 2 + 1]);
+            minX = Math.min(minX, px);
+            maxX = Math.max(maxX, px);
+            minY = Math.min(minY, py);
+            maxY = Math.max(maxY, py);
+        }
+        if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
+            return;
+        }
+        drawRegionName(g, font, r, minX, maxX, minY, maxY);
     }
 
     private void drawRegionName(GuiGraphicsExtractor g, Font font, Region r,
