@@ -2,6 +2,7 @@ package org.webtrade.atlasmapextended.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import org.webtrade.atlasmapextended.mixin.client.KeyMappingAccessor;
 import net.minecraft.resources.ResourceLocation;
 
 /** All key bindings of the mod. They can be changed in Options → Controls → Key Binds → AtlasMapExtended. */
@@ -32,6 +33,7 @@ public final class ModKeys {
             return new KeyMapping[0];
         }
         registered = true;
+        KeyMappingAccessor.getCategorySortOrder().putIfAbsent(CATEGORY, 1000);
         OPEN_MAP = key("open_map", InputConstants.KEY_M);
         MARKER_LIST = key("marker_list", InputConstants.KEY_J);
         NEW_MARKER = key("new_marker", InputConstants.KEY_B);
