@@ -20,6 +20,12 @@ public class Region {
     public List<String> screenshots = new ArrayList<>();
     public Map<String, List<Stroke>> shotDrawings = new HashMap<>();
 
+    /** Cached bounds/area; dropped by Gson and rebuilt when {@link #pts} is replaced. */
+    private transient double[] bounds;
+    private transient double[] boundsFor;
+    private transient double cachedArea;
+    private transient double[] areaFor;
+
     public int pointCount() {
         return pts.length / 2;
     }
@@ -152,15 +158,51 @@ public class Region {
 
     /** Absolute area of the polygon in square blocks. */
     public double area() {
-        int n = pointCount();
-        if (n < 3) {
-            return 0;
+        if (areaFor != pts) {
+            int n = pointCount();
+            double sum = 0;
+            for (int i = 0, j = n - 1; i < n; j = i++) {
+                sum += pts[j * 2] * pts[i * 2 + 1] - pts[i * 2] * pts[j * 2 + 1];
+            }
+            cachedArea = n < 3 ? 0 : Math.abs(sum) / 2;
+            areaFor = pts;
         }
-        double sum = 0;
-        for (int i = 0, j = n - 1; i < n; j = i++) {
-            sum += pts[j * 2] * pts[i * 2 + 1] - pts[i * 2] * pts[j * 2 + 1];
+        return cachedArea;
+    }
+
+    /**
+     * World bounds {minX, maxX, minZ, maxZ}, cached until {@link #pts} is replaced.
+     * Used to reject off-screen regions and players outside a region in O(1).
+     */
+    public double[] bounds() {
+        if (bounds == null || boundsFor != pts) {
+            int n = pointCount();
+            if (n == 0) {
+                bounds = new double[]{0, 0, 0, 0};
+            } else {
+                double minX = Double.MAX_VALUE;
+                double maxX = -Double.MAX_VALUE;
+                double minZ = Double.MAX_VALUE;
+                double maxZ = -Double.MAX_VALUE;
+                for (int i = 0; i < n; i++) {
+                    double x = pts[i * 2];
+                    double z = pts[i * 2 + 1];
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minZ = Math.min(minZ, z);
+                    maxZ = Math.max(maxZ, z);
+                }
+                bounds = new double[]{minX, maxX, minZ, maxZ};
+            }
+            boundsFor = pts;
         }
-        return Math.abs(sum) / 2;
+        return bounds;
+    }
+
+    /** Cheap rejection test: false means the point is definitely outside the polygon. */
+    public boolean mayContain(double x, double z) {
+        double[] b = bounds();
+        return x >= b[0] && x <= b[1] && z >= b[2] && z <= b[3];
     }
 
     /**
@@ -172,7 +214,7 @@ public class Region {
         Region best = null;
         double bestArea = Double.MAX_VALUE;
         for (Region r : regions) {
-            if (r.hidden || !r.dim.equals(dim) || !r.contains(x, z)) {
+            if (r.hidden || !r.dim.equals(dim) || !r.mayContain(x, z) || !r.contains(x, z)) {
                 continue;
             }
             double area = r.area();
