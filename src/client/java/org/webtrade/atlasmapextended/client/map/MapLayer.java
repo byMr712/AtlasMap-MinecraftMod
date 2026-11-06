@@ -79,6 +79,58 @@ public class MapLayer {
         return (t.getPixel(px, pz) >>> 24) != 0;
     }
 
+    /** Centre of the most recently explored area, or null when this dimension has no tiles. */
+    public double[] center() {
+        Set<Long> keys = new HashSet<>(onDisk);
+        for (MapTile t : tiles.values()) {
+            keys.add(pack(t.rx, t.rz));
+        }
+        if (keys.isEmpty()) {
+            return null;
+        }
+        // Anchor on the freshest tile: that is where the player was last.
+        long anchor = keys.iterator().next();
+        long newest = Long.MIN_VALUE;
+        for (long k : keys) {
+            long stamp = 0L;
+            if (onDisk.contains(k)) {
+                try {
+                    stamp = Files.getLastModifiedTime(tileFile(k)).toMillis();
+                } catch (IOException ignored) {
+                }
+            }
+            if (stamp > newest) {
+                newest = stamp;
+                anchor = k;
+            }
+        }
+        int ax = (int) (anchor >> 32);
+        int az = (int) anchor;
+        // Average the tiles around the anchor so the view lands in the middle of that area,
+        // not on the corner tile. Far-away clusters are ignored on purpose.
+        long sx = 0;
+        long sz = 0;
+        long n = 0;
+        for (long k : keys) {
+            int rx = (int) (k >> 32);
+            int rz = (int) k;
+            if (Math.abs(rx - ax) <= 4 && Math.abs(rz - az) <= 4) {
+                sx += (long) rx * MapTile.SIZE + MapTile.SIZE / 2L;
+                sz += (long) rz * MapTile.SIZE + MapTile.SIZE / 2L;
+                n++;
+            }
+        }
+        if (n == 0) {
+            return new double[]{(long) ax * MapTile.SIZE + MapTile.SIZE / 2.0,
+                    (long) az * MapTile.SIZE + MapTile.SIZE / 2.0};
+        }
+        return new double[]{(double) sx / n, (double) sz / n};
+    }
+
+    private Path tileFile(long k) {
+        return dir.resolve((int) (k >> 32) + "_" + (int) k + ".png");
+    }
+
     /** Returns the tile for rendering, loading it from disk if the per-frame budget allows. */
     public MapTile getForRender(int rx, int rz) {
         long k = pack(rx, rz);
