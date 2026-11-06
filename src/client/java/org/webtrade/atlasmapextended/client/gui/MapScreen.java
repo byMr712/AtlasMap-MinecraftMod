@@ -2455,17 +2455,24 @@ public class MapScreen extends Screen {
         Paper.pageTurn();
     }
 
+    /**
+     * Marker Y: two blocks above the surface when the chunk is really loaded,
+     * otherwise 70. Empty/uninitialised client chunks report {@code minY - 1} from
+     * the heightmap, so the raw height is only trusted when it is above minY.
+     */
     private int surfaceY(int x, int z) {
         Minecraft mc = Minecraft.getInstance();
-        if (session.isLive() && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())) {
-            if (mc.level.hasChunk(x >> 4, z >> 4) && !mc.level.dimensionType().hasCeiling()) {
-                return mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
-            }
-            if (mc.player != null) {
-                return mc.player.getBlockY();
+        // hasChunk() answers true for any coordinate: the client chunk cache hands out a
+        // shared empty chunk for chunks outside the view. getChunkNow() returns null there.
+        if (session.isLive() && mc.level != null && dim.equals(mc.level.dimension().identifier().toString())
+                && !mc.level.dimensionType().hasCeiling()
+                && mc.level.getChunkSource().getChunkNow(x >> 4, z >> 4) != null) {
+            int h = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+            if (h > mc.level.getMinY()) {
+                return h + 2;
             }
         }
-        return 64;
+        return 70;
     }
 
     private void openView(Marker m, boolean center) {
@@ -2985,6 +2992,13 @@ public class MapScreen extends Screen {
         }
         if (markerDrag) {
             markerDrag = false;
+            // recompute Y once, when the drag ends: the moved marker sits on the surface
+            // of the new column, or at 70 when that chunk is not loaded
+            if (working != null && selected != null
+                    && (working.x != selected.x || working.z != selected.z)) {
+                working.y = surfaceY(working.x, working.z);
+                yBox.setValue(Integer.toString(working.y));
+            }
             return true;
         }
         if (!pressed) {
