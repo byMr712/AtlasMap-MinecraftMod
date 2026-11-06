@@ -2,8 +2,8 @@
 
 <div align="center">
 
-  <img width="150" alt="Логотип AtlasMapExtended" src="images/icon.png">
-  <h3>AtlasMapExtended</h3>
+  <img width="150" alt="Логотип Atlas Map (Extended)" src="images/icon.png">
+  <h3>Atlas Map (Extended)</h3>
 
 </div>
 
