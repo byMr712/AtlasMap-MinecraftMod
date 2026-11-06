@@ -494,32 +494,64 @@ public class MapView {
         }
     }
 
+    /**
+     * Anti-aliased line: every pixel inside the segment's bounding box gets coverage from its
+     * distance to the segment, so thin outlines are smooth on small views such as the minimap.
+     */
     private void line(int[] pixels, float x1, float y1, float x2, float y2, float width, int color) {
+        float half = Math.max(0.55f, width / 2f);
+        float pad = half + 1f;
+        int bx0 = Math.max(0, (int) Math.floor(Math.min(x1, x2) - pad));
+        int bx1 = Math.min(w - 1, (int) Math.ceil(Math.max(x1, x2) + pad));
+        int by0 = Math.max(0, (int) Math.floor(Math.min(y1, y2) - pad));
+        int by1 = Math.min(h - 1, (int) Math.ceil(Math.max(y1, y2) + pad));
         float dx = x2 - x1;
         float dy = y2 - y1;
-        int steps = (int) Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
-        int half = Math.max(0, Math.round(width / 2f) - 1);
-        if (steps <= 0) {
-            blendBlock(pixels, Math.round(x1), Math.round(y1), half, color);
-            return;
-        }
-        for (int s = 0; s <= steps; s++) {
-            float t = s / (float) steps;
-            blendBlock(pixels, Math.round(x1 + dx * t), Math.round(y1 + dy * t), half, color);
+        float len2 = dx * dx + dy * dy;
+        int alpha = color >>> 24;
+        for (int py = by0; py <= by1; py++) {
+            float cy = py + 0.5f;
+            for (int px = bx0; px <= bx1; px++) {
+                float cx = px + 0.5f;
+                float t = len2 < 0.0001f ? 0f
+                        : ((cx - x1) * dx + (cy - y1) * dy) / len2;
+                t = t < 0 ? 0 : (t > 1 ? 1 : t);
+                float ddx = cx - (x1 + t * dx);
+                float ddy = cy - (y1 + t * dy);
+                float coverage = half + 0.5f - (float) Math.sqrt(ddx * ddx + ddy * ddy);
+                if (coverage <= 0) {
+                    continue;
+                }
+                if (coverage > 1) {
+                    coverage = 1;
+                }
+                blendPixel(pixels, px, py, ((int) (alpha * coverage) << 24) | (color & 0xFFFFFF));
+            }
         }
     }
 
-    private void blendBlock(int[] pixels, int px, int py, int half, int color) {
-        for (int yy = py - half; yy <= py + half; yy++) {
-            if (yy < 0 || yy >= h) {
-                continue;
-            }
-            int x1 = Math.max(0, px - half);
-            int x2 = Math.min(w, px + half + 1);
-            if (x2 > x1) {
-                blendSpan(pixels, yy, x1, x2, color);
-            }
+    private void blendPixel(int[] pixels, int px, int py, int color) {
+        int sa = color >>> 24;
+        if (sa == 0) {
+            return;
         }
+        int index = py * w + px;
+        int dst = pixels[index];
+        int da = dst >>> 24;
+        if (da == 0) {
+            pixels[index] = color;
+            return;
+        }
+        int inv = 255 - sa;
+        int outA = sa + da * inv / 255;
+        if (outA <= 0) {
+            pixels[index] = 0;
+            return;
+        }
+        int outR = (((color >> 16) & 0xFF) * sa + ((dst >> 16) & 0xFF) * da * inv / 255) / outA;
+        int outG = (((color >> 8) & 0xFF) * sa + ((dst >> 8) & 0xFF) * da * inv / 255) / outA;
+        int outB = ((color & 0xFF) * sa + (dst & 0xFF) * da * inv / 255) / outA;
+        pixels[index] = outA << 24 | outR << 16 | outG << 8 | outB;
     }
 
     /** Direct single-region drawing, used for the region that is being drawn right now. */
