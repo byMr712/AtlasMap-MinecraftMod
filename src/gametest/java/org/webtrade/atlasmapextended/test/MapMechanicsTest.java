@@ -211,7 +211,10 @@ public class MapMechanicsTest implements FabricClientGameTest {
 
         MapTile tile = layer.getOrCreate(1000, 1000);
         tile.setPixel(0, 0, 0xFF112233);
-        check(tile.getPixel(0, 0) == 0xFF112233, "tile pixel roundtrip");
+        check(tile.getPixel(0, 0) == 0xFF112233, "tile pixel roundtrip");        check(layer.hasData(256000, 256000), "hasData sees a scanned pixel");
+        check(!layer.hasData(256001, 256000), "hasData ignores empty pixels");
+        check(!layer.hasData(30_000_000, 30_000_000), "hasData false without a tile");
+
 
         long key = MapLayer.pack(-5, 7);
         check((int) (key >> 32) == -5, "pack x");
