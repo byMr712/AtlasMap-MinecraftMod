@@ -12,7 +12,8 @@
       "org.webtrade.atlasmapextended.test.ListHeaderClickTest",
       "org.webtrade.atlasmapextended.test.MarkerHeightTest",
       "org.webtrade.atlasmapextended.test.ListDimensionTest",
-      "org.webtrade.atlasmapextended.test.DimensionMemoryTest"
+      "org.webtrade.atlasmapextended.test.DimensionMemoryTest",
+      "org.webtrade.atlasmapextended.test.RegionPerfTest"
     ]
   },
   "depends": {
