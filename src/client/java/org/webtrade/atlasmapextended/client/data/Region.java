@@ -149,4 +149,38 @@ public class Region {
         }
         return inside;
     }
+
+    /** Absolute area of the polygon in square blocks. */
+    public double area() {
+        int n = pointCount();
+        if (n < 3) {
+            return 0;
+        }
+        double sum = 0;
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            sum += pts[j * 2] * pts[i * 2 + 1] - pts[i * 2] * pts[j * 2 + 1];
+        }
+        return Math.abs(sum) / 2;
+    }
+
+    /**
+     * The smallest visible region containing the point. A region nested inside another one
+     * therefore wins both for map clicks and for the enter/exit messages, regardless of the
+     * order in which the regions were created.
+     */
+    public static Region innermostAt(List<Region> regions, String dim, double x, double z) {
+        Region best = null;
+        double bestArea = Double.MAX_VALUE;
+        for (Region r : regions) {
+            if (r.hidden || !r.dim.equals(dim) || !r.contains(x, z)) {
+                continue;
+            }
+            double area = r.area();
+            if (best == null || area < bestArea) {
+                best = r;
+                bestArea = area;
+            }
+        }
+        return best;
+    }
 }
