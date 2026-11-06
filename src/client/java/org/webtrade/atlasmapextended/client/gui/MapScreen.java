@@ -1103,8 +1103,15 @@ public class MapScreen extends Screen {
         switch (sort) {
             case 1 -> list.sort(Comparator.comparingLong((Region r) -> r.created));
             case 2 -> list.sort(byName);
-            case 3 -> list.sort(Comparator.comparingInt((Region r) -> r.dim.equals(dim) ? 0 : 1)
-                    .thenComparingDouble(r -> regionDistance(r, ref[0], ref[1])));
+            case 3 -> {
+                // distance is O(points): compute it once per region, not inside every comparison
+                Map<Region, Double> distances = new HashMap<>();
+                for (Region r : list) {
+                    distances.put(r, regionDistance(r, ref[0], ref[1]));
+                }
+                list.sort(Comparator.comparingInt((Region r) -> r.dim.equals(dim) ? 0 : 1)
+                        .thenComparingDouble(distances::get));
+            }
             default -> list.sort(Comparator.comparingLong((Region r) -> r.created).reversed());
         }
         return list;
