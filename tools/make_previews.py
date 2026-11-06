@@ -5,7 +5,7 @@ import os
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 DIR = os.path.join(os.path.dirname(__file__), "..", "thumbnails")
-F = "C:/Windows/Fonts/"
+F = os.path.join(os.environ["WINDIR"], "Fonts") + os.sep
 W, H = 1280, 720
 
 
