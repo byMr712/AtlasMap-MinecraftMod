@@ -6,6 +6,7 @@
   "key.atlasmapextended.toggle_minimap": "Toggle minimap",
   "key.atlasmapextended.minimap_zoom_in": "Minimap: zoom in",
   "key.atlasmapextended.minimap_zoom_out": "Minimap: zoom out",
+  "key.atlasmapextended.minimap_zoom_toggle": "Minimap: change view",
   "key.atlasmapextended.ruler": "Ruler (in map)",
   "key.atlasmapextended.editor": "Drawing editor (in map)",
   "key.atlasmapextended.toggle_drawings": "Show/hide drawings (in map)",
