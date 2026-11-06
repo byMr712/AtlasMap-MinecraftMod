@@ -18,6 +18,12 @@ public final class MapManager {
 
     private static MapSession live;
     private static String liveDim;
+    /** Player position on the previous tick, so the exit point of a dimension is exact. */
+    private static double curX;
+    private static double curZ;
+    /** Pan/zoom of dimensions opened remotely, valid only while in the current dimension. */
+    private static final java.util.Map<String, double[]> remoteView = new java.util.HashMap<>();
+    private static final java.util.Map<String, Float> remoteZoom = new java.util.HashMap<>();
     private static final LongLinkedOpenHashSet queue = new LongLinkedOpenHashSet();
     private static int ticks;
 
@@ -30,6 +36,19 @@ public final class MapManager {
 
     public static String liveDim() {
         return liveDim;
+    }
+
+    public static double[] remoteView(String dim) {
+        return remoteView.get(dim);
+    }
+
+    public static Float remoteZoom(String dim) {
+        return remoteZoom.get(dim);
+    }
+
+    public static void rememberView(String dim, double x, double z, float zoom) {
+        remoteView.put(dim, new double[]{x, z});
+        remoteZoom.put(dim, zoom);
     }
 
     public static void onJoin(Minecraft mc) {
@@ -48,6 +67,9 @@ public final class MapManager {
 
     private static void closeLive() {
         if (live != null) {
+            if (liveDim != null) {
+                live.meta.setPos(liveDim, curX, curZ);
+            }
             live.meta.lastPlayed = System.currentTimeMillis();
             live.saveMeta();
             live.saveMarkers();
@@ -56,6 +78,8 @@ public final class MapManager {
             live = null;
         }
         liveDim = null;
+        remoteView.clear();
+        remoteZoom.clear();
         queue.clear();
     }
 
@@ -82,7 +106,14 @@ public final class MapManager {
         int pcx = mc.player.getBlockX() >> 4;
         int pcz = mc.player.getBlockZ() >> 4;
         if (!dim.equals(liveDim)) {
+            if (liveDim != null) {
+                live.meta.setPos(liveDim, curX, curZ);
+                live.saveMeta();
+            }
             liveDim = dim;
+            // Panning a remote dimension only lasts while the player stays in this one.
+            remoteView.clear();
+            remoteZoom.clear();
             queue.clear();
             int r = mc.options.getEffectiveRenderDistance();
             enqueueAround(pcx, pcz, r);
@@ -118,6 +149,8 @@ public final class MapManager {
             live.saveMeta();
             live.unloadUnused();
         }
+        curX = mc.player.getX();
+        curZ = mc.player.getZ();
     }
 
     private static void enqueueAround(int cx, int cz, int r) {
