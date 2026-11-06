@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import org.webtrade.atlasmapextended.client.data.Marker;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
 import org.webtrade.atlasmapextended.client.data.Region;
@@ -266,6 +267,31 @@ public class MapMechanicsTest implements FabricClientGameTest {
         check(view.regionAt(outerFirst, "minecraft:overworld", 50, 50) == small, "regionAt: nested wins");
         check(view.regionAt(outerFirst, "minecraft:overworld", 90, 50) == big, "regionAt: outer area");
         check(view.regionAt(innerFirst, "minecraft:overworld", 50, 50) == small, "regionAt: nested wins (other order)");
+
+        // a click on a name must select that region even when the point lies inside a smaller one
+        Region offset = new Region();
+        offset.name = "Offset";
+        offset.dim = "minecraft:overworld";
+        offset.pts = new double[]{-20, -20, 80, -20, 80, 80, -20, 80};
+        MapView labels = new MapView();
+        labels.setRect(0, 0, 200, 200);
+        labels.cx = 0;
+        labels.cz = 0;
+        labels.zoom = 1;
+        Font font = Minecraft.getInstance().font;
+        List<Region> both = List.of(big, offset);
+        // world (0, 0) is the centre of the big region and inside the offset one
+        check(labels.regionAt(both, "minecraft:overworld", 100, 100) == offset, "label test: area picks the smaller");
+        check(labels.regionLabelAt(font, both, "minecraft:overworld", null, 100, 100) == big,
+                "label test: the name wins over a nested area");
+        check(labels.regionLabelAt(font, both, "minecraft:overworld", null, 130, 130) == offset,
+                "label test: the offset name is clickable");
+        // zoomed out only the selected region keeps its label, so only that one is clickable
+        labels.zoom = 0.4f;
+        check(labels.regionLabelAt(font, both, "minecraft:overworld", null, 100, 100) == null,
+                "label test: hidden names are not clickable");
+        check(labels.regionLabelAt(font, both, "minecraft:overworld", big.id, 100, 100) == big,
+                "label test: selected name stays clickable");
     }
 
     private void persistence() {
