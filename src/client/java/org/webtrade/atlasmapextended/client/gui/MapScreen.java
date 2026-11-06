@@ -436,6 +436,11 @@ public class MapScreen extends Screen {
         }
         if (session.isLive() && mc.level != null
                 && !dim.equals(mc.level.dimension().location().toString())) {
+            double[] last = session.meta.posFor(dim);
+            if (last != null && overlay == Overlay.NONE
+                    && view.drawLastSeen(g, last[0], last[1], 16, mx, my)) {
+                tooltip = T.tr("map.last_seen");
+            }
             MapManager.rememberView(dim, view.cx, view.cz, view.zoom);
         }
     }
