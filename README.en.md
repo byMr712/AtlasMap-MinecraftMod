@@ -2,16 +2,16 @@
 
 <div align="center">
 
-  <img width="150" alt="Atlas Map (Extended) logo" src="images/icon.png">
-  <h3>Atlas Map (Extended)</h3>
-
-</div>
-
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.3-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
 ![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
+
+  <img width="150" alt="Atlas Map (Extended) logo" src="images/icon.png">
+  <h3>Atlas Map (Extended)</h3>
+
+</div>
 
 A client-side mod full-screen world map and minimap, markers with icons, descriptions and screenshots, a ruler, map drawing, teleport to markers and **8 UI designs**.
 
