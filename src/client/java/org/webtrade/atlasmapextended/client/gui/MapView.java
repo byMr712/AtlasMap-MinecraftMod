@@ -443,17 +443,9 @@ public class MapView {
         g.drawString(font, name, tx, ty, Paper.INK, false);
     }
 
-    /** The topmost area under the cursor, if any. */
+    /** The innermost area under the cursor, if any (nested regions: the smallest wins). */
     public Region regionAt(List<Region> regions, String dim, double mx, double my) {
-        double wx = wx(mx);
-        double wz = wz(my);
-        for (int i = regions.size() - 1; i >= 0; i--) {
-            Region r = regions.get(i);
-            if (!r.hidden && r.dim.equals(dim) && r.contains(wx, wz)) {
-                return r;
-            }
-        }
-        return null;
+        return Region.innermostAt(regions, dim, wx(mx), wz(my));
     }
 
     /** The region whose map label is under the cursor. */
