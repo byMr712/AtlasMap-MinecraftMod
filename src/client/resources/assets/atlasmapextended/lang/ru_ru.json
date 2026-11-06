@@ -6,6 +6,7 @@
   "key.atlasmapextended.toggle_minimap": "Вкл/выкл миникарту",
   "key.atlasmapextended.minimap_zoom_in": "Миникарта: приблизить",
   "key.atlasmapextended.minimap_zoom_out": "Миникарта: отдалить",
+  "key.atlasmapextended.minimap_zoom_toggle": "Миникарта: поменять вид",
   "key.atlasmapextended.ruler": "Линейка (на карте)",
   "key.atlasmapextended.editor": "Редактор рисунков (на карте)",
   "key.atlasmapextended.toggle_drawings": "Показать/скрыть рисунки (на карте)",
