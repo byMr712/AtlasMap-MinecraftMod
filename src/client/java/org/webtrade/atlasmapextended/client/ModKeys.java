@@ -17,6 +17,7 @@ public final class ModKeys {
     public static KeyMapping TOGGLE_MINIMAP;
     public static KeyMapping MINIMAP_ZOOM_IN;
     public static KeyMapping MINIMAP_ZOOM_OUT;
+    public static KeyMapping MINIMAP_ZOOM_TOGGLE;
     public static KeyMapping RULER;
     public static KeyMapping EDITOR;
     public static KeyMapping TOGGLE_DRAWINGS;
@@ -40,11 +41,12 @@ public final class ModKeys {
         TOGGLE_MINIMAP = key("toggle_minimap", InputConstants.KEY_N);
         MINIMAP_ZOOM_IN = key("minimap_zoom_in", InputConstants.KEY_EQUALS);
         MINIMAP_ZOOM_OUT = key("minimap_zoom_out", InputConstants.KEY_MINUS);
+        MINIMAP_ZOOM_TOGGLE = key("minimap_zoom_toggle", InputConstants.KEY_Z);
         RULER = key("ruler", InputConstants.KEY_R);
         EDITOR = key("editor", InputConstants.KEY_G);
         TOGGLE_DRAWINGS = key("toggle_drawings", InputConstants.KEY_H);
         return new KeyMapping[]{OPEN_MAP, MARKER_LIST, NEW_MARKER, TOGGLE_MINIMAP,
-                MINIMAP_ZOOM_IN, MINIMAP_ZOOM_OUT, RULER, EDITOR, TOGGLE_DRAWINGS};
+                MINIMAP_ZOOM_IN, MINIMAP_ZOOM_OUT, MINIMAP_ZOOM_TOGGLE, RULER, EDITOR, TOGGLE_DRAWINGS};
     }
 
     private static KeyMapping key(String name, int code) {
