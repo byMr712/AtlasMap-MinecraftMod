@@ -137,8 +137,10 @@ public final class MapManager {
             // track the whole set, not just one region: with nested regions the player can be
             // inside several at once, and only the actual boundary crossings must be announced
             Map<String, String> now = new HashMap<>();
+            double px = mc.player.getX();
+            double pz = mc.player.getZ();
             for (Region r : live.regions(dim)) {
-                if (!r.hidden && r.dim.equals(dim) && r.contains(mc.player.getX(), mc.player.getZ())) {
+                if (!r.hidden && r.dim.equals(dim) && r.mayContain(px, pz) && r.contains(px, pz)) {
                     now.put(r.id, r.name == null || r.name.isBlank() ? "Region" : r.name);
                 }
             }
