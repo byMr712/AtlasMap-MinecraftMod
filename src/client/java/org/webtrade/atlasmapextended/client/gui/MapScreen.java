@@ -1110,7 +1110,7 @@ public class MapScreen extends Screen {
         hint(g, box, T.s(hintKey));
     }
 
-    private void drawListHeader(GuiGraphics g, int mx, int my, int x, int y, int w,
+    private void drawListHeader(GuiGraphics g, int mx, int my, int x, int y, int w, int top, int bottom,
                                 String titleKey, int count, boolean open, String[] sorts, int sortIndex,
                                 Runnable toggle, Runnable next, Runnable prev, Runnable eye, boolean anyVisible) {
         boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, w, 18);
@@ -1118,7 +1118,11 @@ public class MapScreen extends Screen {
         Paper.outline(g, x, y, w, 18, Paper.a(Paper.INK, 0x40));
         g.drawString(font, open ? "▾" : "▸", x + 4, y + 5, Paper.INK, false);
         g.drawString(font, T.s(titleKey) + " (" + count + ")", x + 14, y + 5, Paper.INK, false);
-        hit(x, y, w - 54, 18, toggle);
+        int hy = Math.max(y, top);
+        int hh = Math.min(y + 18, bottom) - hy;
+        if (hh > 0) {
+            hit(x, hy, w, hh, toggle);
+        }
         int sx = x + w - 48;
         boolean hs = overlay == Overlay.NONE && Paper.inside(mx, my, sx, y + 1, 16, 16);
         Paper.iconButton(g, Paper.tool("sort"), sx, y + 1, 16, hs, false);
@@ -1281,7 +1285,7 @@ public class MapScreen extends Screen {
             }
         } else {
             boolean anyMarker = session.markers.stream().anyMatch(m -> !m.hidden);
-            drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.markers", markers.size(),
+            drawListHeader(g, mx, my, lx + 6, y, lw - 12, top, bottom, "list.section.markers", markers.size(),
                     markersOpen, MARKER_SORTS, cfg.markerSort,
                     this::toggleMarkersSection,
                     () -> {
@@ -1318,7 +1322,7 @@ public class MapScreen extends Screen {
 
             boolean anyRegion = !session.allRegions().isEmpty()
                     && session.allRegions().stream().anyMatch(r -> !r.hidden);
-            drawListHeader(g, mx, my, lx + 6, y, lw - 12, "list.section.regions", regions.size(),
+            drawListHeader(g, mx, my, lx + 6, y, lw - 12, top, bottom, "list.section.regions", regions.size(),
                     regionsOpen, REGION_SORTS, cfg.regionSort,
                     this::toggleRegionsSection,
                     () -> {
