@@ -771,7 +771,7 @@ public class MapScreen extends Screen {
 
     private void drawTitle(GuiGraphics g) {
         int avail = freeRight() - freeLeft();
-        String t = font.plainSubstrByWidth(session.meta.name + "  В·  " + T.dimName(dim), Math.max(20, avail - 40));
+        String t = font.plainSubstrByWidth(session.meta.name + "  ·  " + T.dimName(dim), Math.max(20, avail - 40));
         int w = font.width(t) + 30;
         if (w > avail) {
             return;
@@ -1135,7 +1135,7 @@ public class MapScreen extends Screen {
         boolean hover = overlay == Overlay.NONE && Paper.inside(mx, my, x, y, w, 18);
         g.fill(x, y, x + w, y + 18, hover ? 0x24FFFFFF : 0x12FFFFFF);
         Paper.outline(g, x, y, w, 18, Paper.a(Paper.INK, 0x40));
-        g.drawString(font, open ? "в–ѕ" : "в–ё", x + 4, y + 5, Paper.INK, false);
+        g.drawString(font, open ? "▾" : "▸", x + 4, y + 5, Paper.INK, false);
         g.drawString(font, T.s(titleKey) + " (" + count + ")", x + 14, y + 5, Paper.INK, false);
         hit(x, y, w - 54, 18, toggle);
         int sx = x + w - 48;
@@ -1453,7 +1453,7 @@ public class MapScreen extends Screen {
         String where = T.dimName(m.dim);
         double[] ref = referencePoint();
         if (m.dim.equals(dim)) {
-            where += "  В·  " + fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks");
+            where += "  ·  " + fmtInt(Math.hypot(m.x - ref[0], m.z - ref[1])) + " " + T.s("unit.blocks");
         }
         g.drawString(font, where, cx, y, Paper.INK_SOFT, false);
         y += 13;
@@ -1586,7 +1586,7 @@ public class MapScreen extends Screen {
             tooltip = T.tr("edit.icon_tip");
         }
         g.drawString(font, font.plainSubstrByWidth(T.s("edit.icon", T.iconName(working.icon)), cw - 34), cx + 23, y + 7, Paper.INK, false);
-        g.drawString(font, "в–ј", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
+        g.drawString(font, "▼", cx + cw - 10, y + 7, Paper.INK_SOFT, false);
         int iconY = y;
         hit(cx, y, cw, 22, () -> {
             iconPickerY = iconY + 24;
@@ -1727,7 +1727,7 @@ public class MapScreen extends Screen {
                     g.disableScissor();
                 }
             } else {
-                String s = e.failed ? "вњ–" : "вЂ¦";
+                String s = e.failed ? "✖" : "…";
                 g.drawString(font, s, tx + (tw - font.width(s)) / 2, ty + (th - 8) / 2, Paper.INK_SOFT, false);
             }
             Paper.outline(g, tx, ty, tw, th, hover ? Paper.GOLD : Paper.INK);
@@ -2360,7 +2360,7 @@ public class MapScreen extends Screen {
         for (String d : dims) {
             boolean h = Paper.inside(mx, my, ox + 8, y, ow - 16, 16);
             boolean cur = d.equals(dim);
-            Paper.button(g, font, Component.literal((cur ? "В» " : "") + T.dimName(d) + (cur ? " В«" : "")), ox + 8, y, ow - 16, 16, h, true);
+            Paper.button(g, font, Component.literal((cur ? "» " : "") + T.dimName(d) + (cur ? " «" : "")), ox + 8, y, ow - 16, 16, h, true);
             hit(ox + 8, y, ow - 16, 16, () -> {
                 switchDim(d);
                 overlay = Overlay.NONE;
