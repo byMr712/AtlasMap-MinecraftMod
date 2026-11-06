@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /** All key bindings of the mod. They can be changed in Options → Controls → Key Binds → AtlasMapExtended. */
 public final class ModKeys {
-    public static final String CATEGORY = "key.categories.atlasmapextended.main";
+    public static final String CATEGORY = "key.category.atlasmapextended.main";
 
     private static boolean registered;
 
