@@ -132,12 +132,35 @@ public final class WorldMarkerHud {
             if (sx < -ICON_SIZE || sx > sw + ICON_SIZE || sy < -ICON_SIZE || sy > sh + ICON_SIZE) {
                 continue;
             }
-            int alpha = dx * dx + dy * dy + dz * dz <= FADE_RADIUS_SQ ? 128 : 255;
+            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            int hx0 = sx - crossX;
+            int hy0 = sy - crossY;
+            int alpha = 178;
+            if (hx0 * hx0 + hy0 * hy0 <= HOVER_RADIUS_SQ) {
+                alpha = 128;
+            }
+            if (dist < 5.0) {
+                double t = Math.max(0, Math.min(1, (dist - 1.0) / 4.0));
+                int near = (int) Math.round(102 + (178 - 102) * t);
+                if (dist < 1.0) {
+                    near = (int) Math.round(20 + (near - 20) * Math.max(0, dist));
+                }
+                alpha = Math.min(alpha, near);
+            }
+            double scale;
+            if (dist <= 10.0) {
+                scale = 0.65;
+            } else if (dist >= 40.0) {
+                scale = 1.0;
+            } else {
+                scale = 0.65 + 0.35 * (dist - 10.0) / 30.0;
+            }
+            int iconSize = (int) Math.round(ICON_SIZE * scale);
             IconEntry icon = iconEntry(m.icon, m.color != 0, now);
             icon.uses++;
             icon.lastUsed = now;
             int tint = m.color == 0 ? alpha << 24 | 0xFFFFFF : Paper.a(m.color, alpha);
-            Paper.icon(g, icon.texture, sx - ICON_SIZE / 2, sy - ICON_SIZE / 2, ICON_SIZE, tint);
+            Paper.icon(g, icon.texture, sx - iconSize / 2, sy - iconSize / 2, iconSize, tint);
             drawn++;
 
             int hx = sx - crossX;
