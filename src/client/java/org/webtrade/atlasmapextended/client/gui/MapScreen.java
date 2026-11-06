@@ -620,7 +620,7 @@ public class MapScreen extends Screen {
         view.drawBackground(g);
         view.drawTiles(g, layer);
         view.drawGrid(g);
-        view.drawRegions(g, font, regionsForDisplay(), dim, true, regionMode ? selectedRegionId : null);
+        view.drawRegions(g, font, regionsForDisplay(), dim, false, regionMode ? selectedRegionId : null);
         if (regionDrawing) {
             Region preview = previewRegion();
             if (preview != null) {
@@ -634,6 +634,7 @@ public class MapScreen extends Screen {
         if (current != null) {
             view.drawStroke(g, current, 1f);
         }
+        view.drawRegionLabels(g, font, regionsForDisplay(), dim);
         if (tool == Tool.DRAW && drawTool == DrawTool.ERASER && mouseOverMap(mx, my)) {
             Paper.outline(g, mx - 6, my - 6, 12, 12, Paper.RED);
         }
