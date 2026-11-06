@@ -10,6 +10,7 @@
   "key.atlasmapextended.editor": "Drawing editor (in map)",
   "key.atlasmapextended.toggle_drawings": "Show/hide drawings (in map)",
   "atlasmapextended.map.title": "World map",
+  "atlasmapextended.map.last_seen": "You were here last time",
   "atlasmapextended.field.name": "Name",
   "atlasmapextended.field.name_hint": "Enter a name…",
   "atlasmapextended.field.desc": "Description",
