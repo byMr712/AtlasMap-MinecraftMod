@@ -7,11 +7,15 @@
 
 </div>
 
+<div align="center">
+
 ![Java 21+](https://img.shields.io/badge/Java-21+-blue.svg)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.7-blue.svg)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg)
 ![NeoForge](https://img.shields.io/badge/Loader-NeoForge-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
+
+</div>
 
 Клиентский мод полноэкранная карта мира и миникарта, метки с иконками, описаниями и скриншотами, линейка, рисование на карте, телепорт к меткам и **8 вариантов оформления**.
 
