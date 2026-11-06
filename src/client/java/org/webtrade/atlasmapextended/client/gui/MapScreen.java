@@ -536,7 +536,16 @@ public class MapScreen extends Screen {
             drawBiomeHint(g, mx, my);
         }
         if (tooltip != null) {
-            g.setTooltipForNextFrame(font, tooltip, mx, my);
+            String tip = tooltip.getString();
+            if (tip.indexOf('\n') >= 0) {
+                List<Component> lines = new ArrayList<>();
+                for (String line : tip.split("\n", -1)) {
+                    lines.add(Component.literal(line));
+                }
+                g.setComponentTooltipForNextFrame(font, lines, mx, my);
+            } else {
+                g.setTooltipForNextFrame(font, tooltip, mx, my);
+            }
         }
         lastUiRects = new ArrayList<>(uiRects);
     }
