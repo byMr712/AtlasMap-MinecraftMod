@@ -3067,7 +3067,12 @@ public class MapScreen extends Screen {
         double travelled = Math.hypot(mx - regionPressX, my - regionPressY);
         if (travelled < 3) {
             regionPoints.clear();
-            Region hit = view.regionAt(session.regions(dim), dim, mx, my);
+            // a click on a name selects that region even if another one is nested underneath
+            Region hit = view.regionLabelAt(font, session.regions(dim), dim,
+                    regionMode ? selectedRegionId : null, mx, my);
+            if (hit == null) {
+                hit = view.regionAt(session.regions(dim), dim, mx, my);
+            }
             if (hit != null) {
                 openRegionView(hit);
             }
@@ -3571,7 +3576,8 @@ public class MapScreen extends Screen {
                 openView(hit, false);
                 Paper.click();
             } else {
-                Region region = view.regionLabelAt(font, session.regions(dim), dim, mx, my);
+                Region region = view.regionLabelAt(font, session.regions(dim), dim,
+                        regionMode ? selectedRegionId : null, mx, my);
                 if (region == null) {
                     region = view.regionAt(session.regions(dim), dim, mx, my);
                 }
