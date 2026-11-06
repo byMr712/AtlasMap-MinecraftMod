@@ -448,10 +448,15 @@ public class MapView {
     }
 
     /** The region whose map label is under the cursor. */
-    public Region regionLabelAt(Font font, List<Region> regions, String dim, double mx, double my) {
+    public Region regionLabelAt(Font font, List<Region> regions, String dim, String selectedId,
+                                double mx, double my) {
         for (int i = regions.size() - 1; i >= 0; i--) {
             Region r = regions.get(i);
             if (r.hidden || !r.dim.equals(dim) || r.name.isBlank() || r.pointCount() < 3) {
+                continue;
+            }
+            // when zoomed out only the selected region keeps its name on screen
+            if (zoom < 0.5f && (selectedId == null || !r.id.equals(selectedId))) {
                 continue;
             }
             float minX = Float.MAX_VALUE;
