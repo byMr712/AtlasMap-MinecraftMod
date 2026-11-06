@@ -24,6 +24,40 @@ public class MapView {
     /** GUI pixels per block. */
     public float zoom = 2f;
 
+    /** Diagnostics: time spent in {@link #drawRegions} during the last frame. */
+    public static long lastRegionsNanos;
+    public static long lastBakeNanos;
+    public static int lastRegionsDrawn;
+    public static int lastRegionsPoints;
+
+    private final RegionOverlay regionOverlay = new RegionOverlay();
+    private long regionCacheKey = Long.MIN_VALUE;
+
+    // scratch buffers, reused between regions and frames to keep the GC quiet
+    private float[] rawX = new float[0];
+    private float[] rawY = new float[0];
+    private float[] simpleX = new float[0];
+    private float[] simpleY = new float[0];
+    private boolean[] keep = new boolean[0];
+    private int[] stack = new int[0];
+    private float[] cross = new float[0];
+    private int[] dir = new int[0];
+    private int[] spanX1 = new int[0];
+    private int[] spanX2 = new int[0];
+
+    private static float[] grow(float[] a, int n) {
+        return a.length >= n ? a : new float[Math.max(n, a.length * 2)];
+    }
+
+    private static int[] grow(int[] a, int n) {
+        return a.length >= n ? a : new int[Math.max(n, a.length * 2)];
+    }
+
+    private static boolean[] grow(boolean[] a, int n) {
+        return a.length >= n ? a : new boolean[Math.max(n, a.length * 2)];
+    }
+
+
     public void setRect(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
@@ -299,51 +333,239 @@ public class MapView {
         return best;
     }
 
-    /** Draws all named areas of one dimension with a translucent fill, an outline and a label. */
+    /**
+     * Draws all named areas of one dimension. The whole layer is rasterised into one ARGB
+     * texture and blitted once: the cost no longer depends on the number of regions.
+     */
     public void drawRegions(GuiGraphicsExtractor g, Font font, List<Region> regions, String dim, boolean labels, String selectedId) {
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        long start = System.nanoTime();
+        long key = regionKey(regions, dim, selectedId);
+        if (key != regionCacheKey) {
+            long bakeStart = System.nanoTime();
+            int[] pixels = regionOverlay.begin(w, h);
+            int[] stats = rasterize(pixels, regions, dim, selectedId);
+            lastRegionsDrawn = stats[0];
+            lastRegionsPoints = stats[1];
+            lastBakeNanos = System.nanoTime() - bakeStart;
+            regionCacheKey = key;
+        }
+        regionOverlay.draw(g, x, y);
+        lastRegionsNanos = System.nanoTime() - start;
+    }
+
+    /** Changes whenever the region layer has to be rasterised again. */
+    private long regionKey(List<Region> regions, String dim, String selectedId) {
+        long h = 1125899906842597L;
+        h = 31 * h + Double.doubleToLongBits(cx);
+        h = 31 * h + Double.doubleToLongBits(cz);
+        h = 31 * h + Float.floatToIntBits(zoom);
+        h = 31 * h + this.x * 1000003L + this.y;
+        h = 31 * h + this.w * 31L + this.h;
+        h = 31 * h + (selectedId == null ? 0 : selectedId.hashCode());
+        for (Region r : regions) {
+            if (!r.dim.equals(dim)) {
+                continue;
+            }
+            h = 31 * h + r.id.hashCode();
+            h = 31 * h + System.identityHashCode(r.pts);
+            h = 31 * h + (r.hidden ? 1 : 0) + (r.filled ? 2 : 0) + r.color;
+        }
+        return h;
+    }
+
+    private int[] rasterize(int[] pixels, List<Region> regions, String dim, String selectedId) {
+        int drawn = 0;
+        int points = 0;
         for (Region r : regions) {
             if (r.hidden || !r.dim.equals(dim)) {
                 continue;
             }
-            drawRegion(g, font, r, labels, r.id.equals(selectedId));
+            int n = r.pointCount();
+            if (n < 3) {
+                continue;
+            }
+            // world bounds first: an off-screen region costs nothing, not even the point loop
+            double[] b = r.bounds();
+            float minX = Math.min(sx(b[0]), sx(b[1]));
+            float maxX = Math.max(sx(b[0]), sx(b[1]));
+            float minY = Math.min(sy(b[2]), sy(b[3]));
+            float maxY = Math.max(sy(b[2]), sy(b[3]));
+            if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
+                continue;
+            }
+            rawX = grow(rawX, n);
+            rawY = grow(rawY, n);
+            for (int i = 0; i < n; i++) {
+                rawX[i] = sx(r.pts[i * 2]) - x;
+                rawY[i] = sy(r.pts[i * 2 + 1]) - y;
+            }
+            // simplify below a pixel of screen space; the picture stays the same
+            int m = simplify(rawX, rawY, n, 0.75f);
+            points += m;
+            drawn++;
+            int rgb = r.color & 0xFFFFFF;
+            if (r.filled) {
+                fillSpans(pixels, simpleX, simpleY, m, rgb | 0x55000000, minY - y, maxY - y);
+            }
+            boolean selected = r.id.equals(selectedId);
+            int outline = selected ? Paper.GOLD : rgb | 0xFF000000;
+            float lineWidth = selected ? 3f : 1.4f;
+            for (int i = 0, j = m - 1; i < m; j = i++) {
+                line(pixels, simpleX[i], simpleY[i], simpleX[j], simpleY[j], lineWidth, outline);
+            }
+        }
+        return new int[]{drawn, points};
+    }
+
+    /** Non-zero winding scanline fill straight into the overlay pixels. */
+    private void fillSpans(int[] pixels, float[] xs, float[] ys, int m, int color, float top, float bottom) {
+        int y0 = Math.max(0, (int) Math.floor(top));
+        int y1 = Math.min(h - 1, (int) Math.ceil(bottom));
+        cross = grow(cross, m);
+        dir = grow(dir, m);
+        for (int yy = y0; yy <= y1; yy++) {
+            float cy = yy + 0.5f;
+            int count = 0;
+            for (int i = 0, j = m - 1; i < m; j = i++) {
+                float yi = ys[i];
+                float yj = ys[j];
+                if ((yi > cy) != (yj > cy)) {
+                    cross[count] = xs[i] + (cy - yi) / (yj - yi) * (xs[j] - xs[i]);
+                    dir[count] = yj > yi ? 1 : -1;
+                    count++;
+                }
+            }
+            if (count < 2) {
+                continue;
+            }
+            sortCrossings(count);
+            int wind = 0;
+            int spanStart = 0;
+            for (int k = 0; k < count; k++) {
+                int before = wind;
+                wind += dir[k];
+                if (before == 0 && wind != 0) {
+                    spanStart = (int) Math.ceil(cross[k]);
+                } else if (before != 0 && wind == 0) {
+                    int x1 = Math.max(0, spanStart);
+                    int x2 = Math.min(w, (int) Math.ceil(cross[k]));
+                    if (x2 > x1) {
+                        blendSpan(pixels, yy, x1, x2, color);
+                    }
+                }
+            }
         }
     }
 
+    /** Source-over blending of one horizontal run into the overlay. */
+    private void blendSpan(int[] pixels, int yy, int x1, int x2, int color) {
+        int sa = color >>> 24;
+        if (sa == 0) {
+            return;
+        }
+        int row = yy * w;
+        if (sa >= 255) {
+            java.util.Arrays.fill(pixels, row + x1, row + x2, color);
+            return;
+        }
+        int sr = (color >> 16) & 0xFF;
+        int sg = (color >> 8) & 0xFF;
+        int sb = color & 0xFF;
+        int inv = 255 - sa;
+        for (int xx = x1; xx < x2; xx++) {
+            int dst = pixels[row + xx];
+            int da = dst >>> 24;
+            if (da == 0) {
+                pixels[row + xx] = color;
+                continue;
+            }
+            int outA = sa + da * inv / 255;
+            if (outA <= 0) {
+                pixels[row + xx] = 0;
+                continue;
+            }
+            int outR = (sr * sa + ((dst >> 16) & 0xFF) * da * inv / 255) / outA;
+            int outG = (sg * sa + ((dst >> 8) & 0xFF) * da * inv / 255) / outA;
+            int outB = (sb * sa + (dst & 0xFF) * da * inv / 255) / outA;
+            pixels[row + xx] = outA << 24 | outR << 16 | outG << 8 | outB;
+        }
+    }
+
+    private void line(int[] pixels, float x1, float y1, float x2, float y2, float width, int color) {
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        int steps = (int) Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
+        int half = Math.max(0, Math.round(width / 2f) - 1);
+        if (steps <= 0) {
+            blendBlock(pixels, Math.round(x1), Math.round(y1), half, color);
+            return;
+        }
+        for (int s = 0; s <= steps; s++) {
+            float t = s / (float) steps;
+            blendBlock(pixels, Math.round(x1 + dx * t), Math.round(y1 + dy * t), half, color);
+        }
+    }
+
+    private void blendBlock(int[] pixels, int px, int py, int half, int color) {
+        for (int yy = py - half; yy <= py + half; yy++) {
+            if (yy < 0 || yy >= h) {
+                continue;
+            }
+            int x1 = Math.max(0, px - half);
+            int x2 = Math.min(w, px + half + 1);
+            if (x2 > x1) {
+                blendSpan(pixels, yy, x1, x2, color);
+            }
+        }
+    }
+
+    /** Direct single-region drawing, used for the region that is being drawn right now. */
     public void drawRegion(GuiGraphicsExtractor g, Font font, Region r, boolean labels, boolean selected) {
         int n = r.pointCount();
         if (n < 3) {
             return;
         }
-        float[] xs = new float[n];
-        float[] ys = new float[n];
-        float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
-        for (int i = 0; i < n; i++) {
-            xs[i] = sx(r.pts[i * 2]);
-            ys[i] = sy(r.pts[i * 2 + 1]);
-            minX = Math.min(minX, xs[i]);
-            maxX = Math.max(maxX, xs[i]);
-            minY = Math.min(minY, ys[i]);
-            maxY = Math.max(maxY, ys[i]);
+        double[] b = r.bounds();
+        float minX = Math.min(sx(b[0]), sx(b[1]));
+        float maxX = Math.max(sx(b[0]), sx(b[1]));
+        float minY = Math.min(sy(b[2]), sy(b[3]));
+        float maxY = Math.max(sy(b[2]), sy(b[3]));
+        if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
+            return;
         }
+        rawX = grow(rawX, n);
+        rawY = grow(rawY, n);
+        for (int i = 0; i < n; i++) {
+            rawX[i] = sx(r.pts[i * 2]);
+            rawY[i] = sy(r.pts[i * 2 + 1]);
+        }
+        int m = simplify(rawX, rawY, n, 0.75f);
         int rgb = r.color & 0xFFFFFF;
         int fill = rgb | 0x55000000;
         int outline = rgb | 0xFF000000;
-
-        // scanline fill so the polygon follows the parchment look without a custom render type
         if (r.filled) {
             int y0 = Math.max(y, (int) Math.floor(minY));
             int y1 = Math.min(y + h - 1, (int) Math.ceil(maxY));
-            float[] cross = new float[n];
-            int[] dir = new int[n];
+            cross = grow(cross, m);
+            dir = grow(dir, m);
+            spanX1 = grow(spanX1, m);
+            spanX2 = grow(spanX2, m);
+            int bandX1 = 0;
+            int bandX2 = 0;
+            int bandTop = 0;
+            int bandBottom = 0;
+            boolean band = false;
             for (int yy = y0; yy <= y1; yy++) {
                 float cy = yy + 0.5f;
                 int count = 0;
-                for (int i = 0, j = n - 1; i < n; j = i++) {
-                    float yi = ys[i];
-                    float yj = ys[j];
+                for (int i = 0, j = m - 1; i < m; j = i++) {
+                    float yi = simpleY[i];
+                    float yj = simpleY[j];
                     if ((yi > cy) != (yj > cy)) {
-                        cross[count] = xs[i] + (cy - yi) / (yj - yi) * (xs[j] - xs[i]);
+                        cross[count] = simpleX[i] + (cy - yi) / (yj - yi) * (simpleX[j] - simpleX[i]);
                         dir[count] = yj > yi ? 1 : -1;
                         count++;
                     }
@@ -351,21 +573,10 @@ public class MapView {
                 if (count < 2) {
                     continue;
                 }
-                for (int a = 1; a < count; a++) {
-                    float keyX = cross[a];
-                    int keyDir = dir[a];
-                    int b = a - 1;
-                    while (b >= 0 && cross[b] > keyX) {
-                        cross[b + 1] = cross[b];
-                        dir[b + 1] = dir[b];
-                        b--;
-                    }
-                    cross[b + 1] = keyX;
-                    dir[b + 1] = keyDir;
-                }
-                // Non-zero winding: self-intersections and nested loops fill as one shape.
+                sortCrossings(count);
                 int wind = 0;
                 int spanStart = 0;
+                int spans = 0;
                 for (int k = 0; k < count; k++) {
                     int before = wind;
                     wind += dir[k];
@@ -375,19 +586,126 @@ public class MapView {
                         int x1 = Math.max(x, spanStart);
                         int x2 = Math.min(x + w, (int) Math.ceil(cross[k]));
                         if (x2 > x1) {
-                            g.fill(x1, yy, x2, yy + 1, fill);
+                            spanX1[spans] = x1;
+                            spanX2[spans] = x2;
+                            spans++;
                         }
                     }
                 }
+                if (spans == 1) {
+                    int x1 = spanX1[0];
+                    int x2 = spanX2[0];
+                    if (band && x1 == bandX1 && x2 == bandX2 && yy == bandBottom) {
+                        bandBottom = yy + 1;
+                    } else {
+                        if (band) {
+                            g.fill(bandX1, bandTop, bandX2, bandBottom, fill);
+                        }
+                        band = true;
+                        bandX1 = x1;
+                        bandX2 = x2;
+                        bandTop = yy;
+                        bandBottom = yy + 1;
+                    }
+                } else if (spans > 1) {
+                    if (band) {
+                        g.fill(bandX1, bandTop, bandX2, bandBottom, fill);
+                        band = false;
+                    }
+                    for (int s = 0; s < spans; s++) {
+                        g.fill(spanX1[s], yy, spanX2[s], yy + 1, fill);
+                    }
+                }
+            }
+            if (band) {
+                g.fill(bandX1, bandTop, bandX2, bandBottom, fill);
             }
         }
-        for (int i = 0, j = n - 1; i < n; j = i++) {
-            Paper.line(g, xs[i], ys[i], xs[j], ys[j], selected ? 2.4f : 1.4f, selected ? Paper.GOLD : outline);
+        for (int i = 0, j = m - 1; i < m; j = i++) {
+            Paper.line(g, simpleX[i], simpleY[i], simpleX[j], simpleY[j], selected ? 2.4f : 1.4f,
+                    selected ? Paper.GOLD : outline);
         }
-        if (!labels || r.name.isBlank() || maxX < x || minX > x + w || maxY < y || minY > y + h) {
-            return;
+        if (labels && !r.name.isBlank() && maxX - minX >= 24) {
+            drawRegionName(g, font, r, minX, maxX, minY, maxY);
         }
-        drawRegionName(g, font, r, minX, maxX, minY, maxY);
+    }
+
+    /** Ramer-Douglas-Peucker in screen space; writes into {@link #simpleX}/{@link #simpleY}. */
+    private int simplify(float[] xs, float[] ys, int n, float tolerance) {
+        simpleX = grow(simpleX, n);
+        simpleY = grow(simpleY, n);
+        if (n <= 4) {
+            System.arraycopy(xs, 0, simpleX, 0, n);
+            System.arraycopy(ys, 0, simpleY, 0, n);
+            return n;
+        }
+        keep = grow(keep, n);
+        stack = grow(stack, n * 4);
+        java.util.Arrays.fill(keep, 0, n, false);
+        keep[0] = true;
+        keep[n - 1] = true;
+        int sp = 0;
+        stack[sp++] = 0;
+        stack[sp++] = n - 1;
+        float tol2 = tolerance * tolerance;
+        while (sp > 0) {
+            int b = stack[--sp];
+            int a = stack[--sp];
+            float dx = xs[b] - xs[a];
+            float dy = ys[b] - ys[a];
+            float len2 = dx * dx + dy * dy;
+            float best = -1;
+            int idx = -1;
+            for (int i = a + 1; i < b; i++) {
+                float d;
+                if (len2 < 0.0001f) {
+                    float ex = xs[i] - xs[a];
+                    float ey = ys[i] - ys[a];
+                    d = ex * ex + ey * ey;
+                } else {
+                    float t = ((xs[i] - xs[a]) * dx + (ys[i] - ys[a]) * dy) / len2;
+                    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+                    float ex = xs[i] - (xs[a] + t * dx);
+                    float ey = ys[i] - (ys[a] + t * dy);
+                    d = ex * ex + ey * ey;
+                }
+                if (d > best) {
+                    best = d;
+                    idx = i;
+                }
+            }
+            if (idx > a && best > tol2) {
+                keep[idx] = true;
+                stack[sp++] = a;
+                stack[sp++] = idx;
+                stack[sp++] = idx;
+                stack[sp++] = b;
+            }
+        }
+        int m = 0;
+        for (int i = 0; i < n; i++) {
+            if (keep[i]) {
+                simpleX[m] = xs[i];
+                simpleY[m] = ys[i];
+                m++;
+            }
+        }
+        return m;
+    }
+
+    private void sortCrossings(int count) {
+        for (int a = 1; a < count; a++) {
+            float keyX = cross[a];
+            int keyDir = dir[a];
+            int b = a - 1;
+            while (b >= 0 && cross[b] > keyX) {
+                cross[b + 1] = cross[b];
+                dir[b + 1] = dir[b];
+                b--;
+            }
+            cross[b + 1] = keyX;
+            dir[b + 1] = keyDir;
+        }
     }
 
     /** Draws only the region names, so drawings never cover them. */
@@ -411,19 +729,16 @@ public class MapView {
     }
 
     private void drawRegionLabel(GuiGraphicsExtractor g, Font font, Region r) {
-        float minX = Float.MAX_VALUE;
-        float maxX = -Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        float maxY = -Float.MAX_VALUE;
-        for (int p = 0; p < r.pointCount(); p++) {
-            float px = sx(r.pts[p * 2]);
-            float py = sy(r.pts[p * 2 + 1]);
-            minX = Math.min(minX, px);
-            maxX = Math.max(maxX, px);
-            minY = Math.min(minY, py);
-            maxY = Math.max(maxY, py);
-        }
+        double[] b = r.bounds();
+        float minX = Math.min(sx(b[0]), sx(b[1]));
+        float maxX = Math.max(sx(b[0]), sx(b[1]));
+        float minY = Math.min(sy(b[2]), sy(b[3]));
+        float maxY = Math.max(sy(b[2]), sy(b[3]));
         if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
+            return;
+        }
+        // a name wider than its region would only clutter the map with overlapping labels
+        if (maxX - minX < 24) {
             return;
         }
         drawRegionName(g, font, r, minX, maxX, minY, maxY);
@@ -459,18 +774,11 @@ public class MapView {
             if (zoom < 0.5f && (selectedId == null || !r.id.equals(selectedId))) {
                 continue;
             }
-            float minX = Float.MAX_VALUE;
-            float maxX = -Float.MAX_VALUE;
-            float minY = Float.MAX_VALUE;
-            float maxY = -Float.MAX_VALUE;
-            for (int p = 0; p < r.pointCount(); p++) {
-                float px = sx(r.pts[p * 2]);
-                float py = sy(r.pts[p * 2 + 1]);
-                minX = Math.min(minX, px);
-                maxX = Math.max(maxX, px);
-                minY = Math.min(minY, py);
-                maxY = Math.max(maxY, py);
-            }
+            double[] b = r.bounds();
+            float minX = Math.min(sx(b[0]), sx(b[1]));
+            float maxX = Math.max(sx(b[0]), sx(b[1]));
+            float minY = Math.min(sy(b[2]), sy(b[3]));
+            float maxY = Math.max(sy(b[2]), sy(b[3]));
             String name = font.plainSubstrByWidth(r.name, 140);
             int tw = font.width(name);
             int tx = Math.round((minX + maxX) / 2f - tw / 2f);
