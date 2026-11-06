@@ -75,10 +75,10 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(10);
             ctx.takeScreenshot("03_map");
             // the biome plaque appears after the cursor rests over explored terrain
-            moveGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2, mc.gui.screen().height / 2});
+            moveGui(ctx, input, mc -> new int[]{mc.screen.width / 2, mc.screen.height / 2});
             ctx.waitTicks(70);
             ctx.runOnClient(mc -> {
-                String biome = ((MapScreen) mc.gui.screen()).hoveredBiome();
+                String biome = ((MapScreen) mc.screen).hoveredBiome();
                 if (biome == null || biome.isEmpty()) {
                     throw new AssertionError("biome hint did not appear over explored terrain");
                 }
@@ -87,16 +87,16 @@ public class MapClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("03b_biome_hint");
 
             // and stays hidden over unscanned (fog) terrain
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).setView(30_000_000, 30_000_000, 1f));
-            moveGui(ctx, input, mc -> new int[]{mc.gui.screen().width / 2, mc.gui.screen().height / 2});
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).setView(30_000_000, 30_000_000, 1f));
+            moveGui(ctx, input, mc -> new int[]{mc.screen.width / 2, mc.screen.height / 2});
             ctx.waitTicks(70);
             ctx.runOnClient(mc -> {
-                if (((MapScreen) mc.gui.screen()).hoveredBiome() != null) {
+                if (((MapScreen) mc.screen).hoveredBiome() != null) {
                     throw new AssertionError("biome hint appeared over unscanned map");
                 }
             });
             ctx.takeScreenshot("03c_biome_hidden");
-            ctx.runOnClient(mc -> ((MapScreen) mc.gui.screen()).setView(mc.player.getX(), mc.player.getZ(), 2f));
+            ctx.runOnClient(mc -> ((MapScreen) mc.screen).setView(mc.player.getX(), mc.player.getZ(), 2f));
             ctx.waitTicks(5);
 
 
