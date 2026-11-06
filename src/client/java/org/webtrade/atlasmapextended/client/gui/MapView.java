@@ -362,6 +362,36 @@ public class MapView {
         if (!labels || r.name.isBlank() || maxX < x || minX > x + w || maxY < y || minY > y + h) {
             return;
         }
+        drawRegionName(g, font, r, minX, maxX, minY, maxY);
+    }
+
+    /** Draws only the region names, so drawings never cover them. */
+    public void drawRegionLabels(GuiGraphicsExtractor g, Font font, List<Region> regions, String dim) {
+        for (Region r : regions) {
+            if (r.hidden || !r.dim.equals(dim) || r.name.isBlank() || r.pointCount() < 3) {
+                continue;
+            }
+            float minX = Float.MAX_VALUE;
+            float maxX = -Float.MAX_VALUE;
+            float minY = Float.MAX_VALUE;
+            float maxY = -Float.MAX_VALUE;
+            for (int p = 0; p < r.pointCount(); p++) {
+                float px = sx(r.pts[p * 2]);
+                float py = sy(r.pts[p * 2 + 1]);
+                minX = Math.min(minX, px);
+                maxX = Math.max(maxX, px);
+                minY = Math.min(minY, py);
+                maxY = Math.max(maxY, py);
+            }
+            if (maxX < x || minX > x + w || maxY < y || minY > y + h) {
+                continue;
+            }
+            drawRegionName(g, font, r, minX, maxX, minY, maxY);
+        }
+    }
+
+    private void drawRegionName(GuiGraphicsExtractor g, Font font, Region r,
+                                float minX, float maxX, float minY, float maxY) {
         float cx = (minX + maxX) / 2f;
         float cy = (minY + maxY) / 2f;
         String name = font.plainSubstrByWidth(r.name, 140);
