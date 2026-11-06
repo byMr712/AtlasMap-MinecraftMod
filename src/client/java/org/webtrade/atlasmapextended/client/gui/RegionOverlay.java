@@ -1,6 +1,7 @@
 package org.webtrade.atlasmapextended.client.gui;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -60,6 +61,8 @@ final class RegionOverlay {
             }
             dirty = false;
         }
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         g.blit(id, x, y, 0f, 0f, width, height, width, height);
     }
 
