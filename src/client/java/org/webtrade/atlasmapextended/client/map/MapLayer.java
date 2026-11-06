@@ -66,6 +66,24 @@ public class MapLayer {
         return onDisk.isEmpty() && tiles.isEmpty();
     }
 
+    /** Centre of the explored area, or null when this dimension has no tiles yet. */
+    public double[] center() {
+        java.util.Set<Long> keys = new java.util.HashSet<>(onDisk);
+        for (MapTile t : tiles.values()) {
+            keys.add(pack(t.rx, t.rz));
+        }
+        if (keys.isEmpty()) {
+            return null;
+        }
+        long sx = 0;
+        long sz = 0;
+        for (long k : keys) {
+            sx += (long) (int) (k >> 32) * MapTile.SIZE + MapTile.SIZE / 2L;
+            sz += (long) (int) k * MapTile.SIZE + MapTile.SIZE / 2L;
+        }
+        return new double[]{(double) sx / keys.size(), (double) sz / keys.size()};
+    }
+
     /** Returns the tile for rendering, loading it from disk if the per-frame budget allows. */
     public MapTile getForRender(int rx, int rz) {
         long k = pack(rx, rz);
