@@ -85,7 +85,7 @@
   "atlasmapextended.draw.undo": "Отменить [Ctrl+Z]",
   "atlasmapextended.draw.clear": "Стереть все рисунки этого измерения",
   "atlasmapextended.confirm.clear_drawings": "Стереть все рисунки в этом измерении?",
-  "atlasmapextended.confirm.delete_marker": "Удалить метку «%s» вместе со скриншотами?",
+  "atlasmapextended.confirm.delete_marker": "Удалить метку «%s»?",
   "atlasmapextended.sort.name": "По названию",
   "atlasmapextended.sort.distance": "По расстоянию",
   "atlasmapextended.sort.date": "Сначала новые",

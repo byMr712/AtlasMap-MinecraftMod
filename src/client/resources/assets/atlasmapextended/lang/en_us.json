@@ -85,7 +85,7 @@
   "atlasmapextended.draw.undo": "Undo [Ctrl+Z]",
   "atlasmapextended.draw.clear": "Erase all drawings in this dimension",
   "atlasmapextended.confirm.clear_drawings": "Erase all drawings in this dimension?",
-  "atlasmapextended.confirm.delete_marker": "Delete marker “%s” together with its screenshots?",
+  "atlasmapextended.confirm.delete_marker": "Delete marker \"%s\"?",
   "atlasmapextended.sort.name": "By name",
   "atlasmapextended.sort.distance": "By distance",
   "atlasmapextended.sort.date": "Newest first",
