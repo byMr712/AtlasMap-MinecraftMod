@@ -21,6 +21,7 @@ public class GuiMixin {
 
     @Inject(method = "render", at = @At("TAIL"))
     private void atlasmapextended$renderMinimap(GuiGraphics g, DeltaTracker delta, CallbackInfo ci) {
+        g.nextStratum();
         AtlasMapExtendedCommon.renderMinimap(g, delta);
     }
 }
