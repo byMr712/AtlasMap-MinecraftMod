@@ -105,7 +105,7 @@ public class MapScreen extends Screen {
     private Tool tool = Tool.NONE;
     private DrawTool drawTool = DrawTool.PEN;
     private int colorIdx = PAL_COLS;
-    private int regionColorIdx = PAL_COLS;
+    private int regionColorIdx = PAL_COLS + 4;
     private boolean regionFill = true;
     private int widthIdx = 1;
     private Stroke current;
