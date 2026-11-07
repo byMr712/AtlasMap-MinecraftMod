@@ -10,7 +10,7 @@ public class ModConfig {
     public static final int[] MINIMAP_SIZES = {80, 110, 140, 170};
 
     public boolean minimapEnabled = true;
-    public int minimapSizeIndex = 1;
+    public int minimapSizeIndex = 0;
     public int minimapZoomIndex = 2;
     /** 0 = top right, 1 = top left, 2 = bottom right, 3 = bottom left. */
     public int minimapCorner = 0;
