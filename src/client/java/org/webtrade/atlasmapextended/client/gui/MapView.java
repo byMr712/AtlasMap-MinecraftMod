@@ -416,6 +416,9 @@ public class MapView {
             for (int i = 0, j = m - 1; i < m; j = i++) {
                 line(pixels, simpleX[i], simpleY[i], simpleX[j], simpleY[j], lineWidth, outline);
             }
+            for (int i = 0; i < m; i++) {
+                dot(pixels, simpleX[i], simpleY[i], lineWidth, outline);
+            }
         }
         return new int[]{drawn, points};
     }
@@ -519,6 +522,30 @@ public class MapView {
                 float ddx = cx - (x1 + t * dx);
                 float ddy = cy - (y1 + t * dy);
                 float coverage = half + 0.5f - (float) Math.sqrt(ddx * ddx + ddy * ddy);
+                if (coverage <= 0) {
+                    continue;
+                }
+                if (coverage > 1) {
+                    coverage = 1;
+                }
+                blendPixel(pixels, px, py, ((int) (alpha * coverage) << 24) | (color & 0xFFFFFF));
+            }
+        }
+    }
+
+    /** Round joint so thin segments do not leave dark gaps at polygon vertices. */
+    private void dot(int[] pixels, float cx, float cy, float width, int color) {
+        float r = Math.max(0.55f, width / 2f);
+        int bx0 = Math.max(0, (int) Math.floor(cx - r - 1));
+        int bx1 = Math.min(w - 1, (int) Math.ceil(cx + r + 1));
+        int by0 = Math.max(0, (int) Math.floor(cy - r - 1));
+        int by1 = Math.min(h - 1, (int) Math.ceil(cy + r + 1));
+        int alpha = color >>> 24;
+        for (int py = by0; py <= by1; py++) {
+            float dy = py + 0.5f - cy;
+            for (int px = bx0; px <= bx1; px++) {
+                float dx = px + 0.5f - cx;
+                float coverage = r + 0.5f - (float) Math.sqrt(dx * dx + dy * dy);
                 if (coverage <= 0) {
                     continue;
                 }
@@ -655,6 +682,10 @@ public class MapView {
         }
         for (int i = 0, j = m - 1; i < m; j = i++) {
             Paper.line(g, simpleX[i], simpleY[i], simpleX[j], simpleY[j], selected ? 2.4f : 1.4f,
+                    selected ? Paper.GOLD : outline);
+        }
+        for (int i = 0; i < m; i++) {
+            Paper.dot(g, simpleX[i], simpleY[i], selected ? 2.4f : 1.4f,
                     selected ? Paper.GOLD : outline);
         }
         if (labels && !r.name.isBlank() && maxX - minX >= 24) {
