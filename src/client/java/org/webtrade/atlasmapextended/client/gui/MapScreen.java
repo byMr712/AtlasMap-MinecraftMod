@@ -2715,14 +2715,6 @@ public class MapScreen extends Screen {
         }
         confirm(T.tr("confirm.delete_marker", m.name.isEmpty() ? T.s("marker.unnamed") : m.name), () -> {
             session.markers.remove(m);
-            for (String f : m.screenshots) {
-                deleteShot(f);
-            }
-            if (working != null) {
-                for (String f : working.screenshots) {
-                    deleteShot(f);
-                }
-            }
             working = null;
             workingIsNew = false;
             selected = null;
@@ -3792,9 +3784,15 @@ public class MapScreen extends Screen {
             ruler.clear();
             return true;
         }
-        if (key == InputConstants.KEY_DELETE && selected != null) {
-            confirmDelete(selected);
-            return true;
+        if (key == InputConstants.KEY_DELETE) {
+            if (selectedRegion != null) {
+                confirmDeleteRegion();
+                return true;
+            }
+            if (selected != null) {
+                confirmDelete(selected);
+                return true;
+            }
         }
         if (key == InputConstants.KEY_C) {
             centerOnPlayer();
