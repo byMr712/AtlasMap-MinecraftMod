@@ -11,7 +11,7 @@ public class Region {
     public String id = UUID.randomUUID().toString();
     public String name = "";
     public String description = "";
-    public int color = 0xFFB88C2C;
+    public int color = 0xFFE08A2E;
     public String dim = "minecraft:overworld";
     public double[] pts = new double[0];
     public boolean hidden;
