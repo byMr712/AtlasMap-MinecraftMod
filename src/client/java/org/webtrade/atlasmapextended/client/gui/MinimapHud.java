@@ -3,6 +3,7 @@ package org.webtrade.atlasmapextended.client.gui;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.LocalPlayer;
 import org.webtrade.atlasmapextended.client.data.ModConfig;
 import org.webtrade.atlasmapextended.client.map.MapManager;
@@ -27,7 +28,13 @@ public class MinimapHud {
         double pz = p.zo + (p.getZ() - p.zo) * pt;
 
         int size = cfg.minimapSize();
-        int textH = cfg.minimapCoords ? 13 : 0;
+        String coords = p.getBlockX() + ", " + p.getBlockY() + ", " + p.getBlockZ();
+        float textScale = 1f;
+        if (cfg.minimapCoords) {
+            int tw = mc.font.width(coords);
+            textScale = Math.min(1f, (size - 2) / (float) Math.max(1, tw));
+        }
+        int textH = cfg.minimapCoords ? Math.max(6, Math.round(8 * textScale) + 5) : 0;
         int margin = 8;
         int sw = g.guiWidth();
         int sh = g.guiHeight();
@@ -67,8 +74,14 @@ public class MinimapHud {
         g.drawString(mc.font, "N", nx - 2, y - 4, Paper.RED, false);
 
         if (cfg.minimapCoords) {
-            String c = p.getBlockX() + ", " + p.getBlockY() + ", " + p.getBlockZ();
-            g.drawString(mc.font, c, x + (size - mc.font.width(c)) / 2, y + size + 3, Paper.INK, false);
+            float tw = mc.font.width(coords) * textScale;
+            float tx = x + (size - tw) / 2f;
+            float ty = y + size + 3;
+            PoseStack pose = g.pose();
+            pose.pushPose();
+            pose.scale(textScale, textScale, 1f);
+            g.drawString(mc.font, coords, (int) (tx / textScale), (int) (ty / textScale), Paper.INK, false);
+            pose.popPose();
         }
     }
 }
