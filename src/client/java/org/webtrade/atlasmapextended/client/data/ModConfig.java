@@ -7,10 +7,12 @@ import java.nio.file.Path;
 /** Client settings, stored in {@code config/atlasmapextended.json}. */
 public class ModConfig {
     public static final float[] MINIMAP_ZOOMS = {0.5f, 1f, 1.5f, 2f, 3f, 4f};
-    public static final int[] MINIMAP_SIZES = {80, 110, 140, 170};
+    public static final int[] MINIMAP_SIZES = {20, 40, 60, 80, 110, 140, 170, 200, 230, 260, 290};
 
     public boolean minimapEnabled = true;
-    public int minimapSizeIndex = 0;
+    public int minimapSizeIndex = 1;
+    /** Bumped when the size list changes, so old indices can be remapped once. */
+    public int minimapSizesVersion = 0;
     public int minimapZoomIndex = 2;
     /** 0 = top right, 1 = top left, 2 = bottom right, 3 = bottom left. */
     public int minimapCorner = 0;
@@ -30,7 +32,15 @@ public class ModConfig {
 
     public static ModConfig get() {
         if (instance == null) {
-            instance = Storage.readJson(file(), ModConfig.class, new ModConfig());
+            ModConfig fallback = new ModConfig();
+            fallback.minimapSizesVersion = 1;
+            instance = Storage.readJson(file(), ModConfig.class, fallback);
+            if (instance.minimapSizesVersion == 0) {
+                // Old config: the first four slots used to be 80/110/140/170.
+                instance.minimapSizeIndex = Math.min(MINIMAP_SIZES.length - 1, instance.minimapSizeIndex + 3);
+                instance.minimapSizesVersion = 1;
+                instance.save();
+            }
             instance.clamp();
         }
         return instance;
