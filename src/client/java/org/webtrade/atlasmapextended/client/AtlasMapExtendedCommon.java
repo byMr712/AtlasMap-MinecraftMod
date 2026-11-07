@@ -81,8 +81,7 @@ public final class AtlasMapExtendedCommon {
             cfg.save();
         }
         while (ModKeys.MINIMAP_ZOOM_TOGGLE.consumeClick()) {
-            int last = ModConfig.MINIMAP_ZOOMS.length - 1;
-            cfg.minimapZoomIndex = cfg.minimapZoomIndex > last / 2 ? 0 : last;
+            cfg.minimapZoomIndex = (cfg.minimapZoomIndex + 1) % ModConfig.MINIMAP_ZOOMS.length;
             cfg.save();
         }
         // in-map shortcuts are handled by the map screen itself
